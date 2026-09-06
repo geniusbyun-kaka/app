@@ -1,0 +1,467 @@
+<title>새근새근</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap">
+<style>
+:root{
+  --bg:#F7F4ED; --surface:#FFFFFF; --surface2:#F1EDE3;
+  --ink:#2E2B3F; --muted:#8B8699; --line:#E5E0D4;
+  --night:#565CA8; --night-soft:#E4E5F5;
+  --nap:#D08A2E; --nap-soft:#F6E8D2;
+  --good:#3E8E63; --good-soft:#DFEEE6;
+  --warn:#B7791F; --warn-soft:#F5EAD3;
+  --bad:#BF5B5B; --bad-soft:#F5E0E0;
+  --band:rgba(86,92,168,.10);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#1C1B26; --surface:#262433; --surface2:#2E2B3D;
+    --ink:#EAE7F2; --muted:#9C97AC; --line:#3A374C;
+    --night:#8B90D9; --night-soft:#343759;
+    --nap:#E0A45C; --nap-soft:#463A26;
+    --good:#6FBF92; --good-soft:#27402F;
+    --warn:#D9A250; --warn-soft:#443722;
+    --bad:#D98080; --bad-soft:#442A2A;
+    --band:rgba(139,144,217,.14);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1C1B26; --surface:#262433; --surface2:#2E2B3D;
+  --ink:#EAE7F2; --muted:#9C97AC; --line:#3A374C;
+  --night:#8B90D9; --night-soft:#343759;
+  --nap:#E0A45C; --nap-soft:#463A26;
+  --good:#6FBF92; --good-soft:#27402F;
+  --warn:#D9A250; --warn-soft:#443722;
+  --bad:#D98080; --bad-soft:#442A2A;
+  --band:rgba(139,144,217,.14);
+}
+*{box-sizing:border-box}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:"IBM Plex Sans KR",-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  font-size:15px; line-height:1.55; margin:0; padding:0 16px 48px;
+}
+.wrap{max-width:560px; margin:0 auto}
+header{display:flex; align-items:flex-end; justify-content:space-between; padding:26px 2px 14px}
+h1{font-family:"Gowun Dodum",sans-serif; font-weight:400; font-size:1.7rem; margin:0; letter-spacing:.02em}
+.sub{color:var(--muted); font-size:.85rem; margin:2px 0 0}
+.age-chip{background:var(--night-soft); color:var(--night); border-radius:999px; padding:5px 13px; font-weight:700; font-size:.85rem; white-space:nowrap}
+.tabs{display:grid; grid-template-columns:repeat(4,1fr); gap:4px; background:var(--surface2); border-radius:12px; padding:4px; margin-bottom:16px}
+.tabs button{
+  border:0; background:none; color:var(--muted); font:inherit; font-weight:500;
+  padding:8px 0; border-radius:9px; cursor:pointer;
+}
+.tabs button:focus-visible{outline:2px solid var(--night); outline-offset:1px}
+.tabs button.on{background:var(--surface); color:var(--ink); font-weight:700; box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:14px}
+.card h2{font-family:"Gowun Dodum",sans-serif; font-weight:400; font-size:1.06rem; margin:0 0 12px}
+.card h2 small{color:var(--muted); font-family:"IBM Plex Sans KR",sans-serif; font-size:.8rem; margin-left:6px}
+/* form */
+.seg{display:grid; grid-template-columns:1fr 1fr; gap:4px; background:var(--surface2); border-radius:10px; padding:4px; margin-bottom:12px}
+.seg button{border:0; background:none; color:var(--muted); font:inherit; font-weight:500; padding:7px 0; border-radius:7px; cursor:pointer}
+.seg button.on-nap{background:var(--nap-soft); color:var(--nap); font-weight:700}
+.seg button.on-night{background:var(--night-soft); color:var(--night); font-weight:700}
+.frow{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px}
+.frow label{flex:1; min-width:100px; font-size:.78rem; color:var(--muted); display:flex; flex-direction:column; gap:4px}
+input[type=date],input[type=time]{
+  font:inherit; color:var(--ink); background:var(--surface2); border:1px solid var(--line);
+  border-radius:8px; padding:8px 10px; width:100%;
+}
+.btn{
+  display:block; width:100%; border:0; border-radius:10px; padding:11px 0; font:inherit;
+  font-weight:700; cursor:pointer; background:var(--night); color:#fff;
+}
+:root[data-theme="dark"] .btn{color:#1C1B26}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .btn{color:#1C1B26} }
+.note{font-size:.8rem; color:var(--muted); margin:8px 0 0}
+/* gauges */
+.gauge{margin-bottom:16px}
+.gauge:last-child{margin-bottom:2px}
+.ghead{display:flex; align-items:center; gap:8px; margin-bottom:6px}
+.ghead .name{font-weight:700}
+.ghead .val{margin-left:auto; font-variant-numeric:tabular-nums}
+.chip{font-size:.72rem; font-weight:700; border-radius:999px; padding:2px 9px}
+.chip.ok{background:var(--good-soft); color:var(--good)}
+.chip.low{background:var(--warn-soft); color:var(--warn)}
+.chip.high{background:var(--bad-soft); color:var(--bad)}
+.chip.none{background:var(--surface2); color:var(--muted)}
+.track{position:relative; height:12px; border-radius:999px; background:var(--surface2); overflow:hidden}
+.track .band{position:absolute; top:0; bottom:0; background:var(--band); border-left:1px dashed var(--night); border-right:1px dashed var(--night)}
+.track .fill{position:absolute; top:2px; bottom:2px; left:2px; border-radius:999px; min-width:2px}
+.gnote{font-size:.75rem; color:var(--muted); margin-top:4px}
+/* entries */
+.entry{display:flex; align-items:center; gap:10px; padding:10px 2px; border-top:1px solid var(--line)}
+.entry:first-of-type{border-top:0}
+.dot{width:9px; height:9px; border-radius:50%; flex:none}
+.dot.nap{background:var(--nap)} .dot.night{background:var(--night)}
+.entry .t{font-variant-numeric:tabular-nums}
+.entry .dur{margin-left:auto; color:var(--muted); font-variant-numeric:tabular-nums; font-size:.85rem}
+.entry .del{border:0; background:none; color:var(--muted); cursor:pointer; font-size:1rem; padding:2px 6px; border-radius:6px}
+.entry .del:hover{color:var(--bad); background:var(--bad-soft)}
+.empty{color:var(--muted); text-align:center; padding:18px 8px; font-size:.9rem}
+/* stats + insights */
+.statgrid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:4px}
+.stat{background:var(--surface2); border-radius:10px; padding:10px 12px}
+.stat .k{font-size:.72rem; color:var(--muted)}
+.stat .v{font-weight:700; font-variant-numeric:tabular-nums; font-size:.95rem}
+.stat .r{font-size:.7rem; color:var(--muted)}
+.insight{display:flex; gap:9px; padding:9px 0; border-top:1px solid var(--line); font-size:.9rem}
+.insight:first-of-type{border-top:0}
+.insight .mark{flex:none; width:8px; height:8px; border-radius:50%; margin-top:7px}
+.insight.ok .mark{background:var(--good)} .insight.low .mark{background:var(--warn)}
+.insight.high .mark{background:var(--bad)} .insight.info .mark{background:var(--night)}
+.chartbox{overflow-x:auto}
+svg{display:block; width:100%; height:auto}
+.legend{display:flex; gap:16px; font-size:.78rem; color:var(--muted); margin-top:6px}
+.legend span{display:flex; align-items:center; gap:5px}
+.legend i{width:10px; height:10px; border-radius:3px; display:inline-block}
+/* guide table */
+table{border-collapse:collapse; width:100%; font-size:.85rem}
+th,td{padding:7px 8px; text-align:left; border-top:1px solid var(--line); font-variant-numeric:tabular-nums}
+th{color:var(--muted); font-size:.75rem; font-weight:500; border-top:0}
+tr.me td{background:var(--night-soft); font-weight:700}
+tr.me td:first-child{border-radius:8px 0 0 8px} tr.me td:last-child{border-radius:0 8px 8px 0}
+ul.tips{margin:0; padding-left:18px}
+ul.tips li{margin-bottom:8px}
+.savedmode{font-size:.75rem; color:var(--muted); text-align:center; margin-top:20px}
+</style>
+<div class="wrap">
+  <header>
+    <div><h1>새근새근</h1><p class="sub">아기 수면 일기</p></div>
+    <div class="age-chip" id="ageChip">👶</div>
+  </header>
+  <nav class="tabs" id="tabs" aria-label="화면 선택">
+    <button data-tab="today">오늘</button>
+    <button data-tab="week">주간</button>
+    <button data-tab="month">월간</button>
+    <button data-tab="guide">가이드</button>
+  </nav>
+  <main id="view"></main>
+  <p class="savedmode" id="modeNote"></p>
+</div>
+<script>
+"use strict";
+/* ---------- 권장 수면 가이드 (개월수별, 시간 단위) ---------- */
+const GUIDES = [
+  {min:4,  max:11, label:"4~11개월",  total:[12,16], night:[9,11],    nap:[2,4.5],  naps:"2~3회", bed:"19:00~20:00"},
+  {min:12, max:17, label:"12~17개월", total:[11,14], night:[10,11],   nap:[1.5,2.5],naps:"1~2회", bed:"19:30~20:30"},
+  {min:18, max:23, label:"18~23개월", total:[11,14], night:[10,11.5], nap:[1,2],    naps:"1회",   bed:"19:30~20:30"},
+  {min:24, max:35, label:"24~35개월", total:[11,14], night:[10.5,11.5],nap:[1,1.5], naps:"1회",   bed:"20:00~20:30"},
+];
+const SCALE_MAX = 16*60; // 게이지·차트 세로축 상한(분)
+
+const LS_KEY = "saegeun_v1";
+const state = { tab:"today", entries:[], birthDate:null, db:null, mode:"local", formType:"nap" };
+
+/* ---------- 날짜/시간 유틸 ---------- */
+const pad = n => String(n).padStart(2,"0");
+const dayKey = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const todayKey = () => dayKey(new Date());
+const hm2min = hm => { const [h,m]=hm.split(":").map(Number); return h*60+m; };
+const fmtDur = min => {
+  const v=Math.round(min), h=Math.floor(v/60), m=v%60;
+  return h? (m? `${h}시간 ${m}분` : `${h}시간`) : `${m}분`;
+};
+const fmtRange = r => `${r[0]}~${r[1]}시간`;
+const fmtClock = min => { const v=((Math.round(min)%1440)+1440)%1440; return `${pad(Math.floor(v/60))}:${pad(v%60)}`; };
+const weekdayKo = ["일","월","화","수","목","금","토"];
+function ageMonths(){
+  const b = new Date((state.birthDate||defaultBirth())+"T00:00");
+  const t = new Date();
+  let m = (t.getFullYear()-b.getFullYear())*12 + t.getMonth()-b.getMonth();
+  if (t.getDate() < b.getDate()) m--;
+  return Math.max(0,m);
+}
+function defaultBirth(){ // 미설정 시 16개월로 가정
+  const d = new Date(); d.setMonth(d.getMonth()-16);
+  return dayKey(d);
+}
+const guideFor = m => GUIDES.find(g=>m>=g.min&&m<=g.max) || GUIDES[GUIDES.length-1];
+
+/* ---------- 저장소 (artifact db ↔ localStorage) ---------- */
+function loadLocal(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(!raw) return;
+    const d = JSON.parse(raw);
+    state.entries = Object.entries(d.sleeps||{}).map(([id,e])=>({id,...e}));
+    state.birthDate = d.birthDate||null;
+  }catch(e){}
+}
+function persistLocal(){
+  try{
+    const sleeps={}; state.entries.forEach(e=>{ const {id,...rest}=e; sleeps[id]=rest; });
+    localStorage.setItem(LS_KEY, JSON.stringify({sleeps, birthDate:state.birthDate}));
+  }catch(e){}
+}
+function connectDb(){
+  if(!(window.claude && typeof window.claude.use==="function")) return;
+  window.claude.use("db").then(db=>{
+    if(!db) return;
+    state.db = db;
+    db.doc("settings/profile").onSnapshot(s=>{
+      if(s.exists && s.data().birthDate){ state.birthDate = s.data().birthDate; render(); }
+    }, ()=>{});
+    db.collection("sleeps").onSnapshot(qs=>{
+      state.entries = qs.docs.filter(d=>d.exists).map(d=>({id:d.id, ...d.data()}));
+      state.mode = "db";
+      render();
+    }, ()=>{ state.db=null; });
+  }).catch(()=>{});
+}
+function saveEntry(e){
+  const id = "s"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  if(state.db){ state.db.collection("sleeps").doc(id).set(e).catch(()=>alert("저장하지 못했어요. 잠시 후 다시 시도해 주세요.")); }
+  else { state.entries.push({id,...e}); persistLocal(); render(); }
+}
+function removeEntry(id){
+  if(state.db){ state.db.collection("sleeps").doc(id).delete().catch(()=>{}); }
+  else { state.entries = state.entries.filter(e=>e.id!==id); persistLocal(); render(); }
+}
+function saveBirth(v){
+  state.birthDate = v;
+  if(state.db){ state.db.doc("settings/profile").set({birthDate:v}).catch(()=>{}); }
+  else persistLocal();
+  render();
+}
+
+/* ---------- 집계 ---------- */
+function dayStats(dateStr){
+  const es = state.entries.filter(e=>e.date===dateStr);
+  const nap = es.filter(e=>e.type==="nap").reduce((a,e)=>a+e.minutes,0);
+  const night = es.filter(e=>e.type==="night").reduce((a,e)=>a+e.minutes,0);
+  return {date:dateStr, nap, night, total:nap+night, entries:es};
+}
+function lastDays(n){
+  const out=[]; const d=new Date();
+  for(let i=n-1;i>=0;i--){ const c=new Date(d); c.setDate(d.getDate()-i); out.push(dayStats(dayKey(c))); }
+  return out;
+}
+function statusFor(min,rangeH){
+  if(min<=0) return {label:"기록 없음", cls:"none"};
+  const h=min/60;
+  if(h<rangeH[0]) return {label:"부족", cls:"low"};
+  if(h>rangeH[1]) return {label:"과다", cls:"high"};
+  return {label:"적정", cls:"ok"};
+}
+// 밤잠 시작 시각(자정 이전은 그대로, 새벽 시작은 +24h 해서 평균/편차 계산)
+function nightStarts(days){
+  const arr=[];
+  days.forEach(d=>d.entries.filter(e=>e.type==="night").forEach(e=>{
+    let m=hm2min(e.start); if(m<12*60) m+=1440; arr.push(m);
+  }));
+  return arr;
+}
+function mean(a){ return a.reduce((x,y)=>x+y,0)/a.length; }
+function stddev(a){ const m=mean(a); return Math.sqrt(mean(a.map(x=>(x-m)*(x-m)))); }
+
+/* ---------- 인사이트 문구 ---------- */
+function analyze(days, guide){
+  const rec = days.filter(d=>d.total>0);
+  const out = [];
+  if(rec.length===0) return out;
+  const avgT=mean(rec.map(d=>d.total)), avgN=mean(rec.map(d=>d.night)), avgP=mean(rec.map(d=>d.nap));
+  const st = statusFor(avgT, guide.total);
+  if(st.cls==="ok") out.push({cls:"ok", text:`평균 총 수면 ${fmtDur(avgT)}으로 권장 범위(${fmtRange(guide.total)}) 안에 있어요. 잘 자고 있어요!`});
+  else if(st.cls==="low") out.push({cls:"low", text:`평균 총 수면이 ${fmtDur(avgT)}으로 권장(${fmtRange(guide.total)})보다 부족해요. 취침 시간을 20~30분 앞당겨 보세요.`});
+  else out.push({cls:"high", text:`평균 총 수면이 ${fmtDur(avgT)}으로 권장(${fmtRange(guide.total)})보다 많아요. 낮잠이 너무 길지 않은지 확인해 보세요.`});
+  const sn = statusFor(avgN, guide.night);
+  if(sn.cls==="low" && avgP/60>guide.nap[1]) out.push({cls:"low", text:`밤잠 평균 ${fmtDur(avgN)}이 권장(${fmtRange(guide.night)})보다 짧은데 낮잠은 긴 편이에요. 낮잠을 ${fmtRange(guide.nap)} 안으로 줄이면 밤잠이 늘 수 있어요.`});
+  else if(sn.cls==="low") out.push({cls:"low", text:`밤잠 평균이 ${fmtDur(avgN)}으로 권장(${fmtRange(guide.night)})에 못 미쳐요.`});
+  else if(sn.cls==="ok") out.push({cls:"ok", text:`밤잠 평균 ${fmtDur(avgN)}, 권장 범위(${fmtRange(guide.night)}) 안이에요.`});
+  const sp = statusFor(avgP, guide.nap);
+  if(sp.cls==="none") out.push({cls:"low", text:`낮잠 기록이 없어요. 이 시기에는 낮잠 ${guide.naps}, ${fmtRange(guide.nap)}이 권장돼요.`});
+  else if(sp.cls==="ok") out.push({cls:"ok", text:`낮잠 평균 ${fmtDur(avgP)}, 권장 범위(${fmtRange(guide.nap)}) 안이에요.`});
+  else if(sp.cls==="low") out.push({cls:"low", text:`낮잠 평균이 ${fmtDur(avgP)}으로 권장(${fmtRange(guide.nap)})보다 짧아요.`});
+  else out.push({cls:"high", text:`낮잠 평균이 ${fmtDur(avgP)}으로 권장(${fmtRange(guide.nap)})보다 길어요. 밤잠에 영향을 줄 수 있어요.`});
+  const inRange = rec.filter(d=>d.total/60>=guide.total[0] && d.total/60<=guide.total[1]).length;
+  out.push({cls:"info", text:`기록한 ${rec.length}일 중 ${inRange}일이 권장 총 수면 범위 안이었어요.`});
+  const ns = nightStarts(days);
+  if(ns.length>=3){
+    const sd=stddev(ns), avg=mean(ns);
+    if(sd<=20) out.push({cls:"ok", text:`취침 시각이 평균 ${fmtClock(avg)}, 편차 ±${Math.round(sd)}분으로 매우 일정해요. 규칙적인 취침은 수면의 질을 높여요.`});
+    else if(sd<=45) out.push({cls:"info", text:`취침 시각 평균 ${fmtClock(avg)}, 편차 ±${Math.round(sd)}분이에요. 대체로 규칙적이에요.`});
+    else out.push({cls:"low", text:`취침 시각 편차가 ±${Math.round(sd)}분으로 들쭉날쭉해요. 매일 비슷한 시각(${guide.bed} 권장)에 재워 보세요.`});
+  }
+  return out;
+}
+
+/* ---------- SVG 차트 ---------- */
+function chartSvg(days, guide, opts){
+  const W=520, H=230, padL=38, padR=10, padT=12, padB=30;
+  const iw=W-padL-padR, ih=H-padT-padB;
+  const y = v => padT + ih*(1 - Math.min(v,SCALE_MAX)/SCALE_MAX);
+  const n = days.length;
+  const slot = iw/n, bw = Math.min(slot*(n>10?0.62:0.5), 34);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="일별 수면 시간 차트">`;
+  // 권장 범위 밴드
+  const bTop=y(guide.total[1]*60), bBot=y(guide.total[0]*60);
+  s += `<rect x="${padL}" y="${bTop}" width="${iw}" height="${bBot-bTop}" fill="var(--band)"/>`;
+  s += `<line x1="${padL}" x2="${padL+iw}" y1="${bTop}" y2="${bTop}" stroke="var(--night)" stroke-dasharray="4 4" stroke-width="1"/>`;
+  s += `<line x1="${padL}" x2="${padL+iw}" y1="${bBot}" y2="${bBot}" stroke="var(--night)" stroke-dasharray="4 4" stroke-width="1"/>`;
+  // 눈금
+  for(const t of [0,4,8,12,16]){
+    const ty=y(t*60);
+    s += `<line x1="${padL}" x2="${padL+iw}" y1="${ty}" y2="${ty}" stroke="var(--line)" stroke-width="1"/>`;
+    s += `<text x="${padL-6}" y="${ty+4}" text-anchor="end" font-size="10" fill="var(--muted)">${t}h</text>`;
+  }
+  // 막대 (밤잠 아래 + 낮잠 위)
+  days.forEach((d,i)=>{
+    const cx = padL + slot*i + slot/2;
+    const x = cx - bw/2;
+    const yN = y(d.night), yT = y(d.night + d.nap);
+    if(d.night>0) s += `<rect x="${x}" y="${yN}" width="${bw}" height="${y(0)-yN}" rx="2" fill="var(--night)"/>`;
+    if(d.nap>0)   s += `<rect x="${x}" y="${yT}" width="${bw}" height="${yN-yT}" rx="2" fill="var(--nap)"/>`;
+    if(d.total===0) s += `<circle cx="${cx}" cy="${y(0)-3}" r="1.5" fill="var(--muted)"/>`;
+    // x 라벨
+    let lab=null;
+    const dt=new Date(d.date+"T00:00");
+    if(opts.mode==="week") lab = weekdayKo[dt.getDay()];
+    else if(i===0 || i===n-1 || dt.getDate()%5===0) lab = String(dt.getDate());
+    if(lab!==null) s += `<text x="${cx}" y="${H-10}" text-anchor="middle" font-size="10" fill="var(--muted)">${lab}</text>`;
+  });
+  s += `</svg>`;
+  return s;
+}
+
+/* ---------- 화면 렌더링 ---------- */
+const $ = sel => document.querySelector(sel);
+function gaugeHtml(name, min, rangeH, color){
+  const st = statusFor(min, rangeH);
+  const pct = v => Math.min(100, v/SCALE_MAX*100).toFixed(1);
+  return `<div class="gauge">
+    <div class="ghead"><span class="name">${name}</span>
+      <span class="chip ${st.cls}">${st.label}</span>
+      <span class="val">${min>0?fmtDur(min):"–"}</span></div>
+    <div class="track">
+      <div class="band" style="left:${pct(rangeH[0]*60)}%;width:${(pct(rangeH[1]*60)-pct(rangeH[0]*60)).toFixed(1)}%"></div>
+      <div class="fill" style="width:${pct(min)}%;background:${color}"></div>
+    </div>
+    <div class="gnote">권장 ${fmtRange(rangeH)}</div>
+  </div>`;
+}
+function entryRow(e){
+  const label = e.type==="nap"?"낮잠":"밤잠";
+  return `<div class="entry"><span class="dot ${e.type}"></span>
+    <span>${label}</span><span class="t">${e.start} → ${e.end}</span>
+    <span class="dur">${fmtDur(e.minutes)}</span>
+    <button class="del" data-del="${e.id}" aria-label="기록 삭제">✕</button></div>`;
+}
+function renderToday(guide){
+  const t = dayStats(todayKey());
+  const defaults = state.formType==="night" ? ["20:30","07:00"] : ["13:00","14:30"];
+  return `
+  <section class="card">
+    <h2>수면 기록하기</h2>
+    <div class="seg">
+      <button id="segNap" class="${state.formType==="nap"?"on-nap":""}">☀️ 낮잠</button>
+      <button id="segNight" class="${state.formType==="night"?"on-night":""}">🌙 밤잠</button>
+    </div>
+    <div class="frow">
+      <label>날짜 (잠든 날)<input type="date" id="fDate" value="${todayKey()}"></label>
+      <label>잠든 시각<input type="time" id="fStart" value="${defaults[0]}"></label>
+      <label>깬 시각<input type="time" id="fEnd" value="${defaults[1]}"></label>
+    </div>
+    <button class="btn" id="fSave">기록 저장</button>
+    <p class="note">밤잠은 잠든 날짜 기준으로 기록돼요. 깬 시각이 잠든 시각보다 이르면 다음 날 아침으로 계산해요.</p>
+  </section>
+  <section class="card">
+    <h2>오늘 수면 현황 <small>${guide.label} 기준</small></h2>
+    ${gaugeHtml("총 수면", t.total, guide.total, "linear-gradient(90deg,var(--night),var(--nap))")}
+    ${gaugeHtml("밤잠", t.night, guide.night, "var(--night)")}
+    ${gaugeHtml("낮잠", t.nap, guide.nap, "var(--nap)")}
+  </section>
+  <section class="card">
+    <h2>오늘 기록</h2>
+    ${t.entries.length ? t.entries.map(entryRow).join("") :
+      `<div class="empty">아직 기록이 없어요.<br>위에서 낮잠·밤잠을 기록하면 여기에 쌓여요.</div>`}
+  </section>`;
+}
+function renderPeriod(nDays, guide, modeName){
+  const days = lastDays(nDays);
+  const rec = days.filter(d=>d.total>0);
+  const avg = k => rec.length? mean(rec.map(d=>d[k])) : 0;
+  const insights = analyze(days, guide);
+  return `
+  <section class="card">
+    <h2>최근 ${nDays}일 수면 <small>권장 총 수면 ${fmtRange(guide.total)} 구간 표시</small></h2>
+    <div class="chartbox">${chartSvg(days, guide, {mode:modeName})}</div>
+    <div class="legend"><span><i style="background:var(--night)"></i>밤잠</span><span><i style="background:var(--nap)"></i>낮잠</span><span><i style="background:var(--band);border:1px dashed var(--night)"></i>권장 범위</span></div>
+  </section>
+  <section class="card">
+    <h2>평균 <small>기록된 ${rec.length}일 기준</small></h2>
+    <div class="statgrid">
+      <div class="stat"><div class="k">총 수면</div><div class="v">${rec.length?fmtDur(avg("total")):"–"}</div><div class="r">권장 ${fmtRange(guide.total)}</div></div>
+      <div class="stat"><div class="k">밤잠</div><div class="v">${rec.length?fmtDur(avg("night")):"–"}</div><div class="r">권장 ${fmtRange(guide.night)}</div></div>
+      <div class="stat"><div class="k">낮잠</div><div class="v">${rec.length?fmtDur(avg("nap")):"–"}</div><div class="r">권장 ${fmtRange(guide.nap)}</div></div>
+    </div>
+  </section>
+  <section class="card">
+    <h2>분석</h2>
+    ${insights.length ? insights.map(i=>`<div class="insight ${i.cls}"><span class="mark"></span><span>${i.text}</span></div>`).join("") :
+      `<div class="empty">기록이 쌓이면 수면 패턴 분석이 여기에 표시돼요.</div>`}
+  </section>`;
+}
+function renderGuide(guide, months){
+  return `
+  <section class="card">
+    <h2>아기 정보</h2>
+    <div class="frow"><label>생년월일<input type="date" id="fBirth" value="${state.birthDate||defaultBirth()}"></label></div>
+    <button class="btn" id="fBirthSave">저장</button>
+    <p class="note">${state.birthDate? `현재 ${months}개월 기준 가이드가 적용되고 있어요.` : "생년월일을 저장하면 개월수에 맞는 가이드가 자동 적용돼요. (지금은 16개월로 가정)"}</p>
+  </section>
+  <section class="card">
+    <h2>개월수별 권장 수면</h2>
+    <table>
+      <tr><th>개월수</th><th>총 수면</th><th>밤잠</th><th>낮잠</th><th>낮잠 횟수</th></tr>
+      ${GUIDES.map(g=>`<tr class="${g===guide?"me":""}"><td>${g.label}</td><td>${fmtRange(g.total)}</td><td>${fmtRange(g.night)}</td><td>${fmtRange(g.nap)}</td><td>${g.naps}</td></tr>`).join("")}
+    </table>
+    <p class="note">미국수면재단(NSF)·소아과 권장 범위를 참고한 일반 가이드예요. 아기마다 차이가 있으니 컨디션과 함께 봐 주세요.</p>
+  </section>
+  <section class="card">
+    <h2>${guide.label} 수면 팁</h2>
+    <ul class="tips">
+      <li><b>권장 취침 시각은 ${guide.bed}</b> 무렵이에요. 매일 같은 시각에 재우는 게 가장 중요해요.</li>
+      <li>이 시기 아기는 낮잠 2회에서 <b>1회로 넘어가는 전환기</b>일 수 있어요. 점심 식사 후 오후 1시 전후 1회 낮잠이 안정적이에요.</li>
+      <li>낮잠에서 <b>오후 3시 이후까지 자면 밤잠</b>이 늦어질 수 있어요.</li>
+      <li>자기 전 목욕 → 책 읽기 → 소등 같은 <b>일정한 수면 의식</b>이 잠드는 시간을 줄여줘요.</li>
+      <li>총 수면이 하루 이틀 범위를 벗어나는 건 자연스러워요. <b>주간 평균</b>으로 판단하세요.</li>
+    </ul>
+  </section>`;
+}
+function render(){
+  const months = ageMonths();
+  const guide = guideFor(months);
+  $("#ageChip").textContent = `👶 ${months}개월 · ${guide.label} 가이드`;
+  document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on", b.dataset.tab===state.tab));
+  const v = $("#view");
+  if(state.tab==="today") v.innerHTML = renderToday(guide);
+  else if(state.tab==="week") v.innerHTML = renderPeriod(7, guide, "week");
+  else if(state.tab==="month") v.innerHTML = renderPeriod(30, guide, "month");
+  else v.innerHTML = renderGuide(guide, months);
+  $("#modeNote").textContent = state.mode==="db" ? "기록은 안전하게 서버에 저장돼요." : "기록은 이 브라우저에 저장돼요.";
+}
+
+/* ---------- 이벤트 ---------- */
+document.addEventListener("click", ev=>{
+  const b = ev.target.closest("button");
+  if(!b) return;
+  if(b.dataset.tab){ state.tab=b.dataset.tab; render(); return; }
+  if(b.id==="segNap"){ state.formType="nap"; render(); return; }
+  if(b.id==="segNight"){ state.formType="night"; render(); return; }
+  if(b.dataset.del){ if(confirm("이 기록을 삭제할까요?")) removeEntry(b.dataset.del); return; }
+  if(b.id==="fBirthSave"){ const v=$("#fBirth").value; if(v) saveBirth(v); return; }
+  if(b.id==="fSave"){
+    const date=$("#fDate").value, start=$("#fStart").value, end=$("#fEnd").value;
+    if(!date||!start||!end){ alert("날짜와 시각을 모두 입력해 주세요."); return; }
+    let minutes = hm2min(end)-hm2min(start);
+    if(minutes<=0) minutes += 1440; // 자정 넘김
+    if(minutes>=1440){ alert("수면 시간이 24시간을 넘을 수 없어요."); return; }
+    saveEntry({type:state.formType, date, start, end, minutes, createdAt:new Date().toISOString()});
+    if(!state.db) return; // 로컬 모드는 saveEntry에서 렌더됨
+    render();
+  }
+});
+
+loadLocal();
+render();
+connectDb();
+</script>
