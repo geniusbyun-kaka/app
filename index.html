@@ -12,9 +12,11 @@
   --night:#565CA8; --night-soft:#E4E5F5;
   --nap:#D08A2E; --nap-soft:#F6E8D2;
   --good:#3E8E63; --good-soft:#DFEEE6;
+  --diaper:#9A7B5C; --diaper-soft:#EFE4D6;
   --warn:#B7791F; --warn-soft:#F5EAD3;
   --bad:#BF5B5B; --bad-soft:#F5E0E0;
   --band:rgba(86,92,168,.10);
+  --scrim:rgba(30,28,45,.45);
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
@@ -23,9 +25,11 @@
     --night:#8B90D9; --night-soft:#343759;
     --nap:#E0A45C; --nap-soft:#463A26;
     --good:#6FBF92; --good-soft:#27402F;
+    --diaper:#C4A484; --diaper-soft:#3F3428;
     --warn:#D9A250; --warn-soft:#443722;
     --bad:#D98080; --bad-soft:#442A2A;
     --band:rgba(139,144,217,.14);
+    --scrim:rgba(0,0,0,.55);
   }
 }
 :root[data-theme="dark"]{
@@ -34,9 +38,11 @@
   --night:#8B90D9; --night-soft:#343759;
   --nap:#E0A45C; --nap-soft:#463A26;
   --good:#6FBF92; --good-soft:#27402F;
+  --diaper:#C4A484; --diaper-soft:#3F3428;
   --warn:#D9A250; --warn-soft:#443722;
   --bad:#D98080; --bad-soft:#442A2A;
   --band:rgba(139,144,217,.14);
+  --scrim:rgba(0,0,0,.55);
 }
 *{box-sizing:border-box}
 body{
@@ -59,12 +65,28 @@ h1{font-family:"Gowun Dodum",sans-serif; font-weight:400; font-size:1.8rem; marg
 .card{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:14px}
 .card h2{font-family:"Gowun Dodum",sans-serif; font-weight:400; font-size:1.1rem; margin:0 0 12px}
 .card h2 small{color:var(--muted); font-family:"IBM Plex Sans KR",sans-serif; font-size:.8rem; margin-left:6px}
+/* 마지막 상태 밴드 */
+.statusband{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px 8px; margin-bottom:14px; text-align:center}
+.stile .sk{font-size:.76rem; color:var(--muted)}
+.stile .sv{font-weight:700; font-size:.95rem; margin:2px 0; font-variant-numeric:tabular-nums; line-height:1.3}
+.stile.sleep .sv{color:var(--night)} .stile.meal .sv{color:var(--good)} .stile.diaper .sv{color:var(--diaper)}
+.stile .ss{font-size:.72rem; color:var(--muted)}
+/* 빠른 기록 버튼 */
+.quick{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:14px}
+.qbtn{border:0; background:none; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:6px; font:inherit; color:var(--ink); padding:4px 0; border-radius:12px}
+.qbtn:focus-visible{outline:2px solid var(--night); outline-offset:2px}
+.qbtn .circ{width:60px; height:60px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.6rem; box-shadow:0 2px 6px rgba(0,0,0,.08)}
+.qbtn span{font-size:.82rem; font-weight:500}
+.circ.nap{background:var(--nap-soft)} .circ.night{background:var(--night-soft)}
+.circ.meal{background:var(--good-soft)} .circ.diaper{background:var(--diaper-soft)}
+/* 바텀시트 */
+.overlay{position:fixed; inset:0; background:var(--scrim); display:flex; align-items:flex-end; justify-content:center; z-index:50}
+.sheet{background:var(--surface); width:100%; max-width:600px; border-radius:18px 18px 0 0; padding:20px 18px 26px; box-shadow:0 -4px 24px rgba(0,0,0,.2)}
+.sheet h3{font-family:"Gowun Dodum",sans-serif; font-weight:400; font-size:1.15rem; margin:0 0 14px; display:flex; align-items:center; gap:8px}
 /* form */
-.seg{display:grid; grid-template-columns:repeat(3,1fr); gap:4px; background:var(--surface2); border-radius:10px; padding:4px; margin-bottom:12px}
+.seg{display:grid; grid-template-columns:1fr 1fr; gap:4px; background:var(--surface2); border-radius:10px; padding:4px; margin-bottom:12px}
 .seg button{border:0; background:none; color:var(--muted); font:inherit; font-weight:500; padding:9px 0; border-radius:7px; cursor:pointer}
-.seg button.on-nap{background:var(--nap-soft); color:var(--nap); font-weight:700}
-.seg button.on-night{background:var(--night-soft); color:var(--night); font-weight:700}
-.seg button.on-meal{background:var(--good-soft); color:var(--good); font-weight:700}
+.seg button.on{background:var(--diaper-soft); color:var(--diaper); font-weight:700}
 .frow{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px}
 .frow label{flex:1; min-width:110px; font-size:.8rem; color:var(--muted); display:flex; flex-direction:column; gap:4px}
 input[type=date],input[type=time],input[type=text]{
@@ -96,14 +118,21 @@ input[type=date],input[type=time],input[type=text]{
 .track .band{position:absolute; top:0; bottom:0; background:var(--band); border-left:1px dashed var(--night); border-right:1px dashed var(--night)}
 .track .fill{position:absolute; top:2px; bottom:2px; left:2px; border-radius:999px; min-width:2px}
 .gnote{font-size:.76rem; color:var(--muted); margin-top:4px}
-/* entries */
-.entry{display:flex; align-items:center; gap:10px; padding:11px 2px; border-top:1px solid var(--line)}
-.entry:first-of-type{border-top:0}
+/* 타임라인 */
+.dayhead{display:flex; align-items:center; gap:8px; background:var(--surface2); border-radius:10px; padding:9px 12px; margin:14px 0 4px; font-size:.88rem}
+.dayhead:first-child{margin-top:0}
+.dayhead .d{font-weight:700}
+.dayhead .today-mark{font-size:.72rem; font-weight:700; color:var(--night); background:var(--night-soft); border-radius:999px; padding:1px 8px}
+.dayhead .sum{margin-left:auto; color:var(--muted); font-size:.8rem; font-variant-numeric:tabular-nums; display:flex; gap:10px}
+.entry{display:flex; align-items:center; gap:10px; padding:11px 4px; border-top:1px solid var(--line)}
+.dayhead + .entry{border-top:0}
+.entry .etime{font-variant-numeric:tabular-nums; color:var(--muted); font-size:.86rem; width:44px; flex:none}
 .dot{width:9px; height:9px; border-radius:50%; flex:none}
-.dot.nap{background:var(--nap)} .dot.night{background:var(--night)} .dot.meal{background:var(--good)}
-.entry .t{font-variant-numeric:tabular-nums}
-.entry .dur{margin-left:auto; color:var(--muted); font-variant-numeric:tabular-nums; font-size:.86rem}
-.entry .del{border:0; background:none; color:var(--muted); cursor:pointer; font-size:1rem; padding:4px 8px; border-radius:6px}
+.dot.nap{background:var(--nap)} .dot.night{background:var(--night)}
+.dot.meal{background:var(--good)} .dot.diaper{background:var(--diaper)}
+.entry .lab{font-weight:500}
+.entry .t{font-variant-numeric:tabular-nums; color:var(--muted); font-size:.86rem}
+.entry .del{border:0; background:none; color:var(--muted); cursor:pointer; font-size:1rem; padding:4px 8px; border-radius:6px; margin-left:auto}
 .entry .del:hover{color:var(--bad); background:var(--bad-soft)}
 .empty{color:var(--muted); text-align:center; padding:18px 8px; font-size:.92rem}
 /* stats + insights */
@@ -149,6 +178,7 @@ ul.tips li{margin-bottom:8px}
   <main id="view"></main>
   <p class="savedmode" id="modeNote"></p>
 </div>
+<div class="overlay" id="overlay" hidden><div class="sheet" id="sheet"></div></div>
 <script>
 "use strict";
 /* ---------- 권장 수면 가이드 (개월수별, 시간 단위) ---------- */
@@ -159,9 +189,15 @@ const GUIDES = [
   {min:24, max:35, label:"24~35개월", total:[11,14], night:[10.5,11.5],nap:[1,1.5], naps:"1회",   bed:"20:00~20:30"},
 ];
 const SCALE_MAX = 16*60; // 게이지·차트 세로축 상한(분)
+const TYPE_META = {
+  nap:   {label:"낮잠",   emoji:"☀️", dot:"nap"},
+  night: {label:"밤잠",   emoji:"🌙", dot:"night"},
+  meal:  {label:"이유식", emoji:"🍚", dot:"meal"},
+  diaper:{label:"기저귀", emoji:"🧷", dot:"diaper"},
+};
 
 const LS_KEY = "saegeun_v1";
-const state = { tab:"today", entries:[], birthDate:null, babyName:null, db:null, mode:"local", formType:"nap" };
+const state = { tab:"today", entries:[], birthDate:null, babyName:null, db:null, mode:"local", sheet:null, diaperKind:"pee" };
 
 /* ---------- 날짜/시간 유틸 ---------- */
 const pad = n => String(n).padStart(2,"0");
@@ -177,6 +213,17 @@ const fmtRange = r => `${r[0]}~${r[1]}시간`;
 const fmtClock = min => { const v=((Math.round(min)%1440)+1440)%1440; return `${pad(Math.floor(v/60))}:${pad(v%60)}`; };
 const esc = s => String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const weekdayKo = ["일","월","화","수","목","금","토"];
+function fmtSince(ts){
+  const diff = Math.max(0, Date.now()-ts);
+  const m = Math.floor(diff/60000);
+  if(m<1) return "방금 전";
+  const h = Math.floor(m/60);
+  return h? `${h}시간 ${m%60}분 전` : `${m}분 전`;
+}
+function fmtDayHead(dateStr){
+  const d = new Date(dateStr+"T00:00");
+  return `${d.getMonth()+1}월 ${d.getDate()}일 (${weekdayKo[d.getDay()]})`;
+}
 function ageMonths(){
   const b = new Date((state.birthDate||defaultBirth())+"T00:00");
   const t = new Date();
@@ -230,7 +277,9 @@ function connectDb(){
 function saveEntry(e){
   const id = "s"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
   if(state.db){ state.db.collection("sleeps").doc(id).set(e).catch(()=>alert("저장하지 못했어요. 잠시 후 다시 시도해 주세요.")); }
-  else { state.entries.push({id,...e}); persistLocal(); render(); }
+  else { state.entries.push({id,...e}); persistLocal(); }
+  closeSheet();
+  render();
 }
 function removeEntry(id){
   if(state.db){ state.db.collection("sleeps").doc(id).delete().catch(()=>{}); }
@@ -269,7 +318,7 @@ function importData(file){
   r.readAsText(file);
 }
 
-/* ---------- 집계 (식사 기록은 수면 통계에서 제외) ---------- */
+/* ---------- 집계 (이유식·기저귀는 수면 통계에서 제외) ---------- */
 function dayStats(dateStr){
   const es = state.entries.filter(e=>e.date===dateStr);
   const nap = es.filter(e=>e.type==="nap").reduce((a,e)=>a+e.minutes,0);
@@ -287,6 +336,27 @@ function statusFor(min,rangeH){
   if(h<rangeH[0]) return {label:"부족", cls:"low"};
   if(h>rangeH[1]) return {label:"과다", cls:"high"};
   return {label:"적정", cls:"ok"};
+}
+/* 마지막 상태: 잠(깬 시각 기준), 이유식, 기저귀 */
+function entryStartTs(e){ return new Date(e.date+"T"+e.start).getTime(); }
+function sleepEndTs(e){
+  let ts = new Date(e.date+"T"+e.end).getTime();
+  if(hm2min(e.end)<=hm2min(e.start)) ts += 86400000; // 자정 넘김
+  return ts;
+}
+function lastStatus(){
+  const now = Date.now();
+  let sleep=null, meal=null, diaper=null;
+  state.entries.forEach(e=>{
+    if(e.type==="nap"||e.type==="night"){
+      const ts=sleepEndTs(e); if(ts<=now && (!sleep||ts>sleep)) sleep=ts;
+    } else if(e.type==="meal"){
+      const ts=entryStartTs(e); if(ts<=now && (!meal||ts>meal)) meal=ts;
+    } else if(e.type==="diaper"){
+      const ts=entryStartTs(e); if(ts<=now && (!diaper||ts>diaper.ts)) diaper={ts, kind:e.kind};
+    }
+  });
+  return {sleep, meal, diaper};
 }
 // 밤잠 시작 시각(자정 이전은 그대로, 새벽 시작은 +24h 해서 평균/편차 계산)
 function nightStarts(days){
@@ -384,42 +454,58 @@ function gaugeHtml(name, min, rangeH, color){
     <div class="gnote">권장 ${fmtRange(rangeH)}</div>
   </div>`;
 }
+function statusTile(cls, name, ts, sub){
+  return `<div class="stile ${cls}">
+    <div class="sk">${name}</div>
+    <div class="sv" ${ts?`data-ts="${ts}"`:""}>${ts?fmtSince(ts):"기록 없음"}</div>
+    <div class="ss">${sub}</div>
+  </div>`;
+}
 function entryRow(e){
-  if(e.type==="meal"){
-    return `<div class="entry"><span class="dot meal"></span>
-      <span>🍚 식사</span><span class="t">${e.start}</span>
-      <button class="del" data-del="${e.id}" aria-label="기록 삭제">✕</button></div>`;
-  }
-  const label = e.type==="nap"?"낮잠":"밤잠";
-  return `<div class="entry"><span class="dot ${e.type}"></span>
-    <span>${label}</span><span class="t">${e.start} → ${e.end}</span>
-    <span class="dur">${fmtDur(e.minutes)}</span>
+  const meta = TYPE_META[e.type]||TYPE_META.meal;
+  let detail="";
+  if(e.type==="nap"||e.type==="night") detail = `~ ${e.end} · ${fmtDur(e.minutes)}`;
+  else if(e.type==="diaper") detail = e.kind==="poo"?"대변":"소변";
+  return `<div class="entry"><span class="etime">${e.start}</span>
+    <span class="dot ${meta.dot}"></span>
+    <span class="lab">${meta.label}</span>
+    ${detail?`<span class="t">${detail}</span>`:""}
     <button class="del" data-del="${e.id}" aria-label="기록 삭제">✕</button></div>`;
+}
+function timelineHtml(){
+  let dates = [...new Set(state.entries.map(e=>e.date))].sort().reverse();
+  const tk = todayKey();
+  if(!dates.includes(tk)) dates.unshift(tk);
+  dates = dates.slice(0,7);
+  let html="";
+  dates.forEach(date=>{
+    const st = dayStats(date);
+    const list = st.entries.slice().sort((a,b)=>hm2min(b.start)-hm2min(a.start));
+    const sums=[];
+    if(st.night>0) sums.push(`🌙 ${fmtDur(st.night)}`);
+    if(st.nap>0) sums.push(`☀️ ${fmtDur(st.nap)}`);
+    html += `<div class="dayhead"><span class="d">${fmtDayHead(date)}</span>
+      ${date===tk?'<span class="today-mark">오늘</span>':""}
+      <span class="sum">${sums.map(s=>`<span>${s}</span>`).join("")}</span></div>`;
+    html += list.length ? list.map(entryRow).join("")
+      : `<div class="empty">아직 기록이 없어요. 위 버튼으로 기록해 보세요.</div>`;
+  });
+  return html;
 }
 function renderToday(guide){
   const t = dayStats(todayKey());
-  const isMeal = state.formType==="meal";
-  const defaults = state.formType==="night" ? ["20:30","07:00"] : ["13:00","14:30"];
-  const dayList = t.entries.slice().sort((a,b)=>hm2min(a.start)-hm2min(b.start));
+  const last = lastStatus();
   return `
-  <section class="card">
-    <h2>기록하기</h2>
-    <div class="seg">
-      <button id="segNap" class="${state.formType==="nap"?"on-nap":""}">☀️ 낮잠</button>
-      <button id="segNight" class="${state.formType==="night"?"on-night":""}">🌙 밤잠</button>
-      <button id="segMeal" class="${isMeal?"on-meal":""}">🍚 식사</button>
-    </div>
-    <div class="frow">
-      <label>날짜${isMeal?"":" (잠든 날)"}<input type="date" id="fDate" value="${todayKey()}"></label>
-      ${isMeal
-        ? `<label>먹은 시각<input type="time" id="fStart" value="${nowHM()}"></label>`
-        : `<label>잠든 시각<input type="time" id="fStart" value="${defaults[0]}"></label>
-           <label>깬 시각<input type="time" id="fEnd" value="${defaults[1]}"></label>`}
-    </div>
-    <button class="btn" id="fSave">기록 저장</button>
-    <p class="note">${isMeal
-      ? "식사는 시각만 기록돼요. 오늘 기록 목록에서 확인할 수 있어요."
-      : "밤잠은 잠든 날짜 기준으로 기록돼요. 깬 시각이 잠든 시각보다 이르면 다음 날 아침으로 계산해요."}</p>
+  <section class="statusband">
+    ${statusTile("sleep","마지막 잠", last.sleep, "잠에서 깬 후")}
+    ${statusTile("meal","마지막 이유식", last.meal, "먹은 후")}
+    ${statusTile("diaper","마지막 기저귀", last.diaper&&last.diaper.ts, last.diaper?(last.diaper.kind==="poo"?"대변":"소변"):"교체 후")}
+  </section>
+  <section class="quick" aria-label="빠른 기록">
+    <button class="qbtn" data-open="nap"><span class="circ nap">☀️</span><span>낮잠</span></button>
+    <button class="qbtn" data-open="night"><span class="circ night">🌙</span><span>밤잠</span></button>
+    <button class="qbtn" data-open="meal"><span class="circ meal">🍚</span><span>이유식</span></button>
+    <button class="qbtn" data-open="diaper"><span class="circ diaper">🧷</span><span>기저귀</span></button>
   </section>
   <section class="card">
     <h2>오늘 수면 현황 <small>${guide.label} 기준</small></h2>
@@ -428,10 +514,52 @@ function renderToday(guide){
     ${gaugeHtml("낮잠", t.nap, guide.nap, "var(--nap)")}
   </section>
   <section class="card">
-    <h2>오늘 기록</h2>
-    ${dayList.length ? dayList.map(entryRow).join("") :
-      `<div class="empty">아직 기록이 없어요.<br>위에서 낮잠·밤잠·식사를 기록하면 여기에 쌓여요.</div>`}
+    <h2>기록</h2>
+    ${timelineHtml()}
   </section>`;
+}
+function sheetHtml(type){
+  const meta = TYPE_META[type];
+  const isSleep = type==="nap"||type==="night";
+  const defaults = type==="night" ? ["20:30","07:00"] : ["13:00","14:30"];
+  let fields;
+  if(isSleep){
+    fields = `<div class="frow">
+      <label>날짜 (잠든 날)<input type="date" id="fDate" value="${todayKey()}"></label>
+      <label>잠든 시각<input type="time" id="fStart" value="${defaults[0]}"></label>
+      <label>깬 시각<input type="time" id="fEnd" value="${defaults[1]}"></label>
+    </div>
+    <p class="note">깬 시각이 잠든 시각보다 이르면 다음 날 아침으로 계산해요.</p>`;
+  } else if(type==="meal"){
+    fields = `<div class="frow">
+      <label>날짜<input type="date" id="fDate" value="${todayKey()}"></label>
+      <label>먹은 시각<input type="time" id="fStart" value="${nowHM()}"></label>
+    </div>`;
+  } else {
+    fields = `<div class="seg">
+      <button id="kindPee" class="${state.diaperKind==="pee"?"on":""}">💧 소변</button>
+      <button id="kindPoo" class="${state.diaperKind==="poo"?"on":""}">💩 대변</button>
+    </div>
+    <div class="frow">
+      <label>날짜<input type="date" id="fDate" value="${todayKey()}"></label>
+      <label>교체 시각<input type="time" id="fStart" value="${nowHM()}"></label>
+    </div>`;
+  }
+  return `<h3>${meta.emoji} ${meta.label} 기록</h3>
+    ${fields}
+    <div class="btnrow">
+      <button class="btn ghost" id="sCancel">취소</button>
+      <button class="btn" id="sSave">저장</button>
+    </div>`;
+}
+function openSheet(type){
+  state.sheet = type;
+  $("#sheet").innerHTML = sheetHtml(type);
+  $("#overlay").hidden = false;
+}
+function closeSheet(){
+  state.sheet = null;
+  $("#overlay").hidden = true;
 }
 function renderPeriod(nDays, guide, modeName){
   const days = lastDays(nDays);
@@ -512,34 +640,45 @@ function render(){
   else v.innerHTML = renderGuide(guide, months);
   $("#modeNote").textContent = state.mode==="db" ? "기록은 안전하게 서버에 저장돼요." : "기록은 이 브라우저에 저장돼요. 가이드 탭에서 백업할 수 있어요.";
 }
+function tickSince(){
+  document.querySelectorAll("[data-ts]").forEach(el=>{
+    el.textContent = fmtSince(Number(el.dataset.ts));
+  });
+}
+setInterval(tickSince, 30000);
 
 /* ---------- 이벤트 ---------- */
 document.addEventListener("click", ev=>{
+  if(ev.target.id==="overlay"){ closeSheet(); return; }
   const b = ev.target.closest("button");
   if(!b) return;
   if(b.dataset.tab){ state.tab=b.dataset.tab; render(); return; }
-  if(b.id==="segNap"){ state.formType="nap"; render(); return; }
-  if(b.id==="segNight"){ state.formType="night"; render(); return; }
-  if(b.id==="segMeal"){ state.formType="meal"; render(); return; }
+  if(b.dataset.open){ openSheet(b.dataset.open); return; }
+  if(b.id==="sCancel"){ closeSheet(); return; }
+  if(b.id==="kindPee"){ state.diaperKind="pee"; $("#kindPee").classList.add("on"); $("#kindPoo").classList.remove("on"); return; }
+  if(b.id==="kindPoo"){ state.diaperKind="poo"; $("#kindPoo").classList.add("on"); $("#kindPee").classList.remove("on"); return; }
   if(b.dataset.del){ if(confirm("이 기록을 삭제할까요?")) removeEntry(b.dataset.del); return; }
   if(b.id==="fProfileSave"){ saveProfile($("#fBirth").value, $("#fName").value); return; }
   if(b.id==="btnExport"){ exportData(); return; }
   if(b.id==="btnImport"){ $("#impFile").click(); return; }
-  if(b.id==="fSave"){
+  if(b.id==="sSave"){
+    const type = state.sheet;
     const date=$("#fDate").value, start=$("#fStart").value;
-    if(state.formType==="meal"){
-      if(!date||!start){ alert("날짜와 시각을 입력해 주세요."); return; }
+    if(!date||!start){ alert("날짜와 시각을 입력해 주세요."); return; }
+    if(type==="meal"){
       saveEntry({type:"meal", date, start, minutes:0, createdAt:new Date().toISOString()});
-      if(state.db) render();
+      return;
+    }
+    if(type==="diaper"){
+      saveEntry({type:"diaper", date, start, kind:state.diaperKind, minutes:0, createdAt:new Date().toISOString()});
       return;
     }
     const end=$("#fEnd").value;
-    if(!date||!start||!end){ alert("날짜와 시각을 모두 입력해 주세요."); return; }
+    if(!end){ alert("깬 시각을 입력해 주세요."); return; }
     let minutes = hm2min(end)-hm2min(start);
     if(minutes<=0) minutes += 1440; // 자정 넘김
     if(minutes>=1440){ alert("수면 시간이 24시간을 넘을 수 없어요."); return; }
-    saveEntry({type:state.formType, date, start, end, minutes, createdAt:new Date().toISOString()});
-    if(state.db) render();
+    saveEntry({type, date, start, end, minutes, createdAt:new Date().toISOString()});
   }
 });
 document.addEventListener("change", ev=>{
