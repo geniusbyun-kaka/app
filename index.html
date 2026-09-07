@@ -1,3 +1,8 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>새근새근</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap">
 <style>
@@ -37,48 +42,52 @@
 body{
   background:var(--bg); color:var(--ink);
   font-family:"IBM Plex Sans KR",-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
-  font-size:15px; line-height:1.55; margin:0; padding:0 16px 48px;
+  font-size:16px; line-height:1.55; margin:0; padding:0 16px 48px;
 }
-.wrap{max-width:560px; margin:0 auto}
-header{display:flex; align-items:flex-end; justify-content:space-between; padding:26px 2px 14px}
-h1{font-family:"Gowun Dodum",sans-serif; font-weight:400; font-size:1.7rem; margin:0; letter-spacing:.02em}
-.sub{color:var(--muted); font-size:.85rem; margin:2px 0 0}
-.age-chip{background:var(--night-soft); color:var(--night); border-radius:999px; padding:5px 13px; font-weight:700; font-size:.85rem; white-space:nowrap}
+.wrap{max-width:600px; margin:0 auto}
+header{display:flex; align-items:flex-end; justify-content:space-between; gap:10px; padding:26px 2px 14px}
+h1{font-family:"Gowun Dodum",sans-serif; font-weight:400; font-size:1.8rem; margin:0; letter-spacing:.02em}
+.sub{color:var(--muted); font-size:.88rem; margin:2px 0 0}
+.age-chip{background:var(--night-soft); color:var(--night); border-radius:999px; padding:6px 13px; font-weight:700; font-size:.85rem; white-space:nowrap}
 .tabs{display:grid; grid-template-columns:repeat(4,1fr); gap:4px; background:var(--surface2); border-radius:12px; padding:4px; margin-bottom:16px}
 .tabs button{
   border:0; background:none; color:var(--muted); font:inherit; font-weight:500;
-  padding:8px 0; border-radius:9px; cursor:pointer;
+  padding:10px 0; border-radius:9px; cursor:pointer;
 }
 .tabs button:focus-visible{outline:2px solid var(--night); outline-offset:1px}
 .tabs button.on{background:var(--surface); color:var(--ink); font-weight:700; box-shadow:0 1px 3px rgba(0,0,0,.08)}
 .card{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:14px}
-.card h2{font-family:"Gowun Dodum",sans-serif; font-weight:400; font-size:1.06rem; margin:0 0 12px}
+.card h2{font-family:"Gowun Dodum",sans-serif; font-weight:400; font-size:1.1rem; margin:0 0 12px}
 .card h2 small{color:var(--muted); font-family:"IBM Plex Sans KR",sans-serif; font-size:.8rem; margin-left:6px}
 /* form */
-.seg{display:grid; grid-template-columns:1fr 1fr; gap:4px; background:var(--surface2); border-radius:10px; padding:4px; margin-bottom:12px}
-.seg button{border:0; background:none; color:var(--muted); font:inherit; font-weight:500; padding:7px 0; border-radius:7px; cursor:pointer}
+.seg{display:grid; grid-template-columns:repeat(3,1fr); gap:4px; background:var(--surface2); border-radius:10px; padding:4px; margin-bottom:12px}
+.seg button{border:0; background:none; color:var(--muted); font:inherit; font-weight:500; padding:9px 0; border-radius:7px; cursor:pointer}
 .seg button.on-nap{background:var(--nap-soft); color:var(--nap); font-weight:700}
 .seg button.on-night{background:var(--night-soft); color:var(--night); font-weight:700}
+.seg button.on-meal{background:var(--good-soft); color:var(--good); font-weight:700}
 .frow{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px}
-.frow label{flex:1; min-width:100px; font-size:.78rem; color:var(--muted); display:flex; flex-direction:column; gap:4px}
-input[type=date],input[type=time]{
+.frow label{flex:1; min-width:110px; font-size:.8rem; color:var(--muted); display:flex; flex-direction:column; gap:4px}
+input[type=date],input[type=time],input[type=text]{
   font:inherit; color:var(--ink); background:var(--surface2); border:1px solid var(--line);
-  border-radius:8px; padding:8px 10px; width:100%;
+  border-radius:8px; padding:10px; width:100%; min-height:44px;
 }
 .btn{
-  display:block; width:100%; border:0; border-radius:10px; padding:11px 0; font:inherit;
+  display:block; width:100%; border:0; border-radius:10px; padding:13px 0; font:inherit;
   font-weight:700; cursor:pointer; background:var(--night); color:#fff;
 }
 :root[data-theme="dark"] .btn{color:#1C1B26}
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .btn{color:#1C1B26} }
-.note{font-size:.8rem; color:var(--muted); margin:8px 0 0}
+.btn.ghost{background:var(--surface2); color:var(--ink); font-weight:500}
+.btnrow{display:flex; gap:8px}
+.btnrow .btn{flex:1}
+.note{font-size:.82rem; color:var(--muted); margin:8px 0 0}
 /* gauges */
 .gauge{margin-bottom:16px}
 .gauge:last-child{margin-bottom:2px}
 .ghead{display:flex; align-items:center; gap:8px; margin-bottom:6px}
 .ghead .name{font-weight:700}
 .ghead .val{margin-left:auto; font-variant-numeric:tabular-nums}
-.chip{font-size:.72rem; font-weight:700; border-radius:999px; padding:2px 9px}
+.chip{font-size:.74rem; font-weight:700; border-radius:999px; padding:2px 9px}
 .chip.ok{background:var(--good-soft); color:var(--good)}
 .chip.low{background:var(--warn-soft); color:var(--warn)}
 .chip.high{background:var(--bad-soft); color:var(--bad)}
@@ -86,46 +95,49 @@ input[type=date],input[type=time]{
 .track{position:relative; height:12px; border-radius:999px; background:var(--surface2); overflow:hidden}
 .track .band{position:absolute; top:0; bottom:0; background:var(--band); border-left:1px dashed var(--night); border-right:1px dashed var(--night)}
 .track .fill{position:absolute; top:2px; bottom:2px; left:2px; border-radius:999px; min-width:2px}
-.gnote{font-size:.75rem; color:var(--muted); margin-top:4px}
+.gnote{font-size:.76rem; color:var(--muted); margin-top:4px}
 /* entries */
-.entry{display:flex; align-items:center; gap:10px; padding:10px 2px; border-top:1px solid var(--line)}
+.entry{display:flex; align-items:center; gap:10px; padding:11px 2px; border-top:1px solid var(--line)}
 .entry:first-of-type{border-top:0}
 .dot{width:9px; height:9px; border-radius:50%; flex:none}
-.dot.nap{background:var(--nap)} .dot.night{background:var(--night)}
+.dot.nap{background:var(--nap)} .dot.night{background:var(--night)} .dot.meal{background:var(--good)}
 .entry .t{font-variant-numeric:tabular-nums}
-.entry .dur{margin-left:auto; color:var(--muted); font-variant-numeric:tabular-nums; font-size:.85rem}
-.entry .del{border:0; background:none; color:var(--muted); cursor:pointer; font-size:1rem; padding:2px 6px; border-radius:6px}
+.entry .dur{margin-left:auto; color:var(--muted); font-variant-numeric:tabular-nums; font-size:.86rem}
+.entry .del{border:0; background:none; color:var(--muted); cursor:pointer; font-size:1rem; padding:4px 8px; border-radius:6px}
 .entry .del:hover{color:var(--bad); background:var(--bad-soft)}
-.empty{color:var(--muted); text-align:center; padding:18px 8px; font-size:.9rem}
+.empty{color:var(--muted); text-align:center; padding:18px 8px; font-size:.92rem}
 /* stats + insights */
 .statgrid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:4px}
 .stat{background:var(--surface2); border-radius:10px; padding:10px 12px}
-.stat .k{font-size:.72rem; color:var(--muted)}
+.stat .k{font-size:.74rem; color:var(--muted)}
 .stat .v{font-weight:700; font-variant-numeric:tabular-nums; font-size:.95rem}
-.stat .r{font-size:.7rem; color:var(--muted)}
-.insight{display:flex; gap:9px; padding:9px 0; border-top:1px solid var(--line); font-size:.9rem}
+.stat .r{font-size:.72rem; color:var(--muted)}
+.insight{display:flex; gap:9px; padding:10px 0; border-top:1px solid var(--line); font-size:.92rem}
 .insight:first-of-type{border-top:0}
-.insight .mark{flex:none; width:8px; height:8px; border-radius:50%; margin-top:7px}
+.insight .mark{flex:none; width:8px; height:8px; border-radius:50%; margin-top:8px}
 .insight.ok .mark{background:var(--good)} .insight.low .mark{background:var(--warn)}
 .insight.high .mark{background:var(--bad)} .insight.info .mark{background:var(--night)}
 .chartbox{overflow-x:auto}
 svg{display:block; width:100%; height:auto}
-.legend{display:flex; gap:16px; font-size:.78rem; color:var(--muted); margin-top:6px}
+.legend{display:flex; gap:16px; font-size:.8rem; color:var(--muted); margin-top:6px}
 .legend span{display:flex; align-items:center; gap:5px}
 .legend i{width:10px; height:10px; border-radius:3px; display:inline-block}
 /* guide table */
-table{border-collapse:collapse; width:100%; font-size:.85rem}
-th,td{padding:7px 8px; text-align:left; border-top:1px solid var(--line); font-variant-numeric:tabular-nums}
-th{color:var(--muted); font-size:.75rem; font-weight:500; border-top:0}
+table{border-collapse:collapse; width:100%; font-size:.86rem}
+th,td{padding:8px; text-align:left; border-top:1px solid var(--line); font-variant-numeric:tabular-nums}
+th{color:var(--muted); font-size:.76rem; font-weight:500; border-top:0}
 tr.me td{background:var(--night-soft); font-weight:700}
 tr.me td:first-child{border-radius:8px 0 0 8px} tr.me td:last-child{border-radius:0 8px 8px 0}
 ul.tips{margin:0; padding-left:18px}
 ul.tips li{margin-bottom:8px}
-.savedmode{font-size:.75rem; color:var(--muted); text-align:center; margin-top:20px}
+.savedmode{font-size:.78rem; color:var(--muted); text-align:center; margin-top:20px}
+[hidden]{display:none!important}
 </style>
+</head>
+<body>
 <div class="wrap">
   <header>
-    <div><h1>새근새근</h1><p class="sub">아기 수면 일기</p></div>
+    <div><h1>새근새근</h1><p class="sub" id="subTitle">아기 수면 일기</p></div>
     <div class="age-chip" id="ageChip">👶</div>
   </header>
   <nav class="tabs" id="tabs" aria-label="화면 선택">
@@ -149,12 +161,13 @@ const GUIDES = [
 const SCALE_MAX = 16*60; // 게이지·차트 세로축 상한(분)
 
 const LS_KEY = "saegeun_v1";
-const state = { tab:"today", entries:[], birthDate:null, db:null, mode:"local", formType:"nap" };
+const state = { tab:"today", entries:[], birthDate:null, babyName:null, db:null, mode:"local", formType:"nap" };
 
 /* ---------- 날짜/시간 유틸 ---------- */
 const pad = n => String(n).padStart(2,"0");
 const dayKey = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const todayKey = () => dayKey(new Date());
+const nowHM = () => { const d=new Date(); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
 const hm2min = hm => { const [h,m]=hm.split(":").map(Number); return h*60+m; };
 const fmtDur = min => {
   const v=Math.round(min), h=Math.floor(v/60), m=v%60;
@@ -162,6 +175,7 @@ const fmtDur = min => {
 };
 const fmtRange = r => `${r[0]}~${r[1]}시간`;
 const fmtClock = min => { const v=((Math.round(min)%1440)+1440)%1440; return `${pad(Math.floor(v/60))}:${pad(v%60)}`; };
+const esc = s => String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const weekdayKo = ["일","월","화","수","목","금","토"];
 function ageMonths(){
   const b = new Date((state.birthDate||defaultBirth())+"T00:00");
@@ -184,12 +198,13 @@ function loadLocal(){
     const d = JSON.parse(raw);
     state.entries = Object.entries(d.sleeps||{}).map(([id,e])=>({id,...e}));
     state.birthDate = d.birthDate||null;
+    state.babyName = d.babyName||null;
   }catch(e){}
 }
 function persistLocal(){
   try{
     const sleeps={}; state.entries.forEach(e=>{ const {id,...rest}=e; sleeps[id]=rest; });
-    localStorage.setItem(LS_KEY, JSON.stringify({sleeps, birthDate:state.birthDate}));
+    localStorage.setItem(LS_KEY, JSON.stringify({sleeps, birthDate:state.birthDate, babyName:state.babyName}));
   }catch(e){}
 }
 function connectDb(){
@@ -198,7 +213,12 @@ function connectDb(){
     if(!db) return;
     state.db = db;
     db.doc("settings/profile").onSnapshot(s=>{
-      if(s.exists && s.data().birthDate){ state.birthDate = s.data().birthDate; render(); }
+      if(s.exists){
+        const d=s.data();
+        if(d.birthDate) state.birthDate = d.birthDate;
+        state.babyName = d.babyName||state.babyName;
+        render();
+      }
     }, ()=>{});
     db.collection("sleeps").onSnapshot(qs=>{
       state.entries = qs.docs.filter(d=>d.exists).map(d=>({id:d.id, ...d.data()}));
@@ -216,14 +236,40 @@ function removeEntry(id){
   if(state.db){ state.db.collection("sleeps").doc(id).delete().catch(()=>{}); }
   else { state.entries = state.entries.filter(e=>e.id!==id); persistLocal(); render(); }
 }
-function saveBirth(v){
-  state.birthDate = v;
-  if(state.db){ state.db.doc("settings/profile").set({birthDate:v}).catch(()=>{}); }
+function saveProfile(birth, name){
+  state.birthDate = birth||state.birthDate;
+  state.babyName = (name||"").trim()||null;
+  if(state.db){ state.db.doc("settings/profile").set({birthDate:state.birthDate, babyName:state.babyName}).catch(()=>{}); }
   else persistLocal();
   render();
 }
+/* ---------- 백업 (로컬 모드용) ---------- */
+function exportData(){
+  const sleeps={}; state.entries.forEach(e=>{ const {id,...rest}=e; sleeps[id]=rest; });
+  const blob = new Blob([JSON.stringify({sleeps, birthDate:state.birthDate, babyName:state.babyName}, null, 2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `saegeun-backup-${todayKey()}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+function importData(file){
+  const r = new FileReader();
+  r.onload = () => {
+    try{
+      const d = JSON.parse(r.result);
+      const incoming = Object.entries(d.sleeps||{}).map(([id,e])=>({id,...e}));
+      const have = new Set(state.entries.map(e=>e.id));
+      incoming.forEach(e=>{ if(!have.has(e.id)) state.entries.push(e); });
+      if(d.birthDate && !state.birthDate) state.birthDate = d.birthDate;
+      if(d.babyName && !state.babyName) state.babyName = d.babyName;
+      persistLocal(); render();
+      alert(`백업을 불러왔어요. 현재 총 ${state.entries.length}건의 기록이 있어요.`);
+    }catch(e){ alert("백업 파일을 읽지 못했어요. 새근새근에서 내보낸 JSON 파일인지 확인해 주세요."); }
+  };
+  r.readAsText(file);
+}
 
-/* ---------- 집계 ---------- */
+/* ---------- 집계 (식사 기록은 수면 통계에서 제외) ---------- */
 function dayStats(dateStr){
   const es = state.entries.filter(e=>e.date===dateStr);
   const nap = es.filter(e=>e.type==="nap").reduce((a,e)=>a+e.minutes,0);
@@ -339,6 +385,11 @@ function gaugeHtml(name, min, rangeH, color){
   </div>`;
 }
 function entryRow(e){
+  if(e.type==="meal"){
+    return `<div class="entry"><span class="dot meal"></span>
+      <span>🍚 식사</span><span class="t">${e.start}</span>
+      <button class="del" data-del="${e.id}" aria-label="기록 삭제">✕</button></div>`;
+  }
   const label = e.type==="nap"?"낮잠":"밤잠";
   return `<div class="entry"><span class="dot ${e.type}"></span>
     <span>${label}</span><span class="t">${e.start} → ${e.end}</span>
@@ -347,21 +398,28 @@ function entryRow(e){
 }
 function renderToday(guide){
   const t = dayStats(todayKey());
+  const isMeal = state.formType==="meal";
   const defaults = state.formType==="night" ? ["20:30","07:00"] : ["13:00","14:30"];
+  const dayList = t.entries.slice().sort((a,b)=>hm2min(a.start)-hm2min(b.start));
   return `
   <section class="card">
-    <h2>수면 기록하기</h2>
+    <h2>기록하기</h2>
     <div class="seg">
       <button id="segNap" class="${state.formType==="nap"?"on-nap":""}">☀️ 낮잠</button>
       <button id="segNight" class="${state.formType==="night"?"on-night":""}">🌙 밤잠</button>
+      <button id="segMeal" class="${isMeal?"on-meal":""}">🍚 식사</button>
     </div>
     <div class="frow">
-      <label>날짜 (잠든 날)<input type="date" id="fDate" value="${todayKey()}"></label>
-      <label>잠든 시각<input type="time" id="fStart" value="${defaults[0]}"></label>
-      <label>깬 시각<input type="time" id="fEnd" value="${defaults[1]}"></label>
+      <label>날짜${isMeal?"":" (잠든 날)"}<input type="date" id="fDate" value="${todayKey()}"></label>
+      ${isMeal
+        ? `<label>먹은 시각<input type="time" id="fStart" value="${nowHM()}"></label>`
+        : `<label>잠든 시각<input type="time" id="fStart" value="${defaults[0]}"></label>
+           <label>깬 시각<input type="time" id="fEnd" value="${defaults[1]}"></label>`}
     </div>
     <button class="btn" id="fSave">기록 저장</button>
-    <p class="note">밤잠은 잠든 날짜 기준으로 기록돼요. 깬 시각이 잠든 시각보다 이르면 다음 날 아침으로 계산해요.</p>
+    <p class="note">${isMeal
+      ? "식사는 시각만 기록돼요. 오늘 기록 목록에서 확인할 수 있어요."
+      : "밤잠은 잠든 날짜 기준으로 기록돼요. 깬 시각이 잠든 시각보다 이르면 다음 날 아침으로 계산해요."}</p>
   </section>
   <section class="card">
     <h2>오늘 수면 현황 <small>${guide.label} 기준</small></h2>
@@ -371,8 +429,8 @@ function renderToday(guide){
   </section>
   <section class="card">
     <h2>오늘 기록</h2>
-    ${t.entries.length ? t.entries.map(entryRow).join("") :
-      `<div class="empty">아직 기록이 없어요.<br>위에서 낮잠·밤잠을 기록하면 여기에 쌓여요.</div>`}
+    ${dayList.length ? dayList.map(entryRow).join("") :
+      `<div class="empty">아직 기록이 없어요.<br>위에서 낮잠·밤잠·식사를 기록하면 여기에 쌓여요.</div>`}
   </section>`;
 }
 function renderPeriod(nDays, guide, modeName){
@@ -404,10 +462,24 @@ function renderGuide(guide, months){
   return `
   <section class="card">
     <h2>아기 정보</h2>
-    <div class="frow"><label>생년월일<input type="date" id="fBirth" value="${state.birthDate||defaultBirth()}"></label></div>
-    <button class="btn" id="fBirthSave">저장</button>
-    <p class="note">${state.birthDate? `현재 ${months}개월 기준 가이드가 적용되고 있어요.` : "생년월일을 저장하면 개월수에 맞는 가이드가 자동 적용돼요. (지금은 16개월로 가정)"}</p>
+    <div class="frow">
+      <label>아기 이름<input type="text" id="fName" value="${esc(state.babyName||"")}" placeholder="예: 리나"></label>
+      <label>생년월일<input type="date" id="fBirth" value="${state.birthDate||defaultBirth()}"></label>
+    </div>
+    <button class="btn" id="fProfileSave">저장</button>
+    <p class="note">${state.birthDate? `현재 ${months}개월 기준 가이드가 적용되고 있어요.` : "생년월일을 저장하면 개월수에 맞는 가이드가 자동 적용돼요. (지금은 16개월로 가정)"}
+    이름을 저장하면 앱 제목이 "이름 수면 일기"로 바뀌어요.</p>
   </section>
+  ${state.db ? "" : `
+  <section class="card">
+    <h2>데이터 백업</h2>
+    <div class="btnrow">
+      <button class="btn ghost" id="btnExport">내보내기</button>
+      <button class="btn ghost" id="btnImport">가져오기</button>
+    </div>
+    <input type="file" id="impFile" accept=".json,application/json" hidden>
+    <p class="note">이 버전의 기록은 지금 쓰는 브라우저에만 저장돼요. 카카오톡 안에서 열거나 시크릿 모드를 쓰면 기록이 사라질 수 있으니, 가끔 내보내기로 백업해 두세요. 폰의 기본 브라우저(사파리·크롬)에 홈 화면 추가로 열어 쓰는 걸 추천해요.</p>
+  </section>`}
   <section class="card">
     <h2>개월수별 권장 수면</h2>
     <table>
@@ -430,6 +502,7 @@ function renderGuide(guide, months){
 function render(){
   const months = ageMonths();
   const guide = guideFor(months);
+  $("#subTitle").textContent = state.babyName ? `${state.babyName} 수면 일기` : "아기 수면 일기";
   $("#ageChip").textContent = `👶 ${months}개월 · ${guide.label} 가이드`;
   document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on", b.dataset.tab===state.tab));
   const v = $("#view");
@@ -437,7 +510,7 @@ function render(){
   else if(state.tab==="week") v.innerHTML = renderPeriod(7, guide, "week");
   else if(state.tab==="month") v.innerHTML = renderPeriod(30, guide, "month");
   else v.innerHTML = renderGuide(guide, months);
-  $("#modeNote").textContent = state.mode==="db" ? "기록은 안전하게 서버에 저장돼요." : "기록은 이 브라우저에 저장돼요.";
+  $("#modeNote").textContent = state.mode==="db" ? "기록은 안전하게 서버에 저장돼요." : "기록은 이 브라우저에 저장돼요. 가이드 탭에서 백업할 수 있어요.";
 }
 
 /* ---------- 이벤트 ---------- */
@@ -447,17 +520,32 @@ document.addEventListener("click", ev=>{
   if(b.dataset.tab){ state.tab=b.dataset.tab; render(); return; }
   if(b.id==="segNap"){ state.formType="nap"; render(); return; }
   if(b.id==="segNight"){ state.formType="night"; render(); return; }
+  if(b.id==="segMeal"){ state.formType="meal"; render(); return; }
   if(b.dataset.del){ if(confirm("이 기록을 삭제할까요?")) removeEntry(b.dataset.del); return; }
-  if(b.id==="fBirthSave"){ const v=$("#fBirth").value; if(v) saveBirth(v); return; }
+  if(b.id==="fProfileSave"){ saveProfile($("#fBirth").value, $("#fName").value); return; }
+  if(b.id==="btnExport"){ exportData(); return; }
+  if(b.id==="btnImport"){ $("#impFile").click(); return; }
   if(b.id==="fSave"){
-    const date=$("#fDate").value, start=$("#fStart").value, end=$("#fEnd").value;
+    const date=$("#fDate").value, start=$("#fStart").value;
+    if(state.formType==="meal"){
+      if(!date||!start){ alert("날짜와 시각을 입력해 주세요."); return; }
+      saveEntry({type:"meal", date, start, minutes:0, createdAt:new Date().toISOString()});
+      if(state.db) render();
+      return;
+    }
+    const end=$("#fEnd").value;
     if(!date||!start||!end){ alert("날짜와 시각을 모두 입력해 주세요."); return; }
     let minutes = hm2min(end)-hm2min(start);
     if(minutes<=0) minutes += 1440; // 자정 넘김
     if(minutes>=1440){ alert("수면 시간이 24시간을 넘을 수 없어요."); return; }
     saveEntry({type:state.formType, date, start, end, minutes, createdAt:new Date().toISOString()});
-    if(!state.db) return; // 로컬 모드는 saveEntry에서 렌더됨
-    render();
+    if(state.db) render();
+  }
+});
+document.addEventListener("change", ev=>{
+  if(ev.target.id==="impFile" && ev.target.files && ev.target.files[0]){
+    importData(ev.target.files[0]);
+    ev.target.value="";
   }
 });
 
@@ -465,3 +553,5 @@ loadLocal();
 render();
 connectDb();
 </script>
+</body>
+</html>
