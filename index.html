@@ -470,7 +470,7 @@ function renderGuide(guide, months){
     <p class="note">${state.birthDate? `현재 ${months}개월 기준 가이드가 적용되고 있어요.` : "생년월일을 저장하면 개월수에 맞는 가이드가 자동 적용돼요. (지금은 16개월로 가정)"}
     이름을 저장하면 앱 제목이 "이름 수면 일기"로 바뀌어요.</p>
   </section>
-  ${state.db ? "" : `
+  ${(state.db || (window.claude && typeof window.claude.use==="function")) ? "" : `
   <section class="card">
     <h2>데이터 백업</h2>
     <div class="btnrow">
