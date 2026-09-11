@@ -71,6 +71,11 @@ h1{font-family:"Gowun Dodum",sans-serif; font-weight:400; font-size:1.8rem; marg
 .stile .sv{font-weight:700; font-size:.95rem; margin:2px 0; font-variant-numeric:tabular-nums; line-height:1.3}
 .stile.sleep .sv{color:var(--night)} .stile.meal .sv{color:var(--good)} .stile.diaper .sv{color:var(--diaper)}
 .stile .ss{font-size:.72rem; color:var(--muted)}
+/* 자는 중 배너 */
+.sleepbanner{display:flex; align-items:center; gap:12px; background:var(--night-soft); border-color:var(--night)}
+.sleepbanner .sb-emoji{font-size:1.8rem}
+.sleepbanner .sb-sub{font-size:.82rem; color:var(--muted); font-variant-numeric:tabular-nums}
+.sleepbanner .btn{width:auto; padding:10px 18px; flex:none; margin-left:auto}
 /* 빠른 기록 버튼 */
 .quick{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:14px}
 .qbtn{border:0; background:none; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:6px; font:inherit; color:var(--ink); padding:4px 0; border-radius:12px}
@@ -132,7 +137,12 @@ input[type=date],input[type=time],input[type=text]{
 .dot.meal{background:var(--good)} .dot.diaper{background:var(--diaper)}
 .entry .lab{font-weight:500}
 .entry .t{font-variant-numeric:tabular-nums; color:var(--muted); font-size:.86rem}
-.entry .del{border:0; background:none; color:var(--muted); cursor:pointer; font-size:1rem; padding:4px 8px; border-radius:6px; margin-left:auto}
+.entry .sp{flex:1}
+.entry.ongoing{cursor:pointer; background:var(--night-soft); border-radius:10px; padding-left:8px; padding-right:8px; border-top:0; margin-top:4px}
+.wakebtn{border:0; background:var(--night); color:#fff; border-radius:999px; padding:5px 13px; font:inherit; font-size:.8rem; font-weight:700; cursor:pointer; flex:none}
+:root[data-theme="dark"] .wakebtn{color:#1C1B26}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .wakebtn{color:#1C1B26} }
+.entry .del{border:0; background:none; color:var(--muted); cursor:pointer; font-size:1rem; padding:4px 8px; border-radius:6px}
 .entry .del:hover{color:var(--bad); background:var(--bad-soft)}
 .empty{color:var(--muted); text-align:center; padding:18px 8px; font-size:.92rem}
 /* stats + insights */
@@ -219,6 +229,12 @@ function fmtSince(ts){
   if(m<1) return "방금 전";
   const h = Math.floor(m/60);
   return h? `${h}시간 ${m%60}분 전` : `${m}분 전`;
+}
+function fmtElapsed(ts){
+  const m = Math.floor(Math.max(0, Date.now()-ts)/60000);
+  if(m<1) return "방금 잠듦";
+  const h = Math.floor(m/60);
+  return (h? `${h}시간 ${m%60}분` : `${m}분`)+"째";
 }
 function fmtDayHead(dateStr){
   const d = new Date(dateStr+"T00:00");
@@ -321,9 +337,14 @@ function importData(file){
 /* ---------- 집계 (이유식·기저귀는 수면 통계에서 제외) ---------- */
 function dayStats(dateStr){
   const es = state.entries.filter(e=>e.date===dateStr);
-  const nap = es.filter(e=>e.type==="nap").reduce((a,e)=>a+e.minutes,0);
-  const night = es.filter(e=>e.type==="night").reduce((a,e)=>a+e.minutes,0);
+  const nap = es.filter(e=>e.type==="nap"&&e.end).reduce((a,e)=>a+(e.minutes||0),0);
+  const night = es.filter(e=>e.type==="night"&&e.end).reduce((a,e)=>a+(e.minutes||0),0);
   return {date:dateStr, nap, night, total:nap+night, entries:es};
+}
+function ongoingSleep(){
+  const list = state.entries.filter(e=>(e.type==="nap"||e.type==="night") && !e.end);
+  if(!list.length) return null;
+  return list.reduce((a,b)=>entryStartTs(a)>=entryStartTs(b)?a:b);
 }
 function lastDays(n){
   const out=[]; const d=new Date();
@@ -348,7 +369,7 @@ function lastStatus(){
   const now = Date.now();
   let sleep=null, meal=null, diaper=null;
   state.entries.forEach(e=>{
-    if(e.type==="nap"||e.type==="night"){
+    if((e.type==="nap"||e.type==="night") && e.end){
       const ts=sleepEndTs(e); if(ts<=now && (!sleep||ts>sleep)) sleep=ts;
     } else if(e.type==="meal"){
       const ts=entryStartTs(e); if(ts<=now && (!meal||ts>meal)) meal=ts;
@@ -463,13 +484,24 @@ function statusTile(cls, name, ts, sub){
 }
 function entryRow(e){
   const meta = TYPE_META[e.type]||TYPE_META.meal;
+  const isSleep = e.type==="nap"||e.type==="night";
+  if(isSleep && !e.end){
+    return `<div class="entry ongoing" data-wakerow="${e.id}"><span class="etime">${e.start}</span>
+      <span class="dot ${meta.dot}"></span>
+      <span class="lab">${meta.label}</span>
+      <span class="t">💤 자는 중</span>
+      <span class="sp"></span>
+      <button class="wakebtn" data-wake="${e.id}">잠깸</button>
+      <button class="del" data-del="${e.id}" aria-label="기록 삭제">✕</button></div>`;
+  }
   let detail="";
-  if(e.type==="nap"||e.type==="night") detail = `~ ${e.end} · ${fmtDur(e.minutes)}`;
+  if(isSleep) detail = `~ ${e.end} · ${fmtDur(e.minutes)}`;
   else if(e.type==="diaper") detail = e.kind==="poo"?"대변":"소변";
   return `<div class="entry"><span class="etime">${e.start}</span>
     <span class="dot ${meta.dot}"></span>
     <span class="lab">${meta.label}</span>
     ${detail?`<span class="t">${detail}</span>`:""}
+    <span class="sp"></span>
     <button class="del" data-del="${e.id}" aria-label="기록 삭제">✕</button></div>`;
 }
 function timelineHtml(){
@@ -495,9 +527,25 @@ function timelineHtml(){
 function renderToday(guide){
   const t = dayStats(todayKey());
   const last = lastStatus();
+  const og = ongoingSleep();
+  const ogTs = og ? entryStartTs(og) : 0;
+  const name = state.babyName || "아기";
+  const sleepTile = og
+    ? `<div class="stile sleep"><div class="sk">마지막 잠</div>
+        <div class="sv" data-ts="${ogTs}" data-fmt="elapsed">${fmtElapsed(ogTs)}</div>
+        <div class="ss">💤 자는 중</div></div>`
+    : statusTile("sleep","마지막 잠", last.sleep, "잠에서 깬 후");
+  const banner = og ? `
+  <section class="card sleepbanner">
+    <span class="sb-emoji">💤</span>
+    <div><b>${esc(name)}가 ${TYPE_META[og.type].label} 자는 중이에요</b>
+      <div class="sb-sub">${og.start}부터 · <span data-ts="${ogTs}" data-fmt="elapsed">${fmtElapsed(ogTs)}</span></div></div>
+    <button class="btn" data-wake="${og.id}">잠깼어요</button>
+  </section>` : "";
   return `
+  ${banner}
   <section class="statusband">
-    ${statusTile("sleep","마지막 잠", last.sleep, "잠에서 깬 후")}
+    ${sleepTile}
     ${statusTile("meal","마지막 이유식", last.meal, "먹은 후")}
     ${statusTile("diaper","마지막 기저귀", last.diaper&&last.diaper.ts, last.diaper?(last.diaper.kind==="poo"?"대변":"소변"):"교체 후")}
   </section>
@@ -521,15 +569,14 @@ function renderToday(guide){
 function sheetHtml(type){
   const meta = TYPE_META[type];
   const isSleep = type==="nap"||type==="night";
-  const defaults = type==="night" ? ["20:30","07:00"] : ["13:00","14:30"];
   let fields;
   if(isSleep){
     fields = `<div class="frow">
       <label>날짜 (잠든 날)<input type="date" id="fDate" value="${todayKey()}"></label>
-      <label>잠든 시각<input type="time" id="fStart" value="${defaults[0]}"></label>
-      <label>깬 시각<input type="time" id="fEnd" value="${defaults[1]}"></label>
+      <label>잠든 시각<input type="time" id="fStart" value="${nowHM()}"></label>
+      <label>깬 시각 (선택)<input type="time" id="fEnd"></label>
     </div>
-    <p class="note">깬 시각이 잠든 시각보다 이르면 다음 날 아침으로 계산해요.</p>`;
+    <p class="note">깬 시각을 비워두고 저장하면 "자는 중"으로 기록돼요. 아기가 깨면 기록의 잠깸 버튼을 눌러 깬 시각을 넣어 주세요. 이미 끝난 잠은 깬 시각까지 넣으면 한 번에 저장돼요 (잠든 시각보다 이르면 다음 날 아침으로 계산).</p>`;
   } else if(type==="meal"){
     fields = `<div class="frow">
       <label>날짜<input type="date" id="fDate" value="${todayKey()}"></label>
@@ -553,13 +600,38 @@ function sheetHtml(type){
     </div>`;
 }
 function openSheet(type){
-  state.sheet = type;
+  state.sheet = type; state.wakeId = null;
   $("#sheet").innerHTML = sheetHtml(type);
   $("#overlay").hidden = false;
 }
+function openWakeSheet(id){
+  const e = state.entries.find(x=>x.id===id);
+  if(!e) return;
+  state.sheet = null; state.wakeId = id;
+  const meta = TYPE_META[e.type];
+  $("#sheet").innerHTML = `<h3>${meta.emoji} 잠깸 기록</h3>
+    <p class="note" style="margin:0 0 12px">${fmtDayHead(e.date)} ${e.start}에 잠든 ${meta.label}이에요. 언제 깼나요?</p>
+    <div class="frow"><label>깬 시각<input type="time" id="fWake" value="${nowHM()}"></label></div>
+    <div class="btnrow">
+      <button class="btn ghost" id="sCancel">취소</button>
+      <button class="btn" id="wSave">잠깸 저장</button>
+    </div>`;
+  $("#overlay").hidden = false;
+}
 function closeSheet(){
-  state.sheet = null;
+  state.sheet = null; state.wakeId = null;
   $("#overlay").hidden = true;
+}
+function completeSleep(id, endHM){
+  const e = state.entries.find(x=>x.id===id);
+  if(!e || !endHM) return;
+  let minutes = hm2min(endHM)-hm2min(e.start);
+  if(minutes<=0) minutes += 1440; // 자정 넘김
+  e.end = endHM; e.minutes = minutes;
+  if(state.db){ state.db.collection("sleeps").doc(id).update({end:endHM, minutes}).catch(()=>alert("저장하지 못했어요. 잠시 후 다시 시도해 주세요.")); }
+  else persistLocal();
+  closeSheet();
+  render();
 }
 function renderPeriod(nDays, guide, modeName){
   const days = lastDays(nDays);
@@ -642,7 +714,8 @@ function render(){
 }
 function tickSince(){
   document.querySelectorAll("[data-ts]").forEach(el=>{
-    el.textContent = fmtSince(Number(el.dataset.ts));
+    const ts = Number(el.dataset.ts);
+    el.textContent = el.dataset.fmt==="elapsed" ? fmtElapsed(ts) : fmtSince(ts);
   });
 }
 setInterval(tickSince, 30000);
@@ -651,9 +724,19 @@ setInterval(tickSince, 30000);
 document.addEventListener("click", ev=>{
   if(ev.target.id==="overlay"){ closeSheet(); return; }
   const b = ev.target.closest("button");
-  if(!b) return;
+  if(!b){
+    const row = ev.target.closest("[data-wakerow]");
+    if(row) openWakeSheet(row.dataset.wakerow);
+    return;
+  }
   if(b.dataset.tab){ state.tab=b.dataset.tab; render(); return; }
-  if(b.dataset.open){ openSheet(b.dataset.open); return; }
+  if(b.dataset.wake){ openWakeSheet(b.dataset.wake); return; }
+  if(b.dataset.open){
+    const og = ongoingSleep();
+    if(og && (b.dataset.open==="nap"||b.dataset.open==="night")){ openWakeSheet(og.id); return; }
+    openSheet(b.dataset.open); return;
+  }
+  if(b.id==="wSave"){ completeSleep(state.wakeId, $("#fWake").value); return; }
   if(b.id==="sCancel"){ closeSheet(); return; }
   if(b.id==="kindPee"){ state.diaperKind="pee"; $("#kindPee").classList.add("on"); $("#kindPoo").classList.remove("on"); return; }
   if(b.id==="kindPoo"){ state.diaperKind="poo"; $("#kindPoo").classList.add("on"); $("#kindPee").classList.remove("on"); return; }
@@ -674,7 +757,12 @@ document.addEventListener("click", ev=>{
       return;
     }
     const end=$("#fEnd").value;
-    if(!end){ alert("깬 시각을 입력해 주세요."); return; }
+    if(!end){ // 자는 중으로 저장
+      const og = ongoingSleep();
+      if(og){ alert("이미 자는 중인 기록이 있어요. 먼저 잠깸을 기록해 주세요."); closeSheet(); openWakeSheet(og.id); return; }
+      saveEntry({type, date, start, end:null, minutes:0, createdAt:new Date().toISOString()});
+      return;
+    }
     let minutes = hm2min(end)-hm2min(start);
     if(minutes<=0) minutes += 1440; // 자정 넘김
     if(minutes>=1440){ alert("수면 시간이 24시간을 넘을 수 없어요."); return; }
