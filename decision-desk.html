@@ -208,6 +208,24 @@
     padding: 40px 20px; border: 1px dashed var(--line); border-radius: 12px;
   }
 
+  .modelpick {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    margin: 12px 0 2px;
+  }
+  .modelpick .lbl { font-size: 13px; font-weight: 700; color: var(--muted); }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface-2); }
+  .seg button {
+    appearance: none; border: none; background: none; cursor: pointer;
+    font: inherit; font-size: 13.5px; color: var(--muted);
+    padding: 7px 14px; display: flex; flex-direction: column; align-items: flex-start; gap: 0;
+  }
+  .seg button + button { border-inline-start: 1px solid var(--line); }
+  .seg button b { font-weight: 700; color: inherit; }
+  .seg button small { font-size: 11px; opacity: 0.8; }
+  .seg button.on { background: var(--accent); color: var(--accent-ink); }
+  .seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .tier-note { font-size: 12px; color: var(--muted); }
+
   .analysis-status {
     display: flex; align-items: center; gap: 10px;
     color: var(--muted); font-size: 14px; margin-top: 14px;
@@ -328,6 +346,15 @@
       <h3 style="margin:0 0 6px; font-family:'Noto Serif KR',serif;">새로 들어온 사안</h3>
       <p class="muted" style="margin:0 0 12px; font-size:14px;">사안의 배경과 쟁점을 적으면, 축적된 판단 원칙과 과거 선례 전체와 대조해 분석합니다.</p>
       <textarea id="newCaseInput" style="min-height:140px;" placeholder="예: OO 연맹이 내년 대회의 심판 구성 변경을 요청해 왔습니다. 사유는..."></textarea>
+      <div class="modelpick" id="modelPick">
+        <span class="lbl">분석 모델</span>
+        <div class="seg" role="radiogroup" aria-label="분석 모델 선택">
+          <button type="button" id="tierComplex" data-tier="complex"><b>최고 성능</b><small>가장 깊은 추론</small></button>
+          <button type="button" id="tierDefault" data-tier="default"><b>표준</b><small>균형</small></button>
+          <button type="button" id="tierQuick" data-tier="quick"><b>빠름</b><small>신속한 검토</small></button>
+        </div>
+        <span class="tier-note">데이빗 계정(Max)의 사용한도로 실행됩니다</span>
+      </div>
       <div class="rowbtns">
         <button class="btn primary" id="btnAnalyze">선례 대조 분석</button>
         <button class="btn" id="btnStopAnalyze" hidden>중단</button>
@@ -374,8 +401,10 @@
     cases: [], principles: [],
     editingCaseId: null,
     analysisCtl: null,
-    lastAnalysisInput: ""
+    lastAnalysisInput: "",
+    modelTier: "complex"
   };
+  var TIER_LABEL = { complex: "최고 성능", "default": "표준", quick: "빠름" };
 
   function $(id) { return document.getElementById(id); }
   function esc(s) {
@@ -562,6 +591,27 @@
       .then(function () { $("btnSavePrinciple").disabled = false; });
   });
 
+  // ---------- 분석 모델 선택 ----------
+  try {
+    var savedTier = localStorage.getItem("desk-model-tier");
+    if (savedTier === "complex" || savedTier === "default" || savedTier === "quick") state.modelTier = savedTier;
+  } catch (e) {}
+  function renderTierPick() {
+    document.querySelectorAll("#modelPick .seg button").forEach(function (b) {
+      var on = b.dataset.tier === state.modelTier;
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-checked", on ? "true" : "false");
+    });
+  }
+  document.getElementById("modelPick").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-tier]");
+    if (!b) return;
+    state.modelTier = b.dataset.tier;
+    try { localStorage.setItem("desk-model-tier", state.modelTier); } catch (err) {}
+    renderTierPick();
+  });
+  renderTierPick();
+
   // ---------- 새 사안 분석 ----------
   function buildPrompt(input) {
     var principles = state.principles.map(function (p, i) {
@@ -606,21 +656,27 @@
     $("btnAnalyze").disabled = true;
     $("btnStopAnalyze").hidden = false;
     $("analyzeStatus").hidden = false;
-    $("analyzeStatusText").textContent = "선례와 원칙을 대조하는 중... (첫 응답까지 30초 안팎 걸릴 수 있습니다)";
+    var tierName = TIER_LABEL[state.modelTier] || state.modelTier;
+    $("analyzeStatusText").textContent = tierName + " 모델로 선례와 원칙을 대조하는 중... (첫 응답까지 30초 안팎 걸릴 수 있습니다)";
     $("analysisResult").innerHTML = "";
 
-    state.sample.json(buildPrompt(input), {
+    state.sample(buildPrompt(input), {
       signal: ctl.signal,
+      modelTier: state.modelTier,
       onText: function (u) {
         $("analyzeStatusText").textContent = "분석 결과 작성 중... (" + u.text.length + "자 수신)";
       }
-    }).then(function (r) {
-      renderAnalysis(r || {});
+    }).then(function (res) {
+      var parsed = parseAnalysisJson(res.text);
+      if (!parsed) {
+        $("analysisResult").innerHTML = '<div class="card"><p class="muted" style="margin:0;">결과 형식이 맞지 않았습니다. 다시 시도해 주세요.</p></div>';
+        return;
+      }
+      renderAnalysis(parsed, res.modelTierApplied);
     }).catch(function (e) {
       if (e && e.code === "cancelled") return;
       var msg = "분석하지 못했습니다.";
-      if (e && e.code === "invalid_json") msg = "결과 형식이 맞지 않았습니다. 다시 시도해 주세요.";
-      else if (e && e.code === "rate_limited") msg = "요청이 많습니다. 잠시 후 다시 시도해 주세요.";
+      if (e && e.code === "rate_limited") msg = "계정 사용한도에 도달했거나 요청이 많습니다. 잠시 후 다시 시도해 주세요.";
       else if (e && (e.code === "not_granted" || e.code === "sampling_disabled")) msg = "이 계정에서는 AI 분석을 사용할 수 없습니다.";
       $("analysisResult").innerHTML = '<div class="card"><p class="muted" style="margin:0;">' + esc(msg) + "</p></div>";
     }).then(function () {
@@ -634,7 +690,17 @@
     if (state.analysisCtl) state.analysisCtl.abort();
   });
 
-  function renderAnalysis(r) {
+  function parseAnalysisJson(text) {
+    text = String(text || "");
+    try { return JSON.parse(text); } catch (e) {}
+    var fence = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (fence) { try { return JSON.parse(fence[1]); } catch (e) {} }
+    var a = text.indexOf("{"), b = text.lastIndexOf("}");
+    if (a !== -1 && b > a) { try { return JSON.parse(text.slice(a, b + 1)); } catch (e) {} }
+    return null;
+  }
+
+  function renderAnalysis(r, tierApplied) {
     var sims = Array.isArray(r.similarCases) ? r.similarCases : [];
     var diffs = Array.isArray(r.keyDifferences) ? r.keyDifferences : [];
     var reasons = Array.isArray(r.reasoning) ? r.reasoning : [];
@@ -643,6 +709,12 @@
 
     html += '<div class="card"><h4>권고 결정</h4><div class="reco"><p>' + esc(r.recommendation || "권고를 생성하지 못했습니다.") + "</p></div>";
     if (reasons.length) html += '<h4 style="margin-top:14px;">근거</h4><ul>' + reasons.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul>";
+    if (tierApplied) {
+      var applied = TIER_LABEL[tierApplied] || tierApplied;
+      var note = "분석 모델: " + applied;
+      if (tierApplied !== state.modelTier) note += " (요청한 등급 대신 플랜에서 제공되는 등급으로 실행됨)";
+      html += '<p class="tier-note" style="margin:12px 0 0;">' + esc(note) + "</p>";
+    }
     html += "</div>";
 
     html += '<div class="card"><h4>유사 선례</h4>';
