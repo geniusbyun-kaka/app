@@ -1,0 +1,765 @@
+<title>선례 데스크</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&family=Noto+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg: #F2F4F8;
+    --surface: #FFFFFF;
+    --surface-2: #F7F9FC;
+    --ink: #1A2437;
+    --muted: #5C6B84;
+    --line: #DCE2EC;
+    --accent: #2B59C3;
+    --accent-soft: #E7EDFA;
+    --accent-ink: #FFFFFF;
+    --gold: #A9822F;
+    --gold-bg: #F6EEDB;
+    --good: #2E7D4F;
+    --good-bg: #E4F1E9;
+    --warn: #B3541E;
+    --warn-bg: #F9EBE0;
+    --danger: #B3352E;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #10151F;
+      --surface: #1A2130;
+      --surface-2: #202A3D;
+      --ink: #E8ECF4;
+      --muted: #94A1B8;
+      --line: #2B354A;
+      --accent: #7DA1F2;
+      --accent-soft: #22304D;
+      --accent-ink: #0E1526;
+      --gold: #D2AC58;
+      --gold-bg: #2E2714;
+      --good: #6FBE8F;
+      --good-bg: #1B2E23;
+      --warn: #E09159;
+      --warn-bg: #33251A;
+      --danger: #E07670;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #10151F;
+    --surface: #1A2130;
+    --surface-2: #202A3D;
+    --ink: #E8ECF4;
+    --muted: #94A1B8;
+    --line: #2B354A;
+    --accent: #7DA1F2;
+    --accent-soft: #22304D;
+    --accent-ink: #0E1526;
+    --gold: #D2AC58;
+    --gold-bg: #2E2714;
+    --good: #6FBE8F;
+    --good-bg: #1B2E23;
+    --warn: #E09159;
+    --warn-bg: #33251A;
+    --danger: #E07670;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+    font-size: 15px;
+    line-height: 1.65;
+  }
+  .wrap {
+    max-width: 920px;
+    margin: 0 auto;
+    padding-block: 28px 80px;
+    padding-inline: 20px;
+  }
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin: 0 0 6px;
+  }
+  h1 {
+    font-family: 'Noto Serif KR', serif;
+    font-weight: 700;
+    font-size: 30px;
+    margin: 0 0 4px;
+    text-wrap: balance;
+  }
+  .lede { color: var(--muted); margin: 0 0 20px; max-width: 62ch; }
+
+  .statband {
+    display: flex; flex-wrap: wrap; gap: 10px 26px;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    margin-bottom: 22px;
+    font-size: 13.5px;
+  }
+  .statband b { font-variant-numeric: tabular-nums; }
+  .statband .k { color: var(--muted); margin-right: 6px; }
+
+  nav.tabs {
+    display: flex; gap: 4px;
+    border-bottom: 2px solid var(--line);
+    margin-bottom: 24px;
+    overflow-x: auto;
+  }
+  nav.tabs button {
+    appearance: none; background: none; border: none;
+    font: inherit; font-weight: 500; color: var(--muted);
+    padding: 10px 14px; cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    white-space: nowrap;
+  }
+  nav.tabs button.on { color: var(--accent); border-bottom-color: var(--accent); font-weight: 700; }
+  nav.tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 4px; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px 20px;
+  }
+  .stack { display: flex; flex-direction: column; gap: 14px; }
+
+  .case-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .case-head h3 {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 17px; margin: 0; font-weight: 700;
+  }
+  .case-date { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--muted); }
+  .chip {
+    display: inline-block; font-size: 12px; font-weight: 500;
+    padding: 1px 9px; border-radius: 99px;
+    background: var(--accent-soft); color: var(--accent);
+  }
+  .chip.gold { background: var(--gold-bg); color: var(--gold); }
+  .chip.example { background: var(--warn-bg); color: var(--warn); }
+
+  .kv { margin: 10px 0 0; }
+  .kv dt {
+    font-size: 11.5px; font-weight: 700; letter-spacing: 0.08em;
+    color: var(--muted); text-transform: uppercase; margin-bottom: 2px;
+  }
+  .kv dd { margin: 0 0 10px; white-space: pre-wrap; }
+  .kv dd:last-child { margin-bottom: 0; }
+  .kv dd.decision { font-weight: 700; }
+
+  .filerow { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .filerow a {
+    font-size: 12.5px; color: var(--accent); text-decoration: none;
+    border: 1px solid var(--line); border-radius: 8px; padding: 3px 10px;
+    background: var(--surface-2);
+  }
+  .filerow a:hover { border-color: var(--accent); }
+
+  .rowbtns { display: flex; gap: 8px; margin-top: 12px; }
+  button.btn {
+    appearance: none; font: inherit; cursor: pointer;
+    border-radius: 9px; padding: 8px 16px; font-weight: 500;
+    border: 1px solid var(--line);
+    background: var(--surface); color: var(--ink);
+  }
+  button.btn:hover { border-color: var(--muted); }
+  button.btn.primary {
+    background: var(--accent); color: var(--accent-ink); border-color: var(--accent);
+    font-weight: 700;
+  }
+  button.btn.primary:hover { filter: brightness(1.07); }
+  button.btn.small { padding: 4px 11px; font-size: 13px; }
+  button.btn.danger { color: var(--danger); }
+  button.btn:disabled { opacity: 0.5; cursor: default; }
+  button.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+  .toolbar input[type="search"] {
+    flex: 1; min-width: 180px;
+  }
+
+  input, select, textarea {
+    font: inherit; color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    padding: 8px 12px;
+    width: 100%;
+  }
+  textarea { resize: vertical; min-height: 80px; }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  label.f {
+    display: flex; flex-direction: column; gap: 4px;
+    font-size: 13px; font-weight: 700; color: var(--muted);
+  }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 560px) { .grid2 { grid-template-columns: 1fr; } }
+
+  .formcard { border-color: var(--accent); }
+  .formcard h3 { margin: 0 0 14px; font-family: 'Noto Serif KR', serif; }
+  .formgrid { display: flex; flex-direction: column; gap: 12px; }
+
+  .empty {
+    text-align: center; color: var(--muted);
+    padding: 40px 20px; border: 1px dashed var(--line); border-radius: 12px;
+  }
+
+  .analysis-status {
+    display: flex; align-items: center; gap: 10px;
+    color: var(--muted); font-size: 14px; margin-top: 14px;
+  }
+  .spinner {
+    width: 16px; height: 16px; border-radius: 50%;
+    border: 2px solid var(--line); border-top-color: var(--accent);
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+
+  .result { margin-top: 20px; display: flex; flex-direction: column; gap: 14px; }
+  .result h4 {
+    margin: 0 0 8px; font-size: 13px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .result .reco {
+    border-inline-start: 3px solid var(--gold);
+    background: var(--gold-bg);
+    border-radius: 0 10px 10px 0;
+    padding: 14px 16px;
+  }
+  .result .reco p { margin: 0; font-weight: 700; }
+  .result ul { margin: 0; padding-inline-start: 20px; }
+  .result li { margin-bottom: 5px; }
+  .simcase { padding: 10px 12px; background: var(--surface-2); border-radius: 9px; margin-bottom: 8px; }
+  .simcase b { font-size: 14px; }
+  .simcase .why { color: var(--muted); font-size: 13.5px; margin-top: 2px; }
+  .draftbox {
+    background: var(--surface-2); border: 1px solid var(--line);
+    border-radius: 9px; padding: 12px 14px;
+    font-size: 14px; white-space: pre-wrap;
+  }
+  .notice {
+    background: var(--warn-bg); color: var(--warn);
+    border-radius: 9px; padding: 10px 14px; font-size: 13.5px; margin-bottom: 18px;
+  }
+  .principle-body { white-space: pre-wrap; color: var(--ink); margin: 4px 0 0; }
+  .muted { color: var(--muted); }
+  .hint { font-size: 12.5px; color: var(--muted); font-weight: 400; }
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">Decision Precedent Desk</p>
+  <h1>선례 데스크</h1>
+  <p class="lede">회장님 의사결정의 선례와 판단 원칙을 축적하고, 새 사안이 오면 과거 기록과 대조해 어떤 논리로 같은 결정 또는 다른 결정이 필요한지 분석합니다.</p>
+
+  <div id="notice" class="notice" hidden></div>
+
+  <div class="statband">
+    <span><span class="k">기록된 선례</span><b id="statCases">0</b>건</span>
+    <span><span class="k">판단 원칙</span><b id="statPrinciples">0</b>개</span>
+    <span><span class="k">마지막 기록</span><b id="statLast">아직 없음</b></span>
+  </div>
+
+  <nav class="tabs" role="tablist">
+    <button id="tabCases" class="on" data-tab="cases">선례 기록</button>
+    <button id="tabAnalyze" data-tab="analyze">새 사안 분석</button>
+    <button id="tabPrinciples" data-tab="principles">판단 원칙</button>
+  </nav>
+
+  <!-- ============ 선례 기록 ============ -->
+  <section id="paneCases">
+    <div class="toolbar">
+      <input type="search" id="caseSearch" placeholder="제목, 배경, 결정 내용 검색">
+      <button class="btn primary" id="btnNewCase">선례 기록하기</button>
+    </div>
+
+    <div class="card formcard" id="caseForm" hidden>
+      <h3 id="caseFormTitle">새 선례 기록</h3>
+      <div class="formgrid">
+        <label class="f">사안 제목
+          <input id="fTitle" placeholder="예: 국제대회 개최지 변경 요청 검토">
+        </label>
+        <div class="grid2">
+          <label class="f">카테고리
+            <select id="fCategory">
+              <option>대회 운영</option>
+              <option>인사·임명</option>
+              <option>재정·계약</option>
+              <option>징계·윤리</option>
+              <option>대외 관계</option>
+              <option>기타</option>
+            </select>
+          </label>
+          <label class="f">결정 일자
+            <input type="date" id="fDate">
+          </label>
+        </div>
+        <label class="f">배경과 쟁점
+          <textarea id="fBackground" placeholder="어떤 상황이었고 무엇이 쟁점이었는지"></textarea>
+        </label>
+        <label class="f">최종 결정
+          <textarea id="fDecision" placeholder="회장님이 어떤 결정을 내렸는지"></textarea>
+        </label>
+        <label class="f">결정 근거와 로직
+          <textarea id="fRationale" placeholder="왜 그렇게 결정했는지, 어떤 원칙과 우선순위가 적용됐는지"></textarea>
+        </label>
+        <label class="f" id="fFilesLabel">관련 파일 첨부 <span class="hint">(이미지, PDF, CSV, 텍스트 등)</span>
+          <input type="file" id="fFiles" multiple>
+        </label>
+        <div class="rowbtns">
+          <button class="btn primary" id="btnSaveCase">저장</button>
+          <button class="btn" id="btnCancelCase">취소</button>
+          <span class="analysis-status" id="caseFormStatus" hidden><span class="spinner"></span><span>파일 업로드 중...</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="stack" id="caseList"></div>
+    <div class="empty" id="caseEmpty" hidden>아직 기록된 선례가 없습니다. 첫 의사결정을 기록해 보세요.</div>
+  </section>
+
+  <!-- ============ 새 사안 분석 ============ -->
+  <section id="paneAnalyze" hidden>
+    <div class="card">
+      <h3 style="margin:0 0 6px; font-family:'Noto Serif KR',serif;">새로 들어온 사안</h3>
+      <p class="muted" style="margin:0 0 12px; font-size:14px;">사안의 배경과 쟁점을 적으면, 축적된 판단 원칙과 과거 선례 전체와 대조해 분석합니다.</p>
+      <textarea id="newCaseInput" style="min-height:140px;" placeholder="예: OO 연맹이 내년 대회의 심판 구성 변경을 요청해 왔습니다. 사유는..."></textarea>
+      <div class="rowbtns">
+        <button class="btn primary" id="btnAnalyze">선례 대조 분석</button>
+        <button class="btn" id="btnStopAnalyze" hidden>중단</button>
+      </div>
+      <div class="analysis-status" id="analyzeStatus" hidden>
+        <span class="spinner"></span><span id="analyzeStatusText">분석 준비 중...</span>
+      </div>
+    </div>
+    <div class="result" id="analysisResult"></div>
+  </section>
+
+  <!-- ============ 판단 원칙 ============ -->
+  <section id="panePrinciples" hidden>
+    <div class="toolbar">
+      <span class="muted" style="font-size:14px;">반복 적용되는 의사결정 기준을 여기에 축적합니다. 분석 시 항상 함께 참조됩니다.</span>
+      <button class="btn primary" id="btnNewPrinciple" style="margin-inline-start:auto;">원칙 추가</button>
+    </div>
+    <div class="card formcard" id="principleForm" hidden>
+      <h3>새 판단 원칙</h3>
+      <div class="formgrid">
+        <label class="f">원칙 이름
+          <input id="pTitle" placeholder="예: 선수 우선 원칙">
+        </label>
+        <label class="f">내용
+          <textarea id="pBody" placeholder="이 원칙이 언제 어떻게 적용되는지"></textarea>
+        </label>
+        <div class="rowbtns">
+          <button class="btn primary" id="btnSavePrinciple">저장</button>
+          <button class="btn" id="btnCancelPrinciple">취소</button>
+        </div>
+      </div>
+    </div>
+    <div class="stack" id="principleList"></div>
+    <div class="empty" id="principleEmpty" hidden>아직 등록된 원칙이 없습니다.</div>
+  </section>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var state = {
+    db: null, assets: null, sample: null,
+    cases: [], principles: [],
+    editingCaseId: null,
+    analysisCtl: null,
+    lastAnalysisInput: ""
+  };
+
+  function $(id) { return document.getElementById(id); }
+  function esc(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+  function clip(s, n) { s = String(s || ""); return s.length > n ? s.slice(0, n) + "…" : s; }
+
+  // ---------- 탭 ----------
+  var tabs = { cases: $("paneCases"), analyze: $("paneAnalyze"), principles: $("panePrinciples") };
+  document.querySelector("nav.tabs").addEventListener("click", function (e) {
+    var btn = e.target.closest("button[data-tab]");
+    if (!btn) return;
+    showTab(btn.dataset.tab);
+  });
+  function showTab(name) {
+    Object.keys(tabs).forEach(function (k) { tabs[k].hidden = (k !== name); });
+    document.querySelectorAll("nav.tabs button").forEach(function (b) {
+      b.classList.toggle("on", b.dataset.tab === name);
+    });
+  }
+
+  // ---------- 선례 목록 렌더 ----------
+  function renderCases() {
+    var q = $("caseSearch").value.trim().toLowerCase();
+    var list = state.cases.filter(function (c) {
+      if (!q) return true;
+      return [c.title, c.background, c.decision, c.rationale, c.category]
+        .join(" ").toLowerCase().indexOf(q) !== -1;
+    });
+    var box = $("caseList");
+    box.innerHTML = list.map(function (c) {
+      var files = (c.files || []).map(function (f) {
+        return '<a href="/_blob/' + esc(f.id) + '" target="_blank" rel="noopener">📎 ' + esc(f.name) + "</a>";
+      }).join("");
+      return '<div class="card" id="case-' + esc(c.id) + '">'
+        + '<div class="case-head">'
+        + '<h3>' + esc(c.title) + "</h3>"
+        + '<span class="chip">' + esc(c.category || "기타") + "</span>"
+        + (c.example ? '<span class="chip example">예시</span>' : "")
+        + '<span class="case-date">' + esc(c.date || "") + "</span>"
+        + "</div>"
+        + '<dl class="kv">'
+        + "<dt>배경과 쟁점</dt><dd>" + esc(c.background) + "</dd>"
+        + "<dt>최종 결정</dt><dd class=\"decision\">" + esc(c.decision) + "</dd>"
+        + "<dt>결정 근거와 로직</dt><dd>" + esc(c.rationale) + "</dd>"
+        + "</dl>"
+        + (files ? '<div class="filerow">' + files + "</div>" : "")
+        + '<div class="rowbtns">'
+        + '<button class="btn small" data-edit="' + esc(c.id) + '">수정</button>'
+        + '<button class="btn small danger" data-del="' + esc(c.id) + '">삭제</button>'
+        + "</div></div>";
+    }).join("");
+    $("caseEmpty").hidden = state.cases.length > 0;
+    $("statCases").textContent = String(state.cases.length);
+    var last = state.cases.length ? (state.cases[0].date || "날짜 미상") : "아직 없음";
+    $("statLast").textContent = last;
+  }
+  $("caseSearch").addEventListener("input", renderCases);
+
+  $("caseList").addEventListener("click", function (e) {
+    var ed = e.target.closest("[data-edit]");
+    var del = e.target.closest("[data-del]");
+    if (ed) openCaseForm(ed.dataset.edit);
+    if (del) {
+      var c = findCase(del.dataset.del);
+      if (c && confirm('"' + c.title + '" 선례를 삭제할까요?')) {
+        state.db.collection("cases").doc(c.id).delete().catch(function () {});
+      }
+    }
+  });
+  function findCase(id) {
+    for (var i = 0; i < state.cases.length; i++) if (state.cases[i].id === id) return state.cases[i];
+    return null;
+  }
+
+  // ---------- 선례 기록/수정 폼 ----------
+  $("btnNewCase").addEventListener("click", function () { openCaseForm(null); });
+  $("btnCancelCase").addEventListener("click", function () { $("caseForm").hidden = true; });
+
+  function openCaseForm(id, prefill) {
+    state.editingCaseId = id;
+    var c = id ? findCase(id) : (prefill || {});
+    $("caseFormTitle").textContent = id ? "선례 수정" : "새 선례 기록";
+    $("fTitle").value = c.title || "";
+    $("fCategory").value = c.category || "대회 운영";
+    $("fDate").value = c.date || new Date().toISOString().slice(0, 10);
+    $("fBackground").value = c.background || "";
+    $("fDecision").value = c.decision || "";
+    $("fRationale").value = c.rationale || "";
+    $("fFiles").value = "";
+    $("caseForm").hidden = false;
+    $("caseForm").scrollIntoView({ block: "nearest" });
+    $("fTitle").focus();
+  }
+
+  $("btnSaveCase").addEventListener("click", function () {
+    if (!state.db) return;
+    var title = $("fTitle").value.trim();
+    if (!title) { $("fTitle").focus(); return; }
+    var btn = $("btnSaveCase");
+    btn.disabled = true;
+
+    var run = Promise.resolve([]);
+    var picked = $("fFiles").files;
+    if (state.assets && picked && picked.length) {
+      $("caseFormStatus").hidden = false;
+      var metas = [];
+      run = Array.prototype.reduce.call(picked, function (p, file) {
+        return p.then(function () {
+          return state.assets.upload(file).then(function (r) {
+            metas.push({ id: r.id, name: file.name, size: r.sizeBytes });
+          });
+        });
+      }, Promise.resolve()).then(function () { return metas; });
+    }
+
+    run.then(function (newFiles) {
+      var existing = state.editingCaseId ? findCase(state.editingCaseId) : null;
+      var body = {
+        title: title,
+        category: $("fCategory").value,
+        date: $("fDate").value,
+        background: $("fBackground").value.trim(),
+        decision: $("fDecision").value.trim(),
+        rationale: $("fRationale").value.trim(),
+        files: (existing && existing.files ? existing.files : []).concat(newFiles),
+        createdAt: existing ? existing.createdAt : Date.now()
+      };
+      var ref = state.editingCaseId
+        ? state.db.collection("cases").doc(state.editingCaseId)
+        : state.db.collection("cases").doc();
+      return ref.set(body);
+    }).then(function () {
+      $("caseForm").hidden = true;
+    }).catch(function (e) {
+      alert("저장하지 못했습니다: " + (e && e.message ? e.message : "잠시 후 다시 시도해 주세요."));
+    }).then(function () {
+      btn.disabled = false;
+      $("caseFormStatus").hidden = true;
+    });
+  });
+
+  // ---------- 판단 원칙 ----------
+  function renderPrinciples() {
+    var box = $("principleList");
+    box.innerHTML = state.principles.map(function (p) {
+      return '<div class="card">'
+        + '<div class="case-head"><h3>' + esc(p.title) + "</h3>"
+        + '<span class="chip gold">원칙</span>'
+        + (p.example ? '<span class="chip example">예시</span>' : "")
+        + "</div>"
+        + '<p class="principle-body">' + esc(p.body) + "</p>"
+        + '<div class="rowbtns"><button class="btn small danger" data-pdel="' + esc(p.id) + '">삭제</button></div>'
+        + "</div>";
+    }).join("");
+    $("principleEmpty").hidden = state.principles.length > 0;
+    $("statPrinciples").textContent = String(state.principles.length);
+  }
+  $("principleList").addEventListener("click", function (e) {
+    var del = e.target.closest("[data-pdel]");
+    if (del && confirm("이 원칙을 삭제할까요?")) {
+      state.db.collection("principles").doc(del.dataset.pdel).delete().catch(function () {});
+    }
+  });
+  $("btnNewPrinciple").addEventListener("click", function () {
+    $("principleForm").hidden = false;
+    $("pTitle").focus();
+  });
+  $("btnCancelPrinciple").addEventListener("click", function () { $("principleForm").hidden = true; });
+  $("btnSavePrinciple").addEventListener("click", function () {
+    if (!state.db) return;
+    var title = $("pTitle").value.trim();
+    var body = $("pBody").value.trim();
+    if (!title) { $("pTitle").focus(); return; }
+    $("btnSavePrinciple").disabled = true;
+    state.db.collection("principles").add({ title: title, body: body, createdAt: Date.now() })
+      .then(function () {
+        $("pTitle").value = ""; $("pBody").value = "";
+        $("principleForm").hidden = true;
+      })
+      .catch(function (e) { alert("저장하지 못했습니다: " + (e && e.message || "")); })
+      .then(function () { $("btnSavePrinciple").disabled = false; });
+  });
+
+  // ---------- 새 사안 분석 ----------
+  function buildPrompt(input) {
+    var principles = state.principles.map(function (p, i) {
+      return (i + 1) + ". " + p.title + ": " + clip(p.body, 300);
+    }).join("\n") || "(아직 등록된 원칙 없음)";
+
+    var cases = state.cases.slice(0, 24).map(function (c) {
+      return "[사례 " + c.id + "] " + (c.date || "") + " · " + c.title + " (" + (c.category || "") + ")\n"
+        + "배경: " + clip(c.background, 500) + "\n"
+        + "결정: " + clip(c.decision, 350) + "\n"
+        + "근거: " + clip(c.rationale, 500);
+    }).join("\n\n") || "(아직 기록된 선례 없음)";
+
+    return "당신은 국제 스포츠 행정(IOC, ISU) 리더의 의사결정을 보좌하는 분석 참모입니다. "
+      + "아래에 축적된 판단 원칙과 과거 결정 선례가 있습니다. 새 사안을 이 기록과 대조해 분석하세요.\n\n"
+      + "=== 판단 원칙 ===\n" + principles + "\n\n"
+      + "=== 과거 결정 선례 ===\n" + cases + "\n\n"
+      + "=== 새 사안 ===\n" + clip(input, 4000) + "\n\n"
+      + "분석 지침:\n"
+      + "1) 가장 유사한 선례를 찾고 왜 유사한지 설명하세요. 유사 선례가 없으면 빈 배열로 두세요.\n"
+      + "2) 새 사안이 선례와 어떤 점에서 다른지, 그 차이가 결정을 바꿀 만큼 중요한지 판단하세요.\n"
+      + "3) 선례와 같은 결정을 권고한다면 어떤 원칙이 그대로 적용되는지, 다른 결정을 권고한다면 어떤 차이 때문인지 근거를 명시하세요.\n"
+      + "4) 회장님께 보고할 수 있는 수준으로 간결하고 구체적으로 쓰세요.\n\n"
+      + "다음 JSON 형식으로만 답하세요:\n"
+      + '{"similarCases":[{"id":"사례 id","title":"제목","why":"유사한 이유 한두 문장"}],'
+      + '"keyDifferences":["과거 선례와 다른 점"],'
+      + '"recommendation":"권고 결정 한두 문장",'
+      + '"reasoning":["권고의 근거"],'
+      + '"risks":["유의할 리스크"],'
+      + '"englishDraft":"이 입장을 상대방에게 전달하는 정중한 영어 문단 (이메일에 쓸 수 있는 톤)",'
+      + '"suggestedPrinciple":{"title":"","body":""} 또는 null (이번 분석에서 새로 정리할 만한 원칙이 있으면)}';
+  }
+
+  $("btnAnalyze").addEventListener("click", function () {
+    if (!state.sample) return;
+    var input = $("newCaseInput").value.trim();
+    if (!input) { $("newCaseInput").focus(); return; }
+
+    var ctl = new AbortController();
+    state.analysisCtl = ctl;
+    state.lastAnalysisInput = input;
+    $("btnAnalyze").disabled = true;
+    $("btnStopAnalyze").hidden = false;
+    $("analyzeStatus").hidden = false;
+    $("analyzeStatusText").textContent = "선례와 원칙을 대조하는 중... (첫 응답까지 30초 안팎 걸릴 수 있습니다)";
+    $("analysisResult").innerHTML = "";
+
+    state.sample.json(buildPrompt(input), {
+      signal: ctl.signal,
+      onText: function (u) {
+        $("analyzeStatusText").textContent = "분석 결과 작성 중... (" + u.text.length + "자 수신)";
+      }
+    }).then(function (r) {
+      renderAnalysis(r || {});
+    }).catch(function (e) {
+      if (e && e.code === "cancelled") return;
+      var msg = "분석하지 못했습니다.";
+      if (e && e.code === "invalid_json") msg = "결과 형식이 맞지 않았습니다. 다시 시도해 주세요.";
+      else if (e && e.code === "rate_limited") msg = "요청이 많습니다. 잠시 후 다시 시도해 주세요.";
+      else if (e && (e.code === "not_granted" || e.code === "sampling_disabled")) msg = "이 계정에서는 AI 분석을 사용할 수 없습니다.";
+      $("analysisResult").innerHTML = '<div class="card"><p class="muted" style="margin:0;">' + esc(msg) + "</p></div>";
+    }).then(function () {
+      $("btnAnalyze").disabled = false;
+      $("btnStopAnalyze").hidden = true;
+      $("analyzeStatus").hidden = true;
+      state.analysisCtl = null;
+    });
+  });
+  $("btnStopAnalyze").addEventListener("click", function () {
+    if (state.analysisCtl) state.analysisCtl.abort();
+  });
+
+  function renderAnalysis(r) {
+    var sims = Array.isArray(r.similarCases) ? r.similarCases : [];
+    var diffs = Array.isArray(r.keyDifferences) ? r.keyDifferences : [];
+    var reasons = Array.isArray(r.reasoning) ? r.reasoning : [];
+    var risks = Array.isArray(r.risks) ? r.risks : [];
+    var html = "";
+
+    html += '<div class="card"><h4>권고 결정</h4><div class="reco"><p>' + esc(r.recommendation || "권고를 생성하지 못했습니다.") + "</p></div>";
+    if (reasons.length) html += '<h4 style="margin-top:14px;">근거</h4><ul>' + reasons.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul>";
+    html += "</div>";
+
+    html += '<div class="card"><h4>유사 선례</h4>';
+    if (sims.length) {
+      html += sims.map(function (s) {
+        var local = findCase(String(s.id || ""));
+        var title = local ? local.title : (s.title || "제목 미상");
+        return '<div class="simcase"><b>' + esc(title) + "</b>"
+          + '<div class="why">' + esc(s.why || "") + "</div></div>";
+      }).join("");
+    } else {
+      html += '<p class="muted" style="margin:0;">유사한 선례가 없습니다. 이번 결정이 새로운 선례가 됩니다.</p>';
+    }
+    if (diffs.length) {
+      html += '<h4 style="margin-top:14px;">선례와 다른 점</h4><ul>' + diffs.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul>";
+    }
+    html += "</div>";
+
+    if (risks.length) {
+      html += '<div class="card"><h4>유의할 리스크</h4><ul>' + risks.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul></div>";
+    }
+
+    if (r.englishDraft) {
+      html += '<div class="card"><h4>English Draft (전달용 초안)</h4>'
+        + '<div class="draftbox" id="draftText">' + esc(r.englishDraft) + "</div>"
+        + '<div class="rowbtns"><button class="btn small" id="btnCopyDraft">초안 복사</button></div></div>';
+    }
+
+    var sp = r.suggestedPrinciple;
+    if (sp && sp.title) {
+      html += '<div class="card"><h4>새 원칙 제안</h4>'
+        + '<b>' + esc(sp.title) + '</b><p class="principle-body">' + esc(sp.body || "") + "</p>"
+        + '<div class="rowbtns"><button class="btn small" id="btnAdoptPrinciple">원칙으로 저장</button></div></div>';
+    }
+
+    html += '<div class="card"><h4>결정 후</h4>'
+      + '<p class="muted" style="margin:0 0 10px; font-size:14px;">회장님 결정이 내려지면 이 사안을 선례로 기록해 두세요. 다음 분석의 근거가 됩니다.</p>'
+      + '<button class="btn primary" id="btnRecordFromAnalysis">이 사안을 선례로 기록</button></div>';
+
+    $("analysisResult").innerHTML = html;
+
+    var copyBtn = $("btnCopyDraft");
+    if (copyBtn) copyBtn.addEventListener("click", function () {
+      var t = $("draftText").textContent;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(t).then(function () { copyBtn.textContent = "복사됨"; });
+      }
+    });
+    var adoptBtn = $("btnAdoptPrinciple");
+    if (adoptBtn) adoptBtn.addEventListener("click", function () {
+      if (!state.db) return;
+      adoptBtn.disabled = true;
+      state.db.collection("principles").add({ title: String(sp.title), body: String(sp.body || ""), createdAt: Date.now() })
+        .then(function () { adoptBtn.textContent = "저장됨"; })
+        .catch(function () { adoptBtn.disabled = false; });
+    });
+    var recBtn = $("btnRecordFromAnalysis");
+    if (recBtn) recBtn.addEventListener("click", function () {
+      showTab("cases");
+      openCaseForm(null, {
+        title: clip(state.lastAnalysisInput.split("\n")[0], 60),
+        background: state.lastAnalysisInput,
+        rationale: (r.recommendation ? "권고: " + r.recommendation + "\n" : "") + reasons.map(function (x) { return "· " + x; }).join("\n")
+      });
+    });
+  }
+
+  // ---------- 초기화 ----------
+  function setNotice(msg) {
+    var n = $("notice");
+    n.textContent = msg;
+    n.hidden = !msg;
+  }
+
+  window.claude.use("db").then(function (db) {
+    if (!db) {
+      setNotice("데이터 저장소에 연결할 수 없어 읽기 전용으로 표시됩니다. claude.ai에서 열어 주세요.");
+      return;
+    }
+    state.db = db;
+    db.collection("cases").orderBy("createdAt", "desc").limit(500).onSnapshot(function (snap) {
+      state.cases = snap.docs.map(function (d) {
+        var b = d.data() || {};
+        return {
+          id: d.id, title: b.title || "", category: b.category || "",
+          date: b.date || "", background: b.background || "",
+          decision: b.decision || "", rationale: b.rationale || "",
+          files: Array.isArray(b.files) ? b.files : [],
+          example: !!b.example, createdAt: b.createdAt || 0
+        };
+      });
+      renderCases();
+    }, function () { setNotice("선례 목록을 불러오지 못했습니다. 페이지를 새로고침해 주세요."); });
+
+    db.collection("principles").orderBy("createdAt", "asc").limit(200).onSnapshot(function (snap) {
+      state.principles = snap.docs.map(function (d) {
+        var b = d.data() || {};
+        return { id: d.id, title: b.title || "", body: b.body || "", example: !!b.example };
+      });
+      renderPrinciples();
+    }, function () {});
+  });
+
+  window.claude.use("assets").then(function (a) {
+    state.assets = a;
+    if (!a) $("fFilesLabel").hidden = true;
+  });
+
+  window.claude.use("sample").then(function (s) {
+    state.sample = s;
+    if (!s) {
+      $("btnAnalyze").disabled = true;
+      $("btnAnalyze").textContent = "AI 분석을 사용할 수 없습니다";
+    }
+  });
+
+  renderCases();
+  renderPrinciples();
+})();
+</script>
