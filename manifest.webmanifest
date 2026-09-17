@@ -1,0 +1,13 @@
+{
+  "name": "새근새근",
+  "short_name": "새근새근",
+  "description": "아기 수면 일기",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#F7F4ED",
+  "theme_color": "#565CA8",
+  "icons": [
+    { "src": "icon-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

@@ -3,6 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="새근새근">
+<meta name="theme-color" content="#565CA8">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-180.png">
 <title>새근새근</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap">
 <style>
@@ -138,6 +146,7 @@ input[type=date],input[type=time],input[type=text]{
 .entry .lab{font-weight:500}
 .entry .t{font-variant-numeric:tabular-nums; color:var(--muted); font-size:.86rem}
 .entry .sp{flex:1}
+.entry[data-edit]{cursor:pointer}
 .entry.ongoing{cursor:pointer; background:var(--night-soft); border-radius:10px; padding-left:8px; padding-right:8px; border-top:0; margin-top:4px}
 .wakebtn{border:0; background:var(--night); color:#fff; border-radius:999px; padding:5px 13px; font:inherit; font-size:.8rem; font-weight:700; cursor:pointer; flex:none}
 :root[data-theme="dark"] .wakebtn{color:#1C1B26}
@@ -497,7 +506,7 @@ function entryRow(e){
   let detail="";
   if(isSleep) detail = `~ ${e.end} · ${fmtDur(e.minutes)}`;
   else if(e.type==="diaper") detail = e.kind==="poo"?"대변":"소변";
-  return `<div class="entry"><span class="etime">${e.start}</span>
+  return `<div class="entry" data-edit="${e.id}" title="눌러서 수정"><span class="etime">${e.start}</span>
     <span class="dot ${meta.dot}"></span>
     <span class="lab">${meta.label}</span>
     ${detail?`<span class="t">${detail}</span>`:""}
@@ -566,21 +575,25 @@ function renderToday(guide){
     ${timelineHtml()}
   </section>`;
 }
-function sheetHtml(type){
+function sheetHtml(type, e){
   const meta = TYPE_META[type];
   const isSleep = type==="nap"||type==="night";
+  const date = e ? e.date : todayKey();
+  const start = e ? e.start : nowHM();
   let fields;
   if(isSleep){
     fields = `<div class="frow">
-      <label>날짜 (잠든 날)<input type="date" id="fDate" value="${todayKey()}"></label>
-      <label>잠든 시각<input type="time" id="fStart" value="${nowHM()}"></label>
-      <label>깬 시각 (선택)<input type="time" id="fEnd"></label>
+      <label>날짜 (잠든 날)<input type="date" id="fDate" value="${date}"></label>
+      <label>잠든 시각<input type="time" id="fStart" value="${start}"></label>
+      <label>깬 시각${e?"":" (선택)"}<input type="time" id="fEnd" value="${e&&e.end?e.end:""}"></label>
     </div>
-    <p class="note">깬 시각을 비워두고 저장하면 "자는 중"으로 기록돼요. 아기가 깨면 기록의 잠깸 버튼을 눌러 깬 시각을 넣어 주세요. 이미 끝난 잠은 깬 시각까지 넣으면 한 번에 저장돼요 (잠든 시각보다 이르면 다음 날 아침으로 계산).</p>`;
+    <p class="note">${e
+      ? "깬 시각이 잠든 시각보다 이르면 다음 날 아침으로 계산해요."
+      : `깬 시각을 비워두고 저장하면 "자는 중"으로 기록돼요. 아기가 깨면 기록의 잠깸 버튼을 눌러 깬 시각을 넣어 주세요. 이미 끝난 잠은 깬 시각까지 넣으면 한 번에 저장돼요 (잠든 시각보다 이르면 다음 날 아침으로 계산).`}</p>`;
   } else if(type==="meal"){
     fields = `<div class="frow">
-      <label>날짜<input type="date" id="fDate" value="${todayKey()}"></label>
-      <label>먹은 시각<input type="time" id="fStart" value="${nowHM()}"></label>
+      <label>날짜<input type="date" id="fDate" value="${date}"></label>
+      <label>먹은 시각<input type="time" id="fStart" value="${start}"></label>
     </div>`;
   } else {
     fields = `<div class="seg">
@@ -588,20 +601,28 @@ function sheetHtml(type){
       <button id="kindPoo" class="${state.diaperKind==="poo"?"on":""}">💩 대변</button>
     </div>
     <div class="frow">
-      <label>날짜<input type="date" id="fDate" value="${todayKey()}"></label>
-      <label>교체 시각<input type="time" id="fStart" value="${nowHM()}"></label>
+      <label>날짜<input type="date" id="fDate" value="${date}"></label>
+      <label>교체 시각<input type="time" id="fStart" value="${start}"></label>
     </div>`;
   }
-  return `<h3>${meta.emoji} ${meta.label} 기록</h3>
+  return `<h3>${meta.emoji} ${meta.label} ${e?"수정":"기록"}</h3>
     ${fields}
     <div class="btnrow">
       <button class="btn ghost" id="sCancel">취소</button>
-      <button class="btn" id="sSave">저장</button>
+      <button class="btn" id="sSave">${e?"수정 저장":"저장"}</button>
     </div>`;
 }
 function openSheet(type){
-  state.sheet = type; state.wakeId = null;
-  $("#sheet").innerHTML = sheetHtml(type);
+  state.sheet = type; state.wakeId = null; state.editId = null;
+  $("#sheet").innerHTML = sheetHtml(type, null);
+  $("#overlay").hidden = false;
+}
+function openEditSheet(id){
+  const e = state.entries.find(x=>x.id===id);
+  if(!e) return;
+  state.sheet = e.type; state.wakeId = null; state.editId = id;
+  if(e.type==="diaper") state.diaperKind = e.kind==="poo"?"poo":"pee";
+  $("#sheet").innerHTML = sheetHtml(e.type, e);
   $("#overlay").hidden = false;
 }
 function openWakeSheet(id){
@@ -619,8 +640,17 @@ function openWakeSheet(id){
   $("#overlay").hidden = false;
 }
 function closeSheet(){
-  state.sheet = null; state.wakeId = null;
+  state.sheet = null; state.wakeId = null; state.editId = null;
   $("#overlay").hidden = true;
+}
+function updateEntry(id, data){
+  const e = state.entries.find(x=>x.id===id);
+  if(!e) return;
+  Object.assign(e, data);
+  if(state.db){ state.db.collection("sleeps").doc(id).update(data).catch(()=>alert("저장하지 못했어요. 잠시 후 다시 시도해 주세요.")); }
+  else persistLocal();
+  closeSheet();
+  render();
 }
 function completeSleep(id, endHM){
   const e = state.entries.find(x=>x.id===id);
@@ -725,8 +755,10 @@ document.addEventListener("click", ev=>{
   if(ev.target.id==="overlay"){ closeSheet(); return; }
   const b = ev.target.closest("button");
   if(!b){
-    const row = ev.target.closest("[data-wakerow]");
-    if(row) openWakeSheet(row.dataset.wakerow);
+    const wrow = ev.target.closest("[data-wakerow]");
+    if(wrow){ openWakeSheet(wrow.dataset.wakerow); return; }
+    const erow = ev.target.closest("[data-edit]");
+    if(erow) openEditSheet(erow.dataset.edit);
     return;
   }
   if(b.dataset.tab){ state.tab=b.dataset.tab; render(); return; }
@@ -745,19 +777,22 @@ document.addEventListener("click", ev=>{
   if(b.id==="btnExport"){ exportData(); return; }
   if(b.id==="btnImport"){ $("#impFile").click(); return; }
   if(b.id==="sSave"){
-    const type = state.sheet;
+    const type = state.sheet, editing = state.editId;
     const date=$("#fDate").value, start=$("#fStart").value;
     if(!date||!start){ alert("날짜와 시각을 입력해 주세요."); return; }
     if(type==="meal"){
-      saveEntry({type:"meal", date, start, minutes:0, createdAt:new Date().toISOString()});
+      if(editing) updateEntry(editing, {date, start});
+      else saveEntry({type:"meal", date, start, minutes:0, createdAt:new Date().toISOString()});
       return;
     }
     if(type==="diaper"){
-      saveEntry({type:"diaper", date, start, kind:state.diaperKind, minutes:0, createdAt:new Date().toISOString()});
+      if(editing) updateEntry(editing, {date, start, kind:state.diaperKind});
+      else saveEntry({type:"diaper", date, start, kind:state.diaperKind, minutes:0, createdAt:new Date().toISOString()});
       return;
     }
     const end=$("#fEnd").value;
     if(!end){ // 자는 중으로 저장
+      if(editing){ alert("깬 시각을 입력해 주세요."); return; }
       const og = ongoingSleep();
       if(og){ alert("이미 자는 중인 기록이 있어요. 먼저 잠깸을 기록해 주세요."); closeSheet(); openWakeSheet(og.id); return; }
       saveEntry({type, date, start, end:null, minutes:0, createdAt:new Date().toISOString()});
@@ -766,7 +801,8 @@ document.addEventListener("click", ev=>{
     let minutes = hm2min(end)-hm2min(start);
     if(minutes<=0) minutes += 1440; // 자정 넘김
     if(minutes>=1440){ alert("수면 시간이 24시간을 넘을 수 없어요."); return; }
-    saveEntry({type, date, start, end, minutes, createdAt:new Date().toISOString()});
+    if(editing) updateEntry(editing, {date, start, end, minutes});
+    else saveEntry({type, date, start, end, minutes, createdAt:new Date().toISOString()});
   }
 });
 document.addEventListener("change", ev=>{
