@@ -44,7 +44,10 @@
 invest/index.html               앱 화면 (시세 타일, 5분봉 차트, 백테스트)
 invest/vendor/chart.umd.js      Chart.js 4.4.7 (MIT)
 scripts/fetch-market-data.mjs   Yahoo Finance 에서 시세·일봉을 받아 JSON 으로 저장
-.github/workflows/market-data.yml  10분마다 위 스크립트를 실행해 `data` 브랜치에 저장
+scripts/fetch-stocks.mjs        S&P 500 전 종목·주요 ETF 의 일봉·5분봉을 종목별 JSON 으로 저장
+scripts/yahoo.mjs               두 스크립트가 함께 쓰는 Yahoo 호출 헬퍼
+.github/workflows/market-data.yml  10분마다 시세 스크립트를 실행해 `data` 브랜치에 저장
+.github/workflows/stocks-data.yml  하루 한 번 종목 스크립트를 실행해 `stocks` 브랜치에 저장
 ```
 
 - **시세**: GitHub Actions 가 10분마다 Yahoo Finance(약 15분 지연)에서 받아 `data` 브랜치의 `latest.json`, `intraday.json` 에 저장합니다. 앱은 `raw.githubusercontent.com` 에서 이 파일을 읽고 5분마다 다시 확인합니다. 실제 시세 대비 최대 20~25분 정도 늦을 수 있습니다.
@@ -52,10 +55,13 @@ scripts/fetch-market-data.mjs   Yahoo Finance 에서 시세·일봉을 받아 JS
 - **배당 재투자**: ETF(QQQ, SPY)는 가격과 총수익(Yahoo 수정 종가) 두 시계열을 모두 저장하고, 지수는 총수익 지수(^XNDX, ^SP500TR)를 별도로 받아 짝지어 씁니다. 앱의 "배당" 선택으로 재투자 포함/미포함을 바꿉니다. 선물(NQ)은 가격에 배당 기대치가 반영되어 있어 옵션이 없습니다.
 - 신호는 당일 종가로 계산하고 다음 거래일 종가에 체결하는 것으로 가정합니다. 선물 롤오버·증거금·레버리지는 반영하지 않습니다.
 
+- **종목 탭**: 별도 워크플로(`stocks-data.yml`)가 하루 한 번(평일 22:40 UTC, 미국 장 마감 후) 위키백과의 S&P 500 구성종목 표를 읽어 전 종목과 주요 ETF 32개의 일봉 전체·최근 5일 5분봉을 받아 `stocks` 브랜치에 종목별 JSON 으로 저장합니다. 앱은 목록(`index.json`)만 먼저 읽고 종목을 고를 때 해당 파일을 가져옵니다. 1D·5D·1M·6M·YTD·1Y·5Y·MAX 구간 차트를 제공합니다.
+- **비교 탭**: 종목·ETF·지수·선물을 최대 4개까지 같은 기간, 같은 시작 금액(1만 달러 또는 1천만 원)으로 비교합니다. 총수익률, 연평균, 최대 낙폭, 변동성, 샤프, 최악·최고의 해를 표로, 성장 곡선과 낙폭을 그래프로 보여줍니다.
+
 ## 처음 켤 때
 
 1. 이 폴더와 워크플로가 **기본 브랜치**에 있어야 예약 실행이 됩니다 (GitHub 은 기본 브랜치의 워크플로만 스케줄로 돌립니다).
-2. 저장소 **Actions** 탭 → `Market data snapshot` → **Run workflow** 로 한 번 수동 실행합니다. 성공하면 `data` 브랜치가 생깁니다.
+2. 저장소 **Actions** 탭 → `Market data snapshot` → **Run workflow** 로 한 번 수동 실행합니다. 성공하면 `data` 브랜치가 생깁니다. 종목 탭을 쓰려면 `Stock history snapshot` 도 한 번 실행합니다 (약 10분, `stocks` 브랜치 생성).
 3. **Settings → Pages** 에서 배포 브랜치를 고르면 `https://<계정>.github.io/app/invest/` 에서 열립니다.
 4. 공개 저장소는 Actions 실행이 무료입니다. 60일간 커밋이 없으면 GitHub 이 예약 실행을 자동으로 멈추므로, 멈추면 Actions 탭에서 다시 켜 주세요.
 

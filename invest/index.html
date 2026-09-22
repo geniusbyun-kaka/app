@@ -13,7 +13,7 @@
   color-scheme:light;
   --bg:#F3F5F4; --surface:#FFFFFF; --surface-2:#EAEEEC; --ink:#151A1E; --ink-2:#4C575E; --ink-3:#7B868D; --line:#D8DEDB; --line-2:#E8ECEA;
   --accent:#1E6E8C; --accent-ink:#FFFFFF; --up:#CF3639; --down:#2A62D4; --flat:#7B868D;
-  --nq:#1E6E8C; --fx:#B0651C; --strat:#6A47B8; --bench:#7A868E; --grid:#E4E8E6;
+  --nq:#1E6E8C; --fx:#B0651C; --strat:#6A47B8; --c4:#2F8F5B; --bench:#7A868E; --grid:#E4E8E6;
   --shadow:0 1px 2px rgba(20,30,40,.06), 0 6px 20px -12px rgba(20,30,40,.18);
   --radius:10px; --font:"IBM Plex Sans KR","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
 }
@@ -22,7 +22,7 @@
     color-scheme:dark;
     --bg:#0F1417; --surface:#171D22; --surface-2:#1F272D; --ink:#E8ECEE; --ink-2:#A9B4BA; --ink-3:#74818A; --line:#2A343B; --line-2:#222B31;
     --accent:#4FA3C4; --accent-ink:#0B1216; --up:#F0625F; --down:#6C93F0; --flat:#8A969E;
-    --nq:#4FA3C4; --fx:#E1934A; --strat:#A48BE6; --bench:#8A969E; --grid:#232D33;
+    --nq:#4FA3C4; --fx:#E1934A; --strat:#A48BE6; --c4:#5FC08A; --bench:#8A969E; --grid:#232D33;
     --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 20px -12px rgba(0,0,0,.6);
   }
 }
@@ -30,7 +30,7 @@
   color-scheme:dark;
   --bg:#0F1417; --surface:#171D22; --surface-2:#1F272D; --ink:#E8ECEE; --ink-2:#A9B4BA; --ink-3:#74818A; --line:#2A343B; --line-2:#222B31;
   --accent:#4FA3C4; --accent-ink:#0B1216; --up:#F0625F; --down:#6C93F0; --flat:#8A969E;
-  --nq:#4FA3C4; --fx:#E1934A; --strat:#A48BE6; --bench:#8A969E; --grid:#232D33;
+  --nq:#4FA3C4; --fx:#E1934A; --strat:#A48BE6; --c4:#5FC08A; --bench:#8A969E; --grid:#232D33;
   --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 20px -12px rgba(0,0,0,.6);
 }
 *{box-sizing:border-box}
@@ -144,6 +144,43 @@ td.txt{font-family:var(--font)}
 .verdict{font-size:13.5px;line-height:1.6}
 .verdict strong{font-weight:600}
 
+/* stocks */
+.stock-tools{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr);gap:10px;margin-bottom:10px}
+.stock-tools input,.stock-tools select,.cmp-inputs input,.cmp-inputs select,.cmp-dates input{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 10px;font-size:14px;min-width:0;width:100%}
+.stock-list{max-height:330px;overflow:auto;border:1px solid var(--line);border-radius:8px}
+.stock-list table{font-size:13px}
+.stock-list th{position:sticky;top:0;background:var(--surface);z-index:1}
+.stock-list tbody tr{cursor:pointer}
+.stock-list tbody tr:hover{background:var(--surface-2)}
+.stock-list tbody tr[aria-selected="true"]{background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.stock-list td.sym{font-weight:600}
+.stock-list td.name{font-family:var(--font);max-width:260px;overflow:hidden;text-overflow:ellipsis;color:var(--ink-2)}
+.stock-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.stock-head .ttl h3{font-size:18px}
+.stock-head .ttl .sub{font-size:12.5px;color:var(--ink-3);margin-top:2px}
+.stock-head .ttl .sub .num{color:var(--ink-2)}
+.stock-price{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-top:8px}
+.stock-price .big{font-family:var(--mono);font-size:32px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.stock-price .chg{margin-top:0}
+.stock-price .when{font-size:12px;color:var(--ink-3);width:100%}
+.ranges{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:12px 0 8px;overflow-x:auto}
+.ranges button{background:none;border:0;border-bottom:2px solid transparent;padding:6px 10px;font-size:13px;font-weight:500;color:var(--ink-2);margin-bottom:-1px;font-family:var(--mono)}
+.ranges button[aria-pressed="true"]{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:4px 18px;margin-top:12px;font-size:12.5px}
+.stats div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed var(--line-2);padding:4px 0}
+.stats span:first-child{color:var(--ink-3)}
+.stats span:last-child{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.empty{padding:28px 0;text-align:center;color:var(--ink-3);font-size:13.5px}
+/* compare */
+.cmp-inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.cmp-inputs .field input{font-family:var(--mono);text-transform:uppercase}
+.cmp-inputs .field .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px;background:var(--c)}
+.cmp-row{display:flex;gap:10px 14px;flex-wrap:wrap;align-items:flex-end;margin-top:12px}
+.cmp-row .field{min-width:130px}
+.cmp-note{font-size:12.5px;color:var(--ink-2);margin-top:10px;line-height:1.6}
+.cmp-note .warn{color:#B07A00}
+td .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:8px;vertical-align:-1px;background:var(--c)}
+
 /* guide */
 .guide p+p{margin-top:8px}
 .guide ol,.guide ul{margin:8px 0 0;padding-left:20px}
@@ -205,6 +242,8 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
 
   <div class="tabs" role="tablist">
     <button class="tab" role="tab" aria-selected="true" data-tab="quotes" id="tab-quotes">시세</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="stocks" id="tab-stocks">종목</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="compare" id="tab-compare">비교</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="backtest" id="tab-backtest">백테스트</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="guide" id="tab-guide">안내</button>
   </div>
@@ -258,7 +297,6 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
         <div class="field"><label for="bt-currency">기준 통화</label><select id="bt-currency"><option value="USD">달러 (USD)</option><option value="KRW">원화 환산 (KRW)</option></select><span class="hint">원화 기준이면 환율 변동이 수익률에 반영됩니다</span></div>
         <div class="field"><label for="bt-capital">초기 투자금</label><input id="bt-capital" type="number" min="0" step="1000" value="10000"></div>
         <div class="field" data-p="smax smaf rsi"><label for="bt-cash">현금 보유 통화</label><select id="bt-cash"><option value="USD">달러로 보유</option><option value="KRW">원화로 보유 (환전)</option></select><span class="hint">매도 후 현금을 어떤 통화로 두는지</span></div>
-        <div class="field"><label for="bt-fee">거래 비용 (bp)</label><input id="bt-fee" type="number" min="0" max="500" step="1" value="5"><span class="hint">매매 1회당 금액의 만분율. 5bp = 0.05%</span></div>
       </div>
       <div class="strategy-desc" id="bt-desc"></div>
       <div class="form-actions">
@@ -299,12 +337,70 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
     </div>
   </section>
 
+  <!-- 종목 -->
+  <section class="panel" id="panel-stocks" role="tabpanel" hidden>
+    <div class="card">
+      <div class="card-head"><h3>S&amp;P 500 전 종목 · 주요 ETF</h3><span class="small faint" id="stocks-status">목록 불러오는 중</span></div>
+      <div class="stock-tools">
+        <input id="stock-search" type="search" placeholder="티커 또는 회사명 검색 (예: AAPL, Nvidia, TQQQ)" autocomplete="off">
+        <select id="stock-sector"><option value="">전체 섹터</option></select>
+        <select id="stock-sort"><option value="symbol">티커순</option><option value="chg-desc">등락률 높은순</option><option value="chg-asc">등락률 낮은순</option><option value="name">이름순</option></select>
+      </div>
+      <div class="stock-list"><table id="stock-table"><thead><tr><th>티커</th><th>종목</th><th>섹터</th><th>가격</th><th>전일비</th></tr></thead><tbody><tr><td class="txt faint" colspan="5">불러오는 중</td></tr></tbody></table></div>
+      <div class="small faint" style="margin-top:6px" id="stock-count"></div>
+    </div>
+    <div class="card" id="stock-detail">
+      <div class="empty">종목을 선택하면 30년 차트가 여기에 표시됩니다</div>
+    </div>
+  </section>
+
+  <!-- 비교 -->
+  <section class="panel" id="panel-compare" role="tabpanel" hidden>
+    <div class="card">
+      <div class="card-head"><h3>종목 비교</h3><span class="small faint">같은 기간, 같은 금액으로 시작했을 때</span></div>
+      <div class="cmp-inputs">
+        <div class="field"><label for="cmp-s1"><span class="sw" style="--c:var(--nq)"></span>종목 1</label><input id="cmp-s1" list="sym-list" value="QQQ" placeholder="티커"></div>
+        <div class="field"><label for="cmp-s2"><span class="sw" style="--c:var(--fx)"></span>종목 2</label><input id="cmp-s2" list="sym-list" value="TQQQ" placeholder="티커"></div>
+        <div class="field"><label for="cmp-s3"><span class="sw" style="--c:var(--strat)"></span>종목 3</label><input id="cmp-s3" list="sym-list" placeholder="(선택)"></div>
+        <div class="field"><label for="cmp-s4"><span class="sw" style="--c:var(--c4)"></span>종목 4</label><input id="cmp-s4" list="sym-list" placeholder="(선택)"></div>
+      </div>
+      <datalist id="sym-list"></datalist>
+      <div class="cmp-row">
+        <div class="chips" aria-label="기간">
+          <button class="chip" type="button" data-cy="1">1년</button><button class="chip" type="button" data-cy="3">3년</button><button class="chip" type="button" data-cy="5">5년</button><button class="chip" type="button" data-cy="10">10년</button><button class="chip" type="button" data-cy="20">20년</button><button class="chip" type="button" data-cy="0">최대</button>
+        </div>
+        <div class="field cmp-dates"><label for="cmp-start">시작일</label><input id="cmp-start" type="date"></div>
+        <div class="field cmp-dates"><label for="cmp-end">종료일</label><input id="cmp-end" type="date"></div>
+        <div class="field"><label for="cmp-div">배당</label><select id="cmp-div"><option value="tr">재투자</option><option value="pr">미포함</option></select></div>
+        <div class="field"><label for="cmp-cur">기준 통화</label><select id="cmp-cur"><option value="USD">달러</option><option value="KRW">원화 환산</option></select></div>
+        <button class="btn primary" id="cmp-run" type="button">비교</button>
+      </div>
+      <div class="cmp-note" id="cmp-note"></div>
+    </div>
+    <div id="cmp-results" hidden>
+      <div class="panel">
+        <div class="card">
+          <div class="card-head"><h3 id="cmp-title">1만 달러의 성장</h3><label class="small"><input type="checkbox" id="cmp-log"> 로그 스케일</label></div>
+          <div class="chart tall"><canvas id="chart-cmp"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="tablewrap"><table id="cmp-table"><thead><tr><th>종목</th><th>시작</th><th>최종 금액</th><th>총 수익률</th><th>연평균</th><th>최대 낙폭</th><th>연 변동성</th><th>샤프</th><th>최악의 해</th><th>최고의 해</th></tr></thead><tbody></tbody></table></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h3>고점 대비 낙폭</h3></div>
+          <div class="chart short"><canvas id="chart-cmp-dd"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- 안내 -->
   <section class="panel guide" id="panel-guide" role="tabpanel" hidden>
     <div class="card">
       <h3>데이터는 어디서 오나요</h3>
       <p style="margin-top:8px">GitHub Actions 가 10분마다 Yahoo Finance 에서 나스닥 100 선물(NQ=F)과 원달러 환율(KRW=X) 시세를 받아 이 저장소의 <code>data</code> 브랜치에 저장하고, 이 페이지는 그 파일을 읽어 보여줍니다. Yahoo 자체가 거래소 대비 10~15분 지연이라 화면의 시세는 실제보다 최대 20~25분 정도 늦을 수 있습니다. 페이지는 5분마다 자동으로 새 스냅샷을 확인합니다.</p>
       <p>백테스트에 쓰는 일봉은 NQ 선물(2000년~), 나스닥 100 지수(1985년~), QQQ(1999년~), S&amp;P 500(1970년~), SPY(1993년~), 원달러 환율(2003년~)입니다. 원화 기준 백테스트는 환율 데이터가 있는 구간으로 자동으로 맞춰집니다.</p>
+      <p><strong>종목 탭</strong>은 별도 작업이 하루 한 번(미국 장 마감 후) S&amp;P 500 구성종목 전체와 주요 ETF 의 일봉 전체·최근 5일 5분봉을 받아 <code>stocks</code> 브랜치에 저장한 것을 읽습니다. 구성종목 목록은 위키백과의 S&amp;P 500 구성종목 표를 씁니다. 종목 시세는 전일 마감 기준이라 시세 탭보다 늦습니다. <strong>비교 탭</strong>은 여기 있는 종목과 시세 탭의 지수·선물을 같은 기간, 같은 시작 금액으로 나란히 놓고 봅니다.</p>
       <p><strong>배당 재투자</strong>를 켜면 ETF 는 분배금을 받은 날 같은 ETF 를 다시 산 것으로 계산한 총수익 가격(Yahoo 의 수정 종가)을 쓰고, 지수는 총수익 지수(나스닥 100 은 XNDX, S&amp;P 500 은 SP500TR)로 바꿔 계산합니다. 끄면 배당을 뺀 가격 수익률만 봅니다. 장기 백테스트에서는 이 차이가 연 1~2%p, 20년이면 총수익에서 수십 %p 차이가 납니다. 선물(NQ)은 가격에 배당 기대치가 이미 반영되어 있어 이 옵션이 없습니다.</p>
     </div>
     <div class="card">
@@ -343,6 +439,7 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
 const OWNER = "geniusbyun-kaka", REPO = "app";
 const params = new URLSearchParams(location.search);
 const DATA_BASE = params.get("data") || `https://raw.githubusercontent.com/${OWNER}/${REPO}/data/`;
+const STOCKS_BASE = params.get("stocks") || `https://raw.githubusercontent.com/${OWNER}/${REPO}/stocks/`;
 const REFRESH_MS = 5 * 60 * 1000;
 const NQ_MULTIPLIER = 20;
 
@@ -358,7 +455,7 @@ const fmt = {
   time: (iso) => { if (!iso) return "–"; const d = new Date(iso); return d.toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false }); },
   ago: (iso) => { if (!iso) return ""; const m = Math.round((Date.now() - new Date(iso)) / 60000); return m < 1 ? "방금" : m < 60 ? `${m}분 전` : m < 1440 ? `${Math.floor(m / 60)}시간 ${m % 60}분 전` : `${Math.floor(m / 1440)}일 전`; },
 };
-const state = { latest: null, intraday: null, history: null, charts: {}, lastBacktest: null };
+const state = { latest: null, intraday: null, history: null, charts: {}, lastBacktest: null, stockIndex: null, stocks: {}, stockSel: null, stockRange: "1Y", cmpLast: null };
 
 // ───────────────────────── 데이터 로딩 ─────────────────────────
 async function getJson(name) {
@@ -391,7 +488,7 @@ async function loadHistory() {
   try {
     const history = await getJson("history.json");
     state.history = history;
-    renderDailyTable(); initBacktestForm();
+    renderDailyTable(); initBacktestForm(); buildSymList();
   } catch (err) {
     $("#bt-datarange").textContent = `일봉 데이터를 불러오지 못했습니다 (${err.message})`;
     $("#daily-table tbody").innerHTML = `<tr><td class="txt faint" colspan="6">일봉 데이터를 불러오지 못했습니다</td></tr>`;
@@ -667,7 +764,7 @@ const TR_PROXY_ETF = { "^NDX": "QQQ", "^GSPC": "SPY" };
 function resolveSeries(assetSym, reinvest) {
   const h = state.history?.symbols || {}, s = h[assetSym]; if (!s) return null;
   const base = { dates: s.dates, close: s.close, from: s.from, to: s.to, label: s.name, note: "", divAvailable: true };
-  if (assetSym === "NQ=F") return { ...base, divAvailable: false, note: "선물 가격에는 배당 기대치가 이미 반영되어 있어 별도 옵션이 없습니다" };
+  if (assetSym === "NQ=F") return { ...base, divAvailable: false, note: "선물 가격에는 배당 기대치가 이미 반영되어 있어 두 선택의 결과가 같습니다" };
   if (s.tr) return reinvest ? { ...base, close: s.tr, label: `${s.name} (배당 재투자)` } : { ...base, label: `${s.name} (가격 수익률)` };
   const t = h[TR_INDEX[assetSym]];
   if (t) {
@@ -687,7 +784,6 @@ function refreshSeriesInfo() {
   const h = state.history?.symbols, fx = h?.["KRW=X"], ser = currentSeries();
   const divSel = $("#bt-div"), hint = $("#bt-div-hint");
   if (!ser) return;
-  divSel.disabled = !ser.divAvailable;
   hint.textContent = ser.note || (ser.close === h[$("#bt-asset").value]?.tr ? "분배금을 받은 날 같은 ETF 에 다시 산 것으로 계산" : "");
   $("#bt-datarange").textContent = `일봉 ${ser.from} ~ ${ser.to} · 환율 ${fx ? `${fx.from} ~ ${fx.to}` : "없음"}`;
   if ($("#bt-start").value && $("#bt-start").value < ser.from) $("#bt-start").value = ser.from;
@@ -727,7 +823,7 @@ function onCurrencyChange() {
 function readConfig() {
   const v = (id) => $(`#${id}`).value;
   return { asset: v("bt-asset"), strategy: v("bt-strategy"), fast: +v("bt-fast"), slow: +v("bt-slow"), rsiN: +v("bt-rsi-n"), rsiBuy: +v("bt-rsi-buy"), rsiSell: +v("bt-rsi-sell"),
-    monthly: +v("bt-monthly"), start: v("bt-start"), end: v("bt-end"), currency: v("bt-currency"), capital: +v("bt-capital"), cash: v("bt-cash"), feeBp: +v("bt-fee") };
+    monthly: +v("bt-monthly"), start: v("bt-start"), end: v("bt-end"), currency: v("bt-currency"), capital: +v("bt-capital"), cash: v("bt-cash"), feeBp: 0 };
 }
 function runFromForm() {
   const h = state.history?.symbols; if (!h) return;
@@ -826,7 +922,7 @@ function verdict(cfg, m, mb, data, note) {
     const better = m.cagr > mb.cagr, safer = m.mdd > mb.mdd;
     lines.push(`${period} 동안 이 전략의 연평균 수익률은 <strong>${fmt.pct(m.cagr)}</strong>로 바이앤홀드(${fmt.pct(mb.cagr)})보다 <strong>${better ? "높고" : "낮고"}</strong>, 최대 낙폭은 <strong>${fmt.pct(m.mdd)}</strong>로 바이앤홀드(${fmt.pct(mb.mdd)})보다 <strong>${safer ? "얕습니다" : "깊습니다"}</strong>.`);
     if (better && safer) lines.push(`수익과 방어 모두 앞선 결과입니다. 다만 매개변수(이평 기간 등)를 이 구간에 맞춘 것일 수 있으니, 기간을 바꿔 다시 돌려보고도 유지되는지 확인하는 것을 권합니다.`);
-    else if (!better && safer) lines.push(`수익은 양보하고 낙폭을 줄이는 전형적인 추세추종 결과입니다. 하락장을 피하는 대가로 상승장 초기 구간을 놓치며, 총 ${m.trades}회 매매 비용(${cfg.feeBp}bp)이 누적됩니다.`);
+    else if (!better && safer) lines.push(`수익은 양보하고 낙폭을 줄이는 전형적인 추세추종 결과입니다. 하락장을 피하는 대가로 상승장 초기 구간을 놓치며, 매매는 총 ${m.trades}회입니다.`);
     else if (better && !safer) lines.push(`수익은 높지만 낙폭이 더 깊어 위험 대비 효율(샤프 ${fmt.n(m.sharpe)} 대 ${fmt.n(mb.sharpe)})을 함께 봐야 합니다.`);
     else lines.push(`이 구간에서는 단순 보유가 더 나았습니다. 강한 상승 추세 자산에서는 매매 규칙이 오히려 수익을 깎는 경우가 흔합니다.`);
     if (cfg.cash === "KRW" && cfg.currency === "KRW") lines.push(`현금은 원화로 보유한다고 가정했으므로 매도 중에는 환율 변동의 영향을 받지 않습니다.`);
@@ -838,10 +934,12 @@ function verdict(cfg, m, mb, data, note) {
 // ───────────────────────── 탭 · 이벤트 ─────────────────────────
 function selectTab(name) {
   $$(".tab").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.tab === name)));
-  ["quotes", "backtest", "guide"].forEach((p) => { $(`#panel-${p}`).hidden = p !== name; });
+  ["quotes", "stocks", "compare", "backtest", "guide"].forEach((p) => { $(`#panel-${p}`).hidden = p !== name; });
   try { localStorage.setItem("md:tab", name); } catch {}
   if (name === "quotes") renderQuotes();
   if (name === "backtest" && state.lastBacktest) renderBacktest();
+  if (name === "stocks") ensureStockIndex().catch(() => {});
+  if (name === "compare") ensureStockIndex().catch(() => {}).then(() => { if (state.cmpLast) renderCompare(); else if (state.history) runCompare(true); });
 }
 $$(".tab").forEach((t) => t.addEventListener("click", () => selectTab(t.dataset.tab)));
 $("#refresh").addEventListener("click", loadAll);
@@ -851,19 +949,261 @@ $("#bt-currency").addEventListener("change", onCurrencyChange);
 $("#bt-asset").addEventListener("change", () => { if (state.history) refreshSeriesInfo(); });
 $("#bt-div").addEventListener("change", () => { if (state.history) refreshSeriesInfo(); });
 $("#bt-log").addEventListener("change", () => state.lastBacktest && renderBacktest());
-$$(".chip").forEach((c) => c.addEventListener("click", () => setYears(+c.dataset.years)));
+$$(".chip[data-years]").forEach((c) => c.addEventListener("click", () => setYears(+c.dataset.years)));
 window.addEventListener("resize", () => { if (!$("#panel-quotes").hidden) renderQuotes(); });
-matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { renderQuotes(); if (state.lastBacktest) renderBacktest(); });
-new MutationObserver(() => { renderQuotes(); if (state.lastBacktest) renderBacktest(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+const rerenderAll = () => { renderQuotes(); if (state.lastBacktest) renderBacktest(); if (state.stockSel) renderStockDetail(); if (state.cmpLast) renderCompare(); };
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", rerenderAll);
+new MutationObserver(rerenderAll).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+// 종목 탭 이벤트
+["input", "change"].forEach((ev) => { $("#stock-search").addEventListener(ev, renderStockList); });
+$("#stock-search").addEventListener("keydown", (e) => { if (e.key === "Enter") { const first = $("#stock-table tbody tr[data-sym]"); if (first) selectStock(first.dataset.sym); } });
+$("#stock-sector").addEventListener("change", renderStockList);
+$("#stock-sort").addEventListener("change", renderStockList);
+$("#stock-table").addEventListener("click", (e) => { const tr = e.target.closest("tr[data-sym]"); if (tr) selectStock(tr.dataset.sym); });
+$("#stock-detail").addEventListener("click", (e) => {
+  const r = e.target.closest("[data-range]"); if (r) { state.stockRange = r.dataset.range; try { localStorage.setItem("md:range", state.stockRange); } catch {} renderStockDetail(); }
+  const c = e.target.closest("[data-compare]"); if (c) { addToCompare(c.dataset.compare); }
+});
+// 비교 탭 이벤트
+$("#cmp-run").addEventListener("click", () => runCompare(false));
+$("#cmp-log").addEventListener("change", () => state.cmpLast && renderCompare());
+$$("[data-cy]").forEach((c) => c.addEventListener("click", () => { setCompareYears(+c.dataset.cy); runCompare(false); }));
 setInterval(() => { if (document.visibilityState === "visible") loadLive(); }, REFRESH_MS);
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && state.latest && Date.now() - new Date(state.latest.updated) > REFRESH_MS) loadLive(); });
+
+// ───────────────────────── 종목 (S&P 500 · ETF) ─────────────────────────
+async function getStocksJson(name) {
+  const res = await fetch(`${STOCKS_BASE}${name}?t=${Date.now()}`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`${name}: HTTP ${res.status}`);
+  return res.json();
+}
+function expandDates(d0, gaps) {
+  const out = [d0]; let t = new Date(d0 + "T00:00:00Z").getTime();
+  for (const g of gaps) { t += g * 86400000; out.push(new Date(t).toISOString().slice(0, 10)); }
+  return out;
+}
+function buildSymList() {
+  const core = Object.keys(state.history?.symbols || {}).filter((s) => s !== "KRW=X").map((s) => `<option value="${s}">${state.history.symbols[s].name}</option>`);
+  const stocks = (state.stockIndex?.items || []).map((x) => `<option value="${x.symbol}">${x.name}</option>`);
+  $("#sym-list").innerHTML = [...core, ...stocks].join("");
+}
+let stockIndexPromise = null;
+function ensureStockIndex() {
+  if (!stockIndexPromise) stockIndexPromise = getStocksJson("index.json").then((idx) => {
+    state.stockIndex = idx;
+    const sectors = [...new Set(idx.items.map((x) => x.sector))].sort((a, b) => a.localeCompare(b));
+    $("#stock-sector").innerHTML = `<option value="">전체 섹터</option>` + sectors.map((s) => `<option value="${s}">${s}</option>`).join("");
+    $("#stocks-status").textContent = `${idx.count}종목 · ${fmt.time(idx.updated)} 기준${idx.failed?.length ? ` · ${idx.failed.length}개 갱신 실패` : ""}`;
+    buildSymList();
+    renderStockList();
+    const pick = idx.items.find((x) => x.symbol === state.stockSel) || idx.items.find((x) => x.symbol === "AAPL") || idx.items[0];
+    if (pick) selectStock(pick.symbol);
+    return idx;
+  }).catch((err) => {
+    stockIndexPromise = null;
+    $("#stocks-status").textContent = "종목 데이터 없음";
+    $("#stock-table tbody").innerHTML = `<tr><td class="txt faint" colspan="5">종목 스냅샷이 아직 없습니다. Actions 탭에서 <code>Stock history snapshot</code> 워크플로를 한 번 실행하세요. (${err.message})</td></tr>`;
+    throw err;
+  });
+  return stockIndexPromise;
+}
+async function loadStock(sym) {
+  if (state.stocks[sym]) return state.stocks[sym];
+  const d = await getStocksJson(`stocks/${sym}.json`);
+  d.daily.dates = expandDates(d.daily.d0, d.daily.gaps);
+  state.stocks[sym] = d;
+  return d;
+}
+function renderStockList() {
+  const idx = state.stockIndex; if (!idx) return;
+  const q = $("#stock-search").value.trim().toLowerCase(), sector = $("#stock-sector").value, sort = $("#stock-sort").value;
+  let items = idx.items.filter((x) => (!sector || x.sector === sector) && (!q || x.symbol.toLowerCase().includes(q) || x.name.toLowerCase().includes(q)));
+  if (q) items.sort((a, b) => (a.symbol.toLowerCase().startsWith(q) ? 0 : 1) - (b.symbol.toLowerCase().startsWith(q) ? 0 : 1));
+  else if (sort === "chg-desc") items.sort((a, b) => (b.changePercent ?? -1e9) - (a.changePercent ?? -1e9));
+  else if (sort === "chg-asc") items.sort((a, b) => (a.changePercent ?? 1e9) - (b.changePercent ?? 1e9));
+  else if (sort === "name") items.sort((a, b) => a.name.localeCompare(b.name));
+  const shown = items.slice(0, 200);
+  const cls = (v) => v > 0 ? "pos" : v < 0 ? "neg" : "";
+  $("#stock-table tbody").innerHTML = shown.length ? shown.map((x) => `<tr data-sym="${x.symbol}" aria-selected="${x.symbol === state.stockSel}"><td class="sym">${x.symbol}</td><td class="name">${x.name}</td><td class="txt small faint">${x.sector}</td><td>${fmt.n(x.price)}</td><td class="${cls(x.changePercent)}">${x.changePercent == null ? "–" : fmt.signed(x.changePercent) + "%"}</td></tr>`).join("") : `<tr><td class="txt faint" colspan="5">검색 결과가 없습니다</td></tr>`;
+  $("#stock-count").textContent = items.length > shown.length ? `${items.length}개 중 ${shown.length}개 표시. 검색어로 좁혀 보세요.` : `${items.length}개`;
+}
+async function selectStock(sym) {
+  state.stockSel = sym;
+  try { localStorage.setItem("md:stock", sym); } catch {}
+  $$("#stock-table tbody tr").forEach((tr) => tr.setAttribute("aria-selected", String(tr.dataset.sym === sym)));
+  $("#stock-detail").innerHTML = `<div class="empty">${sym} 불러오는 중</div>`;
+  try { await loadStock(sym); renderStockDetail(); }
+  catch (err) { $("#stock-detail").innerHTML = `<div class="empty">${sym} 데이터를 불러오지 못했습니다 (${err.message})</div>`; }
+}
+const RANGES = ["1D", "5D", "1M", "6M", "YTD", "1Y", "5Y", "MAX"];
+function sliceRange(d, range) {
+  const tz = d.timezone || "America/New_York";
+  if (range === "1D" || range === "5D") {
+    const dayFmt = new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" });
+    const days = d.intraday.t.map((t) => dayFmt.format(new Date(t * 1000)));
+    let idx = d.intraday.t.map((_, i) => i);
+    if (range === "1D") { const last = days.at(-1); idx = idx.filter((i) => days[i] === last); }
+    return { kind: "intraday", t: idx.map((i) => d.intraday.t[i]), values: idx.map((i) => d.intraday.c[i]), days: idx.map((i) => days[i]), prev: range === "1D" ? d.intraday.previousClose : null, tz };
+  }
+  const { dates, close } = d.daily, end = dates.length - 1, endDate = new Date(dates[end]);
+  let startDate;
+  if (range === "1M") { startDate = new Date(endDate); startDate.setMonth(startDate.getMonth() - 1); }
+  else if (range === "6M") { startDate = new Date(endDate); startDate.setMonth(startDate.getMonth() - 6); }
+  else if (range === "YTD") { startDate = new Date(Date.UTC(endDate.getUTCFullYear(), 0, 1)); }
+  else if (range === "1Y") { startDate = new Date(endDate); startDate.setFullYear(startDate.getFullYear() - 1); }
+  else if (range === "5Y") { startDate = new Date(endDate); startDate.setFullYear(startDate.getFullYear() - 5); }
+  else startDate = new Date(dates[0]);
+  const s = startDate.toISOString().slice(0, 10);
+  let i0 = dates.findIndex((x) => x >= s); if (i0 < 0) i0 = 0; if (i0 > 0 && range !== "MAX" && range !== "YTD") i0--; // 기준점: 기간 시작 직전 종가
+  return { kind: "daily", dates: dates.slice(i0), values: close.slice(i0), prev: null };
+}
+function renderStockDetail() {
+  const d = state.stocks[state.stockSel]; if (!d) return;
+  const range = RANGES.includes(state.stockRange) ? state.stockRange : "1Y";
+  const sl = sliceRange(d, range), q = d.quote;
+  const first = sl.values[0], last = sl.values.at(-1);
+  const base = range === "1D" ? (sl.prev ?? first) : first;
+  const chg = last - base, chgPct = base ? chg / base : null;
+  const dir = chg > 0 ? "up" : chg < 0 ? "down" : "flat", arrow = dir === "up" ? "▲" : dir === "down" ? "▼" : "";
+  const rangeLabel = { "1D": "당일", "5D": "5일", "1M": "1개월", "6M": "6개월", YTD: "연초 대비", "1Y": "1년", "5Y": "5년", MAX: `전체 (${d.daily.from.slice(0, 4)}년~)` }[range];
+  const stat = (k, v) => `<div><span>${k}</span><span>${v}</span></div>`;
+  $("#stock-detail").innerHTML = `
+    <div class="stock-head">
+      <div class="ttl"><h3>${d.name}</h3><div class="sub"><span class="num">${d.symbol}</span> · ${d.sector}${d.kind === "etf" ? " · ETF" : ""}</div></div>
+      <div><button class="btn" type="button" data-compare="${d.symbol}">비교에 추가</button></div>
+    </div>
+    <div class="stock-price">
+      <span class="big">${fmt.n(q.price)}<span class="cur" style="font-family:var(--font);font-size:13px;color:var(--ink-3);margin-left:4px">${d.currency}</span></span>
+      <span class="chg ${dir}">${arrow} ${fmt.n(Math.abs(chg))} (${fmt.signed(chgPct * 100)}%) <span style="font-weight:400;font-family:var(--font)">${rangeLabel}</span></span>
+      <span class="when">${q.marketTime ? `마감 ${fmt.time(q.marketTime)} 기준 · 스냅샷 ${fmt.ago(d.updated)}` : ""}</span>
+    </div>
+    <div class="ranges" role="group">${RANGES.map((r) => `<button type="button" data-range="${r}" aria-pressed="${r === range}">${r}</button>`).join("")}</div>
+    <div class="chart tall"><canvas id="chart-stock"></canvas></div>
+    <div class="stats">
+      ${stat("시가", fmt.n(q.open))}${stat("고가", fmt.n(q.dayHigh))}${stat("저가", fmt.n(q.dayLow))}${stat("전일 종가", fmt.n(q.previousClose))}
+      ${stat("52주 고가", fmt.n(q.fiftyTwoWeekHigh))}${stat("52주 저가", fmt.n(q.fiftyTwoWeekLow))}${stat("거래량", q.volume == null ? "–" : fmt.n(q.volume, 0))}${stat("데이터 시작", d.daily.from)}
+    </div>`;
+  const color = dir === "down" ? css("--down") : css("--up");
+  if (sl.kind === "intraday") {
+    const timeFmt = new Intl.DateTimeFormat("ko-KR", { timeZone: sl.tz, hour: "2-digit", minute: "2-digit", hour12: false });
+    const dayFmtK = new Intl.DateTimeFormat("en-US", { timeZone: sl.tz, month: "numeric", day: "numeric" });
+    const labels = sl.t.map((t) => range === "1D" ? timeFmt.format(new Date(t * 1000)) : dayFmtK.format(new Date(t * 1000)));
+    const dayStart = new Set(); const seen = new Set(); sl.days.forEach((dd, i) => { if (!seen.has(dd)) { seen.add(dd); dayStart.add(i); } });
+    const points = sl.values.map((v, i) => ({ x: i, y: v }));
+    const datasets = [{ label: d.symbol, data: points, borderColor: color, backgroundColor: color + "22", fill: true }];
+    if (sl.prev != null) datasets.push({ label: "전일 종가", data: [{ x: 0, y: sl.prev }, { x: points.length - 1, y: sl.prev }], borderColor: css("--ink-3"), borderDash: [4, 4], borderWidth: 1, fill: false, pointHitRadius: 0 });
+    const opts = baseOptions(labels, { yFmt: (v) => fmt.n(v, v < 10 ? 2 : 0), tooltipTitle: (i) => `${dayFmtK.format(new Date(sl.t[i] * 1000))} ${timeFmt.format(new Date(sl.t[i] * 1000))} (거래소 시간)`, tooltipLabel: (it) => it.datasetIndex === 0 ? `${fmt.n(it.parsed.y)} (${fmt.pct(it.parsed.y / base - 1)})` : `전일 종가 ${fmt.n(sl.prev)}`, xTick: (i) => range === "1D" ? labels[i] : (dayStart.has(i) ? labels[i] : "") });
+    if (range === "5D") { opts.scales.x.ticks.autoSkip = true; opts.scales.x.ticks.autoSkipPadding = 24; opts.scales.x.ticks.maxTicksLimit = undefined; opts.scales.x.afterBuildTicks = (scale) => { const minGap = Math.ceil(points.length * 56 / Math.max(scale.chart.width || 320, 1)); let lastI = -Infinity; scale.ticks = [...dayStart].filter((v) => { if (v - lastI < minGap) return false; lastI = v; return true; }).map((v) => ({ value: v })); }; }
+    makeChart("chart-stock", { type: "line", data: { datasets }, options: opts });
+  } else {
+    const labels = sl.dates, span = (new Date(labels.at(-1)) - new Date(labels[0])) / 864e5;
+    const tick = span > 900 ? (i) => labels[i].slice(0, 4) : span > 120 ? (i) => labels[i].slice(0, 7) : (i) => labels[i].slice(5).replace("-", "/");
+    const opts = baseOptions(labels, { yFmt: (v) => fmt.n(v, v < 10 ? 2 : 0), tooltipLabel: (it) => `${fmt.n(it.parsed.y)} (${fmt.pct(it.parsed.y / base - 1)} 기간 시작 대비)`, xTick: tick });
+    makeChart("chart-stock", { type: "line", data: { datasets: [{ label: d.symbol, data: sl.values.map((v, i) => ({ x: i, y: v })), borderColor: color, backgroundColor: color + "22", fill: true }] }, options: opts });
+  }
+}
+
+// ───────────────────────── 비교 ─────────────────────────
+const CMP_COLORS = ["--nq", "--fx", "--strat", "--c4"];
+function normSym(s) { return s.trim().toUpperCase().replace(/\./g, "-"); }
+// 통합 시계열: 시세 탭의 지수·선물(history.json) 또는 종목 파일. reinvest 면 총수익(tr) 우선.
+async function getSeries(symRaw, reinvest) {
+  const sym = normSym(symRaw); if (!sym) return null;
+  const h = state.history?.symbols || {};
+  const fromHistory = (s, label) => ({ symbol: sym, label, dates: s.dates, close: s.close, tr: s.tr || null });
+  if (h[sym]) {
+    const s = h[sym];
+    if (reinvest && !s.tr && TR_INDEX[sym] && h[TR_INDEX[sym]]) { const t = h[TR_INDEX[sym]]; return { ...fromHistory(t, t.name), symbol: sym, trNote: `${t.name} 사용` }; }
+    return fromHistory(s, s.name);
+  }
+  const idxItem = state.stockIndex?.items.find((x) => x.symbol === sym);
+  if (!idxItem) return null;
+  const d = await loadStock(sym);
+  return { symbol: sym, label: d.name, dates: d.daily.dates, close: d.daily.close, tr: d.daily.tr };
+}
+function setCompareYears(years) {
+  const end = state.history?.symbols?.["^GSPC"]?.to || new Date().toISOString().slice(0, 10);
+  let start = "1970-01-01";
+  if (years > 0) { const dt = new Date(end); dt.setFullYear(dt.getFullYear() - years); start = dt.toISOString().slice(0, 10); }
+  $("#cmp-start").value = start; $("#cmp-end").value = end;
+}
+async function runCompare(auto) {
+  if (!state.history) return;
+  const reinvest = $("#cmp-div").value === "tr", cur = $("#cmp-cur").value, fxSym = state.history.symbols["KRW=X"];
+  if (!$("#cmp-start").value) setCompareYears(10);
+  const inputs = ["cmp-s1", "cmp-s2", "cmp-s3", "cmp-s4"].map((id) => $(`#${id}`).value).filter((v) => v.trim());
+  if (inputs.length < 1) return;
+  $("#cmp-note").innerHTML = "불러오는 중";
+  const notes = [], series = [];
+  for (const [i, raw] of inputs.entries()) {
+    let s;
+    try { s = await getSeries(raw, reinvest); } catch (err) { notes.push(`<span class="warn">${normSym(raw)}: 불러오지 못했습니다 (${err.message})</span>`); continue; }
+    if (!s) { notes.push(`<span class="warn">${normSym(raw)}: 목록에 없는 티커입니다</span>`); continue; }
+    const useTr = reinvest && s.tr;
+    if (reinvest && !s.tr && !s.trNote && !/=F$/.test(s.symbol)) notes.push(`${s.symbol}: 총수익 데이터가 없어 가격 수익률로 계산`);
+    if (s.trNote) notes.push(`${s.symbol}: ${s.trNote}`);
+    series.push({ ...s, values: useTr ? s.tr : s.close, color: css(CMP_COLORS[series.length]) });
+  }
+  if (!series.length) { $("#cmp-note").innerHTML = notes.join("<br>"); return; }
+  // 공통 구간: 요청 시작일과 각 종목 데이터 시작일 중 가장 늦은 날
+  let start = $("#cmp-start").value, end = $("#cmp-end").value;
+  const clampers = series.filter((s) => s.dates[0] > start);
+  if (clampers.length) { const c = clampers.reduce((a, b) => a.dates[0] > b.dates[0] ? a : b); notes.unshift(`${c.symbol} 데이터가 ${c.dates[0]}부터 있어 비교 시작일을 맞췄습니다`); start = c.dates[0]; }
+  if (cur === "KRW") { if (!fxSym) { notes.push('<span class="warn">환율 데이터가 없어 달러로 계산</span>'); } else if (start < fxSym.from) { notes.unshift(`환율 데이터가 ${fxSym.from}부터 있어 시작일을 맞췄습니다`); start = fxSym.from; } }
+  // 기준 날짜축: 첫 종목의 거래일. 다른 종목은 같은 날 또는 직전 거래일 값으로 맞춘다.
+  const baseS = series[0];
+  let i0 = baseS.dates.findIndex((d) => d >= start), i1 = baseS.dates.findLastIndex((d) => d <= end);
+  if (i0 < 0 || i1 < 0 || i1 - i0 < 20) { $("#cmp-note").innerHTML = '<span class="warn">기간이 너무 짧거나 데이터가 없습니다</span>'; return; }
+  const dates = baseS.dates.slice(i0, i1 + 1);
+  const fx = cur === "KRW" && fxSym ? alignFx(dates, fxSym) : null;
+  const startAmt = cur === "KRW" ? 1e7 : 1e4;
+  const lines = series.map((s) => {
+    const aligned = alignFx(dates, { dates: s.dates, close: s.values });
+    const p0 = aligned[0];
+    const eq = aligned.map((p, i) => p == null || p0 == null ? null : startAmt * (p / p0) * (fx ? fx[i] / fx[0] : 1));
+    return { ...s, equity: eq };
+  }).filter((l) => l.equity[0] != null);
+  state.cmpLast = { dates, lines, cur, startAmt, reinvest, start: dates[0], end: dates.at(-1) };
+  $("#cmp-note").innerHTML = notes.join("<br>") || `${dates[0]} ~ ${dates.at(-1)} · ${reinvest ? "배당 재투자 포함" : "가격 수익률"} · ${cur === "KRW" ? "원화 환산 (환율 변동 반영)" : "달러 기준"}`;
+  renderCompare();
+  if (!auto) $("#cmp-results").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+function renderCompare() {
+  const c = state.cmpLast; if (!c) return;
+  const { dates, lines, cur, startAmt } = c;
+  $("#cmp-title").textContent = `${cur === "KRW" ? "1천만 원" : "1만 달러"}의 성장 · ${c.start} ~ ${c.end}`;
+  const span = (new Date(dates.at(-1)) - new Date(dates[0])) / 864e5;
+  const tick = span > 900 ? (i) => dates[i].slice(0, 4) : span > 120 ? (i) => dates[i].slice(0, 7) : (i) => dates[i].slice(5).replace("-", "/");
+  const yFmt = (v) => cur === "KRW" ? (v >= 1e8 ? `${fmt.n(v / 1e8, 1)}억` : `${fmt.n(v / 1e4, 0)}만`) : `$${v >= 1e6 ? fmt.n(v / 1e6, 1) + "M" : v >= 1e3 ? fmt.n(v / 1e3, 0) + "k" : fmt.n(v, 0)}`;
+  const opts = baseOptions(dates, { yFmt, xTick: tick, tooltipLabel: (it) => `${it.dataset.label}: ${fmt.money(it.parsed.y, cur)} (${fmt.pct(it.parsed.y / startAmt - 1)})`, yType: $("#cmp-log").checked ? "logarithmic" : "linear" });
+  makeChart("chart-cmp", { type: "line", data: { datasets: lines.map((l) => ({ label: l.symbol, data: l.equity.map((v, i) => ({ x: i, y: v })), borderColor: l.color, fill: false })) }, options: opts });
+  const rows = lines.map((l) => {
+    const eq = l.equity.map((v) => v ?? NaN);
+    const m = metrics(eq, dates, { invested: startAmt, flows: [], trades: [], exposure: 1 });
+    const ys = yearlyReturns(eq, dates).filter((y) => isFinite(y.ret));
+    const worst = ys.reduce((a, b) => b.ret < a.ret ? b : a, ys[0]), best = ys.reduce((a, b) => b.ret > a.ret ? b : a, ys[0]);
+    return { l, m, worst, best };
+  });
+  const sgn = (v) => v > 0 ? "pos" : v < 0 ? "neg" : "";
+  $("#cmp-table tbody").innerHTML = rows.map(({ l, m, worst, best }) => `<tr><td class="txt"><span class="sw" style="--c:${l.color}"></span><strong>${l.symbol}</strong> <span class="faint small">${l.label}</span></td><td class="txt">${dates[0]}</td><td>${fmt.money(m.finalValue, cur)}</td><td class="${sgn(m.total)}">${fmt.pct(m.total)}</td><td class="${sgn(m.cagr)}">${fmt.pct(m.cagr)}</td><td class="neg">${fmt.pct(m.mdd)}</td><td>${fmt.pct(m.vol, 1, false)}</td><td>${fmt.n(m.sharpe)}</td><td class="neg">${worst ? `${worst.year} ${fmt.pct(worst.ret, 1)}` : "–"}</td><td class="pos">${best ? `${best.year} ${fmt.pct(best.ret, 1)}` : "–"}</td></tr>`).join("");
+  const ddOpts = baseOptions(dates, { yFmt: (v) => `${fmt.n(v * 100, 0)}%`, xTick: tick, tooltipLabel: (it) => `${it.dataset.label}: ${fmt.pct(it.parsed.y, 1, false)}`, yMax: 0 });
+  makeChart("chart-cmp-dd", { type: "line", data: { datasets: rows.map(({ l, m }) => ({ label: l.symbol, data: m.dd.map((v, i) => ({ x: i, y: v })), borderColor: l.color, borderWidth: 1.5, fill: false })) }, options: ddOpts });
+  $("#cmp-results").hidden = false;
+}
+function addToCompare(sym) {
+  const ids = ["cmp-s1", "cmp-s2", "cmp-s3", "cmp-s4"];
+  const vals = ids.map((id) => normSym($(`#${id}`).value));
+  if (!vals.includes(sym)) { const slot = ids[vals.findIndex((v) => !v)] || ids[3]; $(`#${slot}`).value = sym; }
+  selectTab("compare"); runCompare(false);
+}
 
 // ───────────────────────── 시작 ─────────────────────────
 updateParamVisibility();
 const cachedLatest = cacheGet("md:latest"), cachedIntraday = cacheGet("md:intraday");
 if (cachedLatest) { state.latest = cachedLatest; state.intraday = cachedIntraday; renderQuotes(); }
+try { state.stockRange = localStorage.getItem("md:range") || "1Y"; const ss = localStorage.getItem("md:stock"); if (ss) state.stockSel = ss; } catch {}
 try { const t = localStorage.getItem("md:tab"); if (t && t !== "quotes") selectTab(t); } catch {}
-loadAll();
+loadAll().then(() => { if (!$("#panel-compare").hidden && !state.cmpLast) runCompare(true); });
 })();
 </script>
 </body>
