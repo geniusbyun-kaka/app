@@ -31,6 +31,7 @@ const KNOWN = {
   "57636Q104": "MA", "023135106": "AMZN", "172967424": "C", "14040H105": "COF", "92343E102": "VRSN", "25754A201": "DPZ",
   "73278L105": "POOL", "21036P108": "STZ", "G0408V102": "AON", "02005N100": "ALLY", "82968B103": "SIRI", "16119P108": "CHTR",
   "546347105": "LPX", "872590104": "TMUS", "47233W109": "JEF", "526057104": "LEN", "526057302": "LEN-B", "422806109": "HEI-A", "422806208": "HEI",
+  "H1467J104": "CB", // Chubb 은 스위스 법인이라 CUSIP 이 H 로 시작하고 OpenFIGI 미국 거래소 조회에 안 잡힌다
 };
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -121,7 +122,7 @@ async function loadCache(name) { try { return JSON.parse(await readFile(path.joi
 // CUSIP → 티커 (OpenFIGI, 키 없이 분당 25회 · 요청당 10건)
 async function mapTickers(cusips, cache) {
   const map = { ...(cache || {}) };
-  const todo = cusips.filter((c) => !map[c]);
+  const todo = cusips.filter((c) => !map[c]?.ticker);
   for (let i = 0; i < todo.length; i += 10) {
     const batch = todo.slice(i, i + 10);
     try {
@@ -131,7 +132,7 @@ async function mapTickers(cusips, cache) {
       batch.forEach((c, k) => {
         const hits = data[k]?.data || [];
         const pick = hits.find((h) => h.exchCode === "US") || hits[0];
-        map[c] = pick ? { ticker: pick.ticker, name: pick.name || null } : { ticker: KNOWN[c] || null, name: null };
+        map[c] = pick?.ticker ? { ticker: pick.ticker.replace(/\//g, "-"), name: pick.name || null } : { ticker: KNOWN[c] || null, name: null };
       });
     } catch (err) {
       console.warn(`[13f] OpenFIGI 실패 (${err.message}) → 내장 매핑으로 대체`);
