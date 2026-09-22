@@ -21,7 +21,8 @@ const EDGAR_WWW = process.env.EDGAR_BASE || "https://www.sec.gov";
 const FIGI_BASE = process.env.FIGI_BASE || "https://api.openfigi.com";
 const QUARTERS = Number(process.env.QUARTERS || 21);
 // SEC 는 요청자를 식별할 수 있는 User-Agent 를 요구한다
-const UA = process.env.EDGAR_USER_AGENT || `market-desk/1.0 (${process.env.GITHUB_REPOSITORY || "personal"} via GitHub Actions)`;
+const UA = process.env.EDGAR_USER_AGENT?.trim() || `market-desk/1.0 (${process.env.GITHUB_REPOSITORY || "personal"} via GitHub Actions)`;
+if (!process.env.EDGAR_USER_AGENT?.trim()) console.warn("[13f] EDGAR_USER_AGENT 가 비어 있습니다. SEC 는 \"이름 이메일\" 형식의 User-Agent 를 요구하므로 403 이 날 수 있습니다.");
 
 // OpenFIGI 가 막혔을 때를 위한 최소 매핑 (버크셔 대형 보유 종목)
 const KNOWN = {
@@ -30,6 +31,9 @@ const KNOWN = {
   "57636Q104": "MA", "023135106": "AMZN", "172967424": "C", "14040H105": "COF", "92343E102": "VRSN", "25754A201": "DPZ",
   "73278L105": "POOL", "21036P108": "STZ", "G0408V102": "AON", "02005N100": "ALLY", "82968B103": "SIRI", "16119P108": "CHTR",
   "546347105": "LPX", "872590104": "TMUS", "47233W109": "JEF", "526057104": "LEN", "526057302": "LEN-B", "422806109": "HEI-A", "422806208": "HEI",
+  // 해외 법인(CUSIP 이 G/H 로 시작)은 OpenFIGI 미국 거래소 조회에 안 잡히는 경우가 있어 직접 적어둔다
+  "H1467J104": "CB", "G0403H108": "AON", "G85158106": "STNE", "G7709Q104": "RPRX", "G6683N103": "NU", "G6693N103": "NU",
+  "G0176J109": "ALLE", "G9001E102": "LILA", "G9001E128": "LILAK", "G5480U104": "LBTYA", "G5480U120": "LBTYK",
 };
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -42,6 +46,7 @@ async function edgar(url, asText = false) {
     const res = await fetch(url, { headers: { "User-Agent": UA, "Accept-Encoding": "gzip, deflate", Accept: asText ? "*/*" : "application/json" } });
     if (res.ok) return asText ? res.text() : res.json();
     if (res.status === 429 || res.status >= 500) { await sleep(3000 * (i + 1)); continue; }
+    if (res.status === 403) throw new Error(`SEC 가 요청을 거부했습니다 (403). SEC 는 자동 조회에 "이름 이메일" 형식의 User-Agent 를 요구합니다. 저장소 Settings → Secrets and variables → Actions 에 EDGAR_USER_AGENT 를 예: "Hong Gildong hong@example.com" 으로 추가하세요. 현재 UA: "${UA}"`);
     throw new Error(`${res.status} ${res.statusText} for ${url}`);
   }
   throw new Error(`EDGAR 응답 없음: ${url}`);
@@ -119,7 +124,7 @@ async function loadCache(name) { try { return JSON.parse(await readFile(path.joi
 // CUSIP → 티커 (OpenFIGI, 키 없이 분당 25회 · 요청당 10건)
 async function mapTickers(cusips, cache) {
   const map = { ...(cache || {}) };
-  const todo = cusips.filter((c) => !map[c]);
+  const todo = cusips.filter((c) => !map[c]?.ticker);
   for (let i = 0; i < todo.length; i += 10) {
     const batch = todo.slice(i, i + 10);
     try {
@@ -129,7 +134,7 @@ async function mapTickers(cusips, cache) {
       batch.forEach((c, k) => {
         const hits = data[k]?.data || [];
         const pick = hits.find((h) => h.exchCode === "US") || hits[0];
-        map[c] = pick ? { ticker: pick.ticker, name: pick.name || null } : { ticker: KNOWN[c] || null, name: null };
+        map[c] = pick?.ticker ? { ticker: pick.ticker.replace(/\//g, "-"), name: pick.name || null } : { ticker: KNOWN[c] || null, name: null };
       });
     } catch (err) {
       console.warn(`[13f] OpenFIGI 실패 (${err.message}) → 내장 매핑으로 대체`);
@@ -177,7 +182,7 @@ async function main() {
   }
   const cusips = [...new Set(quarters.flatMap((q) => q.holdings.map((h) => h.cusip)))];
   const tickerMap = await mapTickers(cusips, await loadCache("cusips.json"));
-  for (const q of quarters) for (const h of q.holdings) { h.ticker = tickerMap[h.cusip]?.ticker || null; }
+  for (const q of quarters) for (const h of q.holdings) { h.ticker = tickerMap[h.cusip]?.ticker?.replace(/\//g, "-") || null; }
   const out = { updated: new Date().toISOString(), cik: CIK, filer: "Berkshire Hathaway Inc", source: "SEC EDGAR 13F-HR · 티커: OpenFIGI", quarters, filings };
   await writeFile(path.join(OUT_DIR, "berkshire.json"), JSON.stringify(out));
   await writeFile(path.join(OUT_DIR, "cusips.json"), JSON.stringify(tickerMap));
