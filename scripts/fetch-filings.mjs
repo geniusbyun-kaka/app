@@ -182,7 +182,7 @@ async function main() {
   }
   const cusips = [...new Set(quarters.flatMap((q) => q.holdings.map((h) => h.cusip)))];
   const tickerMap = await mapTickers(cusips, await loadCache("cusips.json"));
-  for (const q of quarters) for (const h of q.holdings) { h.ticker = tickerMap[h.cusip]?.ticker || null; }
+  for (const q of quarters) for (const h of q.holdings) { h.ticker = tickerMap[h.cusip]?.ticker?.replace(/\//g, "-") || null; }
   const out = { updated: new Date().toISOString(), cik: CIK, filer: "Berkshire Hathaway Inc", source: "SEC EDGAR 13F-HR · 티커: OpenFIGI", quarters, filings };
   await writeFile(path.join(OUT_DIR, "berkshire.json"), JSON.stringify(out));
   await writeFile(path.join(OUT_DIR, "cusips.json"), JSON.stringify(tickerMap));
