@@ -67,6 +67,16 @@ header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:spac
 .notice code{font-family:var(--mono);font-size:12px;background:var(--surface-2);padding:1px 5px;border-radius:4px}
 .notice.error{border-left-color:var(--up)}
 
+/* ticker strip (접힌 시세) */
+.strip{display:flex;align-items:center;gap:6px 18px;flex-wrap:wrap;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:8px 14px;margin-bottom:14px;font-size:13px;color:var(--ink-2);cursor:pointer}
+.strip:hover{border-color:var(--ink-3)}
+.strip-item{display:inline-flex;align-items:baseline;gap:8px}
+.strip-item .k{font-weight:600;color:var(--ink-3);font-size:12px;letter-spacing:.02em}
+.strip-item .v{color:var(--ink);font-weight:600}
+.strip-item .d{font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums}
+.strip-item .d.up{color:var(--up)}.strip-item .d.down{color:var(--down)}
+.strip-hint{margin-left:auto;font-size:11.5px;color:var(--ink-3)}
+.strip[aria-expanded="true"] .strip-hint::after{content:" ▴"}.strip[aria-expanded="false"] .strip-hint::after{content:" ▾"}
 /* quote tiles */
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-bottom:18px}
 .tile{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px 12px;box-shadow:var(--shadow);position:relative;overflow:hidden}
@@ -181,6 +191,29 @@ td.txt{font-family:var(--font)}
 .cmp-note .warn{color:#B07A00}
 td .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:8px;vertical-align:-1px;background:var(--c)}
 
+/* buffett */
+.bf-head{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:10px}
+.bf-head .kpi .v{font-size:19px}
+.streak{display:inline-block;min-width:34px;text-align:center;font-family:var(--mono);font-weight:600;border-radius:999px;padding:2px 8px;font-size:12px}
+.streak.s2{background:color-mix(in srgb,var(--up) 12%,transparent);color:var(--up)}
+.streak.s3{background:color-mix(in srgb,var(--up) 22%,transparent);color:var(--up)}
+.streak.s4{background:var(--up);color:#fff}
+tr.hl4 td{background:color-mix(in srgb,var(--up) 9%,transparent)}
+tr.hl3 td{background:color-mix(in srgb,var(--up) 5%,transparent)}
+.hist{font-family:var(--mono);letter-spacing:1px;font-size:12px;white-space:nowrap}
+.hist .u{color:var(--up)}.hist .d{color:var(--down)}.hist .n{color:var(--ink-3)}.hist .x{color:var(--accent);font-weight:700}
+.tag{display:inline-block;font-size:11px;padding:1px 6px;border-radius:4px;background:var(--surface-2);color:var(--ink-2);margin-left:6px;font-family:var(--font)}
+.tag.new{background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)}
+.tag.inc{background:color-mix(in srgb,var(--up) 12%,transparent);color:var(--up)}
+.tag.dec{background:color-mix(in srgb,var(--down) 12%,transparent);color:var(--down)}
+.tag.exit{background:color-mix(in srgb,var(--down) 20%,transparent);color:var(--down)}
+.bf-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.bf-tools select{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 10px;font-size:14px}
+.bf-sum{font-size:13px;color:var(--ink-2);line-height:1.7}
+td .tk{font-weight:600;cursor:pointer;color:var(--accent)}
+td .tk.plain{color:var(--ink);cursor:default}
+td .nm{font-family:var(--font);color:var(--ink-3);font-size:12px;margin-left:6px}
+
 /* guide */
 .guide p+p{margin-top:8px}
 .guide ol,.guide ul{margin:8px 0 0;padding-left:20px}
@@ -209,7 +242,12 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
 
   <div id="notice" class="notice" hidden></div>
 
-  <section class="tiles" aria-label="현재 시세">
+  <button class="strip" id="strip" type="button" aria-expanded="false" aria-controls="tiles">
+    <span class="strip-item" id="strip-nq"><span class="k">NQ 선물</span><span class="v num">–</span></span>
+    <span class="strip-item" id="strip-fx"><span class="k">USD/KRW</span><span class="v num">–</span></span>
+    <span class="strip-hint">터치하면 상세</span>
+  </button>
+  <section class="tiles" id="tiles" aria-label="현재 시세" hidden>
     <article class="tile" id="tile-NQ" style="--series:var(--nq)">
       <div class="head"><h2>나스닥 100 선물</h2><span class="sym">NQ=F · CME</span></div>
       <div class="price skeleton">00000.00</div>
@@ -241,15 +279,16 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
   </section>
 
   <div class="tabs" role="tablist">
-    <button class="tab" role="tab" aria-selected="true" data-tab="quotes" id="tab-quotes">시세</button>
-    <button class="tab" role="tab" aria-selected="false" data-tab="stocks" id="tab-stocks">종목</button>
+    <button class="tab" role="tab" aria-selected="true" data-tab="stocks" id="tab-stocks">종목</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="compare" id="tab-compare">비교</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="backtest" id="tab-backtest">백테스트</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="buffett" id="tab-buffett">버핏</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="quotes" id="tab-quotes">선물·환율</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="guide" id="tab-guide">안내</button>
   </div>
 
   <!-- 시세 -->
-  <section class="panel" id="panel-quotes" role="tabpanel">
+  <section class="panel" id="panel-quotes" role="tabpanel" hidden>
     <div class="two">
       <div class="card">
         <div class="card-head"><h3>나스닥 100 선물 · 5분봉</h3><div class="legend"><span><i style="--c:var(--nq)"></i>NQ</span><span><i class="dash" style="--c:var(--ink-3)"></i>전일 종가</span></div></div>
@@ -278,6 +317,8 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
           <option value="^GSPC">S&amp;P 500 지수</option>
           <option value="SPY">SPY ETF</option>
         </select></div>
+        <div class="field" id="bt-asset2-wrap" hidden><label for="bt-asset2">비교 종목 <button type="button" class="chip" id="bt-asset2-remove" style="padding:1px 8px;margin-left:6px">×</button></label><input id="bt-asset2" list="sym-list" placeholder="티커 (예: TQQQ, AAPL)" style="font-family:var(--mono);text-transform:uppercase"><span class="hint">같은 전략·기간으로 나란히 돌립니다</span></div>
+        <div class="field" id="bt-asset2-add-wrap"><label>&nbsp;</label><button type="button" class="btn" id="bt-asset2-add">+ 비교 종목 추가</button><span class="hint">둘을 같은 조건으로 비교</span></div>
         <div class="field"><label for="bt-div">배당</label><select id="bt-div"><option value="tr">재투자 (총수익)</option><option value="pr">미포함 (가격만)</option></select><span class="hint" id="bt-div-hint"></span></div>
         <div class="field"><label for="bt-strategy">전략</label><select id="bt-strategy">
           <option value="bh">바이 앤 홀드</option>
@@ -316,17 +357,21 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
         <div class="kpis" id="bt-kpis"></div>
         <div class="card"><div class="verdict" id="bt-verdict"></div></div>
         <div class="card">
-          <div class="card-head"><h3>자산 곡선</h3><div class="legend"><span><i style="--c:var(--strat)"></i>전략</span><span><i style="--c:var(--bench)"></i>바이 앤 홀드</span><label class="small" style="margin-left:6px"><input type="checkbox" id="bt-log"> 로그 스케일</label></div></div>
+          <div class="card-head"><h3>나란히 비교</h3><span class="small faint">같은 기간 · 같은 시작 금액</span></div>
+          <div class="tablewrap"><table id="bt-compare"><thead><tr><th>구분</th><th>최종 금액</th><th>총 수익률</th><th>연평균</th><th>최대 낙폭</th><th>연 변동성</th><th>샤프</th><th>매매</th></tr></thead><tbody></tbody></table></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h3>자산 곡선</h3><div class="legend" id="bt-legend"></div></div>
           <div class="chart tall"><canvas id="chart-equity"></canvas></div>
         </div>
         <div class="card">
-          <div class="card-head"><h3>고점 대비 낙폭 (드로다운)</h3><div class="legend"><span><i style="--c:var(--strat)"></i>전략</span><span><i style="--c:var(--bench)"></i>바이 앤 홀드</span></div></div>
+          <div class="card-head"><h3>고점 대비 낙폭 (드로다운)</h3><div class="legend" id="bt-legend-dd"></div></div>
           <div class="chart short"><canvas id="chart-dd"></canvas></div>
         </div>
         <div class="two">
           <div class="card">
             <div class="card-head"><h3>연도별 수익률</h3></div>
-            <div class="tablewrap"><table id="bt-yearly"><thead><tr><th>연도</th><th>전략</th><th>바이 앤 홀드</th><th>차이</th></tr></thead><tbody></tbody></table></div>
+            <div class="tablewrap"><table id="bt-yearly"><thead></thead><tbody></tbody></table></div>
           </div>
           <div class="card">
             <div class="card-head"><h3>매매 내역</h3><span class="small faint" id="bt-trades-note"></span></div>
@@ -338,7 +383,7 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
   </section>
 
   <!-- 종목 -->
-  <section class="panel" id="panel-stocks" role="tabpanel" hidden>
+  <section class="panel" id="panel-stocks" role="tabpanel">
     <div class="card">
       <div class="card-head"><h3>S&amp;P 500 전 종목 · 주요 ETF</h3><span class="small faint" id="stocks-status">목록 불러오는 중</span></div>
       <div class="stock-tools">
@@ -394,6 +439,32 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
     </div>
   </section>
 
+  <!-- 버핏 (버크셔 13F) -->
+  <section class="panel" id="panel-buffett" role="tabpanel" hidden>
+    <div class="card">
+      <div class="card-head"><h3>버크셔 해서웨이 포트폴리오 · 13F</h3><span class="small faint" id="bf-status">불러오는 중</span></div>
+      <p class="small muted">SEC 에 분기마다 제출하는 13F 보고서 기준입니다. 분기 종료 45일 뒤에 공개되므로 "지금" 포트폴리오가 아니라 분기 말 시점의 미국 상장 주식 보유분이고, 이후 45일간의 매매는 다음 보고서에 나옵니다. 일본 상사 같은 해외 주식은 13F 에 없습니다.</p>
+      <div class="bf-head" id="bf-head"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>계속 모으고 있는 종목</h3><span class="small faint">현재 보유 중이면서 최근 분기까지 연속으로 주식수를 늘린 종목. 4분기 이상은 진하게 표시</span></div>
+      <div class="tablewrap"><table id="bf-streak"><thead><tr><th>종목</th><th>연속 매수</th><th>최근 분기</th><th>최근 8분기</th><th>8분기 매수</th><th>보유 주식</th><th>비중</th></tr></thead><tbody></tbody></table></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>꾸준히 사는 종목 (연속은 아님)</h3><span class="small faint">현재 보유 중이고 최근 8분기 중 2번 이상 매수했지만 연속은 끊긴 종목</span></div>
+      <div class="tablewrap"><table id="bf-often"><thead><tr><th>종목</th><th>8분기 매수</th><th>최근 8분기</th><th>마지막 매수</th><th>보유 주식</th><th>비중</th></tr></thead><tbody></tbody></table></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>분기별 포트폴리오</h3><div class="bf-tools"><label for="bf-quarter" class="small">분기</label><select id="bf-quarter"></select></div></div>
+      <div class="bf-sum" id="bf-sum"></div>
+      <div class="tablewrap"><table id="bf-holdings"><thead><tr><th>종목</th><th>비중</th><th>평가액</th><th>주식수</th><th>전분기 대비</th><th>최근 8분기</th></tr></thead><tbody></tbody></table></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>포트폴리오 평가액 추이</h3><span class="small faint">13F 보고 기준, 분기 말</span></div>
+      <div class="chart short"><canvas id="chart-bf"></canvas></div>
+    </div>
+  </section>
+
   <!-- 안내 -->
   <section class="panel guide" id="panel-guide" role="tabpanel" hidden>
     <div class="card">
@@ -401,6 +472,7 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
       <p style="margin-top:8px">GitHub Actions 가 10분마다 Yahoo Finance 에서 나스닥 100 선물(NQ=F)과 원달러 환율(KRW=X) 시세를 받아 이 저장소의 <code>data</code> 브랜치에 저장하고, 이 페이지는 그 파일을 읽어 보여줍니다. Yahoo 자체가 거래소 대비 10~15분 지연이라 화면의 시세는 실제보다 최대 20~25분 정도 늦을 수 있습니다. 페이지는 5분마다 자동으로 새 스냅샷을 확인합니다.</p>
       <p>백테스트에 쓰는 일봉은 NQ 선물(2000년~), 나스닥 100 지수(1985년~), QQQ(1999년~), S&amp;P 500(1970년~), SPY(1993년~), 원달러 환율(2003년~)입니다. 원화 기준 백테스트는 환율 데이터가 있는 구간으로 자동으로 맞춰집니다.</p>
       <p><strong>종목 탭</strong>은 별도 작업이 하루 한 번(미국 장 마감 후) S&amp;P 500 구성종목 전체와 주요 ETF 의 일봉 전체·최근 5일 5분봉을 받아 <code>stocks</code> 브랜치에 저장한 것을 읽습니다. 구성종목 목록은 위키백과의 S&amp;P 500 구성종목 표를 씁니다. 종목 시세는 전일 마감 기준이라 시세 탭보다 늦습니다. <strong>비교 탭</strong>은 여기 있는 종목과 시세 탭의 지수·선물을 같은 기간, 같은 시작 금액으로 나란히 놓고 봅니다.</p>
+      <p><strong>버핏 탭</strong>은 매주 한 번 SEC EDGAR 에서 버크셔 해서웨이의 13F-HR 보고서(최근 5년)를 받아 <code>filings</code> 브랜치에 저장한 것을 읽습니다. 같은 종목이 여러 자회사 계정으로 나뉘어 보고되므로 CUSIP 기준으로 합치고, 정정 보고서(13F-HR/A)는 원본에 반영합니다. 주식수가 2배 이상 뛰는데 평가액은 그만큼 늘지 않으면 액면분할로 보고 매수로 세지 않습니다. 티커는 OpenFIGI 로 CUSIP 에서 찾습니다.</p>
       <p><strong>배당 재투자</strong>를 켜면 ETF 는 분배금을 받은 날 같은 ETF 를 다시 산 것으로 계산한 총수익 가격(Yahoo 의 수정 종가)을 쓰고, 지수는 총수익 지수(나스닥 100 은 XNDX, S&amp;P 500 은 SP500TR)로 바꿔 계산합니다. 끄면 배당을 뺀 가격 수익률만 봅니다. 장기 백테스트에서는 이 차이가 연 1~2%p, 20년이면 총수익에서 수십 %p 차이가 납니다. 선물(NQ)은 가격에 배당 기대치가 이미 반영되어 있어 이 옵션이 없습니다.</p>
     </div>
     <div class="card">
@@ -440,6 +512,7 @@ const OWNER = "geniusbyun-kaka", REPO = "app";
 const params = new URLSearchParams(location.search);
 const DATA_BASE = params.get("data") || `https://raw.githubusercontent.com/${OWNER}/${REPO}/data/`;
 const STOCKS_BASE = params.get("stocks") || `https://raw.githubusercontent.com/${OWNER}/${REPO}/stocks/`;
+const FILINGS_BASE = params.get("filings") || `https://raw.githubusercontent.com/${OWNER}/${REPO}/filings/`;
 const REFRESH_MS = 5 * 60 * 1000;
 const NQ_MULTIPLIER = 20;
 
@@ -455,7 +528,7 @@ const fmt = {
   time: (iso) => { if (!iso) return "–"; const d = new Date(iso); return d.toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false }); },
   ago: (iso) => { if (!iso) return ""; const m = Math.round((Date.now() - new Date(iso)) / 60000); return m < 1 ? "방금" : m < 60 ? `${m}분 전` : m < 1440 ? `${Math.floor(m / 60)}시간 ${m % 60}분 전` : `${Math.floor(m / 1440)}일 전`; },
 };
-const state = { latest: null, intraday: null, history: null, charts: {}, lastBacktest: null, stockIndex: null, stocks: {}, stockSel: null, stockRange: "1Y", cmpLast: null };
+const state = { latest: null, intraday: null, history: null, charts: {}, lastBacktest: null, stockIndex: null, stocks: {}, stockSel: null, stockRange: "1Y", cmpLast: null, filings: null, bfQuarter: null };
 
 // ───────────────────────── 데이터 로딩 ─────────────────────────
 async function getJson(name) {
@@ -500,6 +573,8 @@ async function loadAll() { await loadLive(); await loadHistory(); }
 function renderQuotes() {
   const q = state.latest?.quotes || {};
   const nq = q["NQ=F"], fx = q["KRW=X"];
+  const strip = (el, q, unit) => { if (!q) return; const dir = q.change > 0 ? "up" : q.change < 0 ? "down" : ""; el.innerHTML = `<span class="k">${el.id === "strip-nq" ? "NQ 선물" : "USD/KRW"}</span><span class="v num">${fmt.n(q.price)}${unit}</span><span class="d ${dir}">${dir === "up" ? "▲" : dir === "down" ? "▼" : ""}${fmt.n(Math.abs(q.change ?? 0))} (${fmt.signed(q.changePercent)}%)</span>`; };
+  strip($("#strip-nq"), nq, ""); strip($("#strip-fx"), fx, "원");
   renderTile($("#tile-NQ"), nq, state.intraday?.series?.["NQ=F"], "USD");
   renderTile($("#tile-FX"), fx, state.intraday?.series?.["KRW=X"], "KRW");
   if (nq?.price != null) {
@@ -529,7 +604,7 @@ function renderTile(tile, quote, series, cur) {
   drawSpark($(".spark", tile), series, quote);
 }
 function drawSpark(canvas, series, quote) {
-  if (!series?.c?.length) return;
+  if (!series?.c?.length || !canvas.clientWidth) return;
   const dpr = window.devicePixelRatio || 1, W = canvas.clientWidth, H = canvas.clientHeight;
   canvas.width = W * dpr; canvas.height = H * dpr;
   const ctx = canvas.getContext("2d"); ctx.scale(dpr, dpr); ctx.clearRect(0, 0, W, H);
@@ -825,9 +900,9 @@ function readConfig() {
   return { asset: v("bt-asset"), strategy: v("bt-strategy"), fast: +v("bt-fast"), slow: +v("bt-slow"), rsiN: +v("bt-rsi-n"), rsiBuy: +v("bt-rsi-buy"), rsiSell: +v("bt-rsi-sell"),
     monthly: +v("bt-monthly"), start: v("bt-start"), end: v("bt-end"), currency: v("bt-currency"), capital: +v("bt-capital"), cash: v("bt-cash"), feeBp: 0 };
 }
-function runFromForm() {
+async function runFromForm() {
   const h = state.history?.symbols; if (!h) return;
-  const cfg = readConfig(), sym = currentSeries(), fxSym = h["KRW=X"];
+  const cfg = readConfig(), sym = currentSeries(), fxSym = h["KRW=X"], reinvest = $("#bt-div").value === "tr";
   if (!sym) return alert("이 종목의 일봉 데이터가 이번 스냅샷에 없습니다.");
   cfg.seriesLabel = sym.label;
   if (cfg.strategy === "smax" && cfg.fast >= cfg.slow) return alert("단기 이평은 장기 이평보다 짧아야 합니다.");
@@ -835,84 +910,125 @@ function runFromForm() {
   if (!(cfg.capital > 0)) return alert("초기 투자금을 입력하세요.");
   const useFx = cfg.currency === "KRW" || (cfg.cash === "KRW" && cfg.strategy !== "bh" && cfg.strategy !== "dca");
   if (cfg.strategy === "bh" || cfg.strategy === "dca") cfg.cash = "USD";
-  let start = cfg.start || sym.from, end = cfg.end || sym.to, note = "";
-  if (start < sym.from) { note += `${sym.label} 데이터가 ${sym.from}부터 있어 시작일을 맞췄습니다. `; start = sym.from; }
-  if (useFx) { if (!fxSym) return alert("환율 데이터가 없어 원화 기준 백테스트를 할 수 없습니다."); if (start < fxSym.from) { note += `환율 데이터가 ${fxSym.from}부터 있어 시작일을 맞췄습니다. `; start = fxSym.from; } }
-  // 지표 계산에 필요한 워밍업 구간을 시작일 앞에 확보
-  const warm = cfg.strategy === "smax" || cfg.strategy === "smaf" ? cfg.slow : cfg.strategy === "rsi" ? cfg.rsiN + 1 : 0;
-  let i0 = sym.dates.findIndex((d) => d >= start), i1 = sym.dates.findLastIndex((d) => d <= end);
-  if (i0 < 0 || i1 < 0 || i1 - i0 < 30) return alert("기간이 너무 짧거나 데이터가 없습니다.");
-  const w0 = Math.max(0, i0 - warm);
-  const closeAll = sym.close.slice(w0, i1 + 1), datesAll = sym.dates.slice(w0, i1 + 1);
-  const want = cfg.strategy === "dca" ? null : signals(closeAll, cfg);
-  const off = i0 - w0;
-  const dates = datesAll.slice(off), close = closeAll.slice(off);
-  const fx = useFx ? alignFx(dates, fxSym) : null;
-  if (fx && fx.some((r) => r == null)) return alert("선택한 구간의 환율 데이터가 비어 있습니다. 시작일을 늦춰 보세요.");
-  // 워밍업 구간을 포함해 계산한 신호를 시작일 이후 구간만 잘라 사용
-  const data = { dates, close, fx };
-  const cfgRun = { ...cfg };
-  const res = runBacktest(data, cfgRun, want ? want.slice(off) : null);
-  const bhCfg = { ...cfg, strategy: "bh", cash: "USD" };
-  const bh = runBacktest(data, bhCfg, null);
-  state.lastBacktest = { cfg, data, res, bh, note };
-  renderBacktest();
+  $("#bt-run").disabled = true;
+  try {
+    // 비교 종목(선택)과 SPY 기준선을 같은 날짜축에 올린다
+    const runsIn = [{ key: "a1", label: sym.label, short: $("#bt-asset option:checked").textContent.replace(/ \(.*\)$/, ""), dates: sym.dates, values: sym.close, color: "--strat" }];
+    const raw2 = $("#bt-asset2-wrap").hidden ? "" : $("#bt-asset2").value.trim();
+    if (raw2) {
+      const s2 = await getSeries(raw2, reinvest);
+      if (!s2) return alert(`${normSym(raw2)}: 목록에 없는 티커입니다.`);
+      const useTr = reinvest && s2.tr;
+      runsIn.push({ key: "a2", label: `${s2.label}${useTr ? " (배당 재투자)" : ""}`, short: s2.symbol, dates: s2.dates, values: useTr ? s2.tr : s2.close, color: "--fx" });
+    }
+    let start = cfg.start || sym.from, end = cfg.end || sym.to, note = "";
+    for (const r of runsIn) if (start < r.dates[0]) { note += `${r.short} 데이터가 ${r.dates[0]}부터 있어 시작일을 맞췄습니다. `; start = r.dates[0]; }
+    // 기준선: SPY 가 기간을 덮지 못하면 S&P 500 총수익 지수, 그다음 S&P 500 가격 지수로 대신한다
+    let bench = null;
+    const candidates = [["SPY", "SPY"], ["^SP500TR", "S&P 500 총수익"], ["^GSPC", "S&P 500 지수"]];
+    for (const [csym, cname] of candidates) {
+      let b = null; try { b = await getSeries(csym, reinvest); } catch {}
+      if (!b || b.dates[0] > start) continue;
+      if (csym === "^SP500TR" && !reinvest) continue;
+      const useTr = reinvest && b.tr;
+      bench = { key: "bench", label: `${cname}${useTr ? " (배당 재투자)" : ""}`, short: cname, dates: b.dates, values: useTr ? b.tr : b.close, color: "--c4" };
+      break;
+    }
+    if (!bench) note += "이 기간을 덮는 S&P 500 기준선 데이터가 없습니다. ";
+    if (useFx) { if (!fxSym) return alert("환율 데이터가 없어 원화 기준 백테스트를 할 수 없습니다."); if (start < fxSym.from) { note += `환율 데이터가 ${fxSym.from}부터 있어 시작일을 맞췄습니다. `; start = fxSym.from; } }
+    const warm = cfg.strategy === "smax" || cfg.strategy === "smaf" ? cfg.slow : cfg.strategy === "rsi" ? cfg.rsiN + 1 : 0;
+    const axis = sym.dates;
+    let i0 = axis.findIndex((d) => d >= start), i1 = axis.findLastIndex((d) => d <= end);
+    if (i0 < 0 || i1 < 0 || i1 - i0 < 30) return alert("기간이 너무 짧거나 데이터가 없습니다.");
+    const dates = axis.slice(i0, i1 + 1);
+    const fx = useFx ? alignFx(dates, fxSym) : null;
+    if (fx && fx.some((r) => r == null)) return alert("선택한 구간의 환율 데이터가 비어 있습니다. 시작일을 늦춰 보세요.");
+    // 한 시계열을 기준 날짜축에 맞추고(같은 날 또는 직전 거래일 값), 워밍업을 포함해 신호를 계산한 뒤 시작일 이후만 사용
+    const runOne = (series, runCfg) => {
+      const onAxis = series === runsIn[0] ? series.values : alignFx(axis, { dates: series.dates, close: series.values });
+      const firstOk = onAxis.findIndex((v) => v != null);
+      if (firstOk < 0 || firstOk > i0) return null; // 이 구간을 덮지 못함
+      const w0 = Math.max(firstOk, i0 - warm), off = i0 - w0;
+      const closeAll = onAxis.slice(w0, i1 + 1);
+      if (closeAll.slice(off).some((v) => v == null)) return null; // 이 구간 데이터 없음
+      const want = runCfg.strategy === "dca" ? null : signals(closeAll, runCfg).slice(off);
+      const data = { dates, close: closeAll.slice(off), fx };
+      return { data, res: runBacktest(data, runCfg, want), bh: runBacktest(data, { ...runCfg, strategy: "bh", cash: "USD" }, null) };
+    };
+    const runs = runsIn.map((r) => { const out = runOne(r, { ...cfg }); return out && { ...r, ...out }; }).filter(Boolean);
+    let benchRun = null;
+    if (bench) { const bc = { ...cfg, strategy: cfg.strategy === "dca" ? "dca" : "bh", cash: "USD" }; const out = runOne(bench, bc); if (out) benchRun = { ...bench, ...out }; }
+    state.lastBacktest = { cfg, dates, runs, bench: benchRun, note };
+    renderBacktest();
+  } finally { $("#bt-run").disabled = false; }
 }
 function kpi(k, v, b, cls = "") { return `<div class="kpi"><div class="k">${k}</div><div class="v ${cls}">${v}</div><div class="b">${b || ""}</div></div>`; }
 function renderBacktest() {
-  const { cfg, data, res, bh, note } = state.lastBacktest, cur = cfg.currency;
-  const m = metrics(res.equity, data.dates, res), mb = metrics(bh.equity, data.dates, bh);
-  const isDca = cfg.strategy === "dca";
+  const { cfg, dates, runs, bench, note } = state.lastBacktest, cur = cfg.currency;
+  const main = runs[0], data = main.data, res = main.res, bh = main.bh;
+  const m = metrics(res.equity, dates, res), mb = metrics(bh.equity, dates, bh);
+  const isDca = cfg.strategy === "dca", isBh = cfg.strategy === "bh";
   const sgn = (v) => v > 0 ? "pos" : v < 0 ? "neg" : "";
+  const mBench = bench ? metrics(bench.res.equity, dates, bench.res) : null; const bName = bench?.short || "SPY";
   const kpis = [];
   if (isDca) {
-    kpis.push(kpi("총 납입금", fmt.money(m.invested, cur), `${data.dates[0]} ~ ${data.dates.at(-1)}`));
+    kpis.push(kpi("총 납입금", fmt.money(m.invested, cur), `${dates[0]} ~ ${dates.at(-1)}`));
     kpis.push(kpi("최종 평가액", fmt.money(m.finalValue, cur), `손익 ${fmt.signed(m.profit, 0)}`, sgn(m.profit)));
     kpis.push(kpi("단순 수익률", fmt.pct(m.finalValue / m.invested - 1), "평가액 ÷ 납입금", sgn(m.profit)));
-    kpis.push(kpi("연환산 IRR", fmt.pct(m.xirr), "납입 시점 반영", sgn(m.xirr)));
+    kpis.push(kpi("연환산 IRR", fmt.pct(m.xirr), mBench ? `같은 적립을 ${bName} 에 했다면 ${fmt.pct(mBench.xirr)}` : "납입 시점 반영", sgn(m.xirr)));
   } else {
-    kpis.push(kpi("총 수익률", fmt.pct(m.total), `바이앤홀드 ${fmt.pct(mb.total)}`, sgn(m.total)));
-    kpis.push(kpi("연평균 (CAGR)", fmt.pct(m.cagr), `바이앤홀드 ${fmt.pct(mb.cagr)}`, sgn(m.cagr)));
+    kpis.push(kpi("총 수익률", fmt.pct(m.total), mBench ? `${bName} ${fmt.pct(mBench.total)}` : `바이앤홀드 ${fmt.pct(mb.total)}`, sgn(m.total)));
+    kpis.push(kpi("연평균 (CAGR)", fmt.pct(m.cagr), mBench ? `${bName} ${fmt.pct(mBench.cagr)}` : `바이앤홀드 ${fmt.pct(mb.cagr)}`, sgn(m.cagr)));
     kpis.push(kpi("최종 평가액", fmt.money(m.finalValue, cur), `시작 ${fmt.money(cfg.capital, cur)}`));
   }
   kpis.push(kpi("최대 낙폭 (MDD)", fmt.pct(m.mdd), `${m.mddFrom || ""} → ${m.mddTo || ""}`, "neg"));
-  kpis.push(kpi("연 변동성", fmt.pct(m.vol, 1, false), `바이앤홀드 ${fmt.pct(mb.vol, 1, false)}`));
-  kpis.push(kpi("샤프 비율", fmt.n(m.sharpe), `바이앤홀드 ${fmt.n(mb.sharpe)}`));
-  if (!isDca && cfg.strategy !== "bh") kpis.push(kpi("매매 횟수 · 승률", `${m.trades}회 · ${m.winRate == null ? "–" : fmt.n(m.winRate * 100, 0) + "%"}`, `시장 노출 ${fmt.n(m.exposure * 100, 0)}%`));
+  kpis.push(kpi("연 변동성", fmt.pct(m.vol, 1, false), mBench ? `${bName} ${fmt.pct(mBench.vol, 1, false)}` : ""));
+  kpis.push(kpi("샤프 비율", fmt.n(m.sharpe), mBench ? `${bName} ${fmt.n(mBench.sharpe)}` : ""));
+  if (!isDca && !isBh) kpis.push(kpi("매매 횟수 · 승률", `${m.trades}회 · ${m.winRate == null ? "–" : fmt.n(m.winRate * 100, 0) + "%"}`, `시장 노출 ${fmt.n(m.exposure * 100, 0)}%`));
   kpis.push(kpi("최장 회복 기간", `${m.maxDdDays}거래일`, `약 ${fmt.n(m.maxDdDays / 21, 0)}개월`));
   $("#bt-kpis").innerHTML = kpis.join("");
-  $("#bt-verdict").innerHTML = verdict(cfg, m, mb, data, note);
+  $("#bt-verdict").innerHTML = verdict(cfg, m, mb, data, note, mBench && { ...mBench, name: bName }, runs[1] ? { short: runs[1].short, m: metrics(runs[1].res.equity, dates, runs[1].res) } : null);
 
-  // 자산 곡선
-  const labels = data.dates;
-  const eq = res.equity.map((v, i) => ({ x: i, y: v })), eqb = bh.equity.map((v, i) => ({ x: i, y: v }));
-  const log = $("#bt-log").checked;
-  const opts = baseOptions(labels, { xTick: (i) => labels[i]?.slice(0, 7) ?? "", yFmt: (v) => cur === "KRW" ? (v >= 1e8 ? `${fmt.n(v / 1e8, 1)}억` : `${fmt.n(v / 1e4, 0)}만`) : `$${v >= 1e6 ? fmt.n(v / 1e6, 1) + "M" : v >= 1e3 ? fmt.n(v / 1e3, 0) + "k" : fmt.n(v, 0)}`,
-    tooltipLabel: (it) => `${it.dataset.label}: ${fmt.money(it.parsed.y, cur)}`, yType: log ? "logarithmic" : "linear" });
-  makeChart("chart-equity", { type: "line", data: { datasets: [
-    { label: isDca ? "적립식" : "전략", data: eq, borderColor: css("--strat"), backgroundColor: css("--strat") + "1A", fill: !isDca && cfg.strategy === "bh" ? false : "origin" },
-    { label: isDca ? "일시납 바이앤홀드 (초기 투자금만)" : "바이 앤 홀드", data: eqb, borderColor: css("--bench"), borderWidth: 1.5, fill: false, hidden: cfg.strategy === "bh" },
-  ] }, options: opts });
-  // 드로다운
+  // 그릴 선 목록: 각 종목의 전략, (전략이 바이앤홀드가 아니면) 첫 종목의 바이앤홀드, SPY 기준선
+  const stratName = isDca ? "적립식" : isBh ? "보유" : "전략";
+  const lines = [];
+  runs.forEach((r, i) => lines.push({ label: `${r.short} ${stratName}`, equity: r.res.equity, color: css(r.color), width: 2, fill: i === 0, dash: null, run: r.res }));
+  if (!isBh && !isDca) lines.push({ label: `${main.short} 바이 앤 홀드`, equity: bh.equity, color: css("--bench"), width: 1.5, fill: false, dash: null, run: bh });
+  if (bench) lines.push({ label: `${bench.short} ${isDca ? "적립식" : "기준선"}`, equity: bench.res.equity, color: css("--c4"), width: 1.5, fill: false, dash: [5, 4], run: bench.res });
+  const legend = lines.map((l) => `<span><i class="${l.dash ? "dash" : ""}" style="--c:${l.color}"></i>${l.label}</span>`).join("");
+  $("#bt-legend").innerHTML = legend + `<label class="small" style="margin-left:6px"><input type="checkbox" id="bt-log"${state.btLog ? " checked" : ""}> 로그 스케일</label>`;
+  $("#bt-legend-dd").innerHTML = legend;
+  $("#bt-log").addEventListener("change", (e) => { state.btLog = e.target.checked; renderBacktest(); });
+  const labels = dates;
+  const yFmt = (v) => cur === "KRW" ? (v >= 1e8 ? `${fmt.n(v / 1e8, 1)}억` : `${fmt.n(v / 1e4, 0)}만`) : `$${v >= 1e6 ? fmt.n(v / 1e6, 1) + "M" : v >= 1e3 ? fmt.n(v / 1e3, 0) + "k" : fmt.n(v, 0)}`;
+  const opts = baseOptions(labels, { xTick: (i) => labels[i]?.slice(0, 7) ?? "", yFmt, tooltipLabel: (it) => `${it.dataset.label}: ${fmt.money(it.parsed.y, cur)}`, yType: state.btLog ? "logarithmic" : "linear" });
+  makeChart("chart-equity", { type: "line", data: { datasets: lines.map((l) => ({ label: l.label, data: l.equity.map((v, i) => ({ x: i, y: v })), borderColor: l.color, backgroundColor: l.color + "1A", fill: l.fill ? "origin" : false, borderWidth: l.width, borderDash: l.dash || undefined })) }, options: opts });
   const ddOpts = baseOptions(labels, { xTick: (i) => labels[i]?.slice(0, 7) ?? "", yFmt: (v) => `${fmt.n(v * 100, 0)}%`, tooltipLabel: (it) => `${it.dataset.label}: ${fmt.pct(it.parsed.y, 1, false)}`, yMax: 0 });
-  makeChart("chart-dd", { type: "line", data: { datasets: [
-    { label: "전략", data: m.dd.map((v, i) => ({ x: i, y: v })), borderColor: css("--strat"), backgroundColor: css("--strat") + "26", fill: "origin", borderWidth: 1.5 },
-    { label: "바이 앤 홀드", data: mb.dd.map((v, i) => ({ x: i, y: v })), borderColor: css("--bench"), borderWidth: 1, fill: false, hidden: cfg.strategy === "bh" },
-  ] }, options: ddOpts });
+  const mets = lines.map((l) => metrics(l.equity, dates, l.run));
+  makeChart("chart-dd", { type: "line", data: { datasets: lines.map((l, i) => ({ label: l.label, data: mets[i].dd.map((v, k) => ({ x: k, y: v })), borderColor: l.color, backgroundColor: l.color + "26", fill: i === 0 ? "origin" : false, borderWidth: i === 0 ? 1.5 : 1, borderDash: l.dash || undefined })) }, options: ddOpts });
+  // 나란히 비교 표
+  $("#bt-compare tbody").innerHTML = lines.map((l, i) => { const x = mets[i]; return `<tr><td class="txt"><span class="sw" style="--c:${l.color}"></span>${l.label}</td><td>${fmt.money(x.finalValue, cur)}</td><td class="${sgn(x.total)}">${fmt.pct(x.total)}</td><td class="${sgn(x.cagr)}">${isDca ? fmt.pct(x.xirr) + " (IRR)" : fmt.pct(x.cagr)}</td><td class="neg">${fmt.pct(x.mdd)}</td><td>${fmt.pct(x.vol, 1, false)}</td><td>${fmt.n(x.sharpe)}</td><td>${x.trades > 1 ? x.trades + "회" : "–"}</td></tr>`; }).join("");
   // 연도별
-  const ys = yearlyReturns(res.equity, data.dates), yb = yearlyReturns(bh.equity, data.dates);
-  $("#bt-yearly tbody").innerHTML = ys.map((y, i) => { const d = y.ret - yb[i].ret; return `<tr><td class="txt">${y.year}</td><td class="${sgn(y.ret)}">${fmt.pct(y.ret, 1)}</td><td class="${sgn(yb[i].ret)}">${fmt.pct(yb[i].ret, 1)}</td><td class="${sgn(d)}">${isDca ? "–" : fmt.pct(d, 1)}</td></tr>`; }).join("");
-  // 매매 내역
+  const yrs = lines.map((l) => yearlyReturns(l.equity, dates));
+  $("#bt-yearly thead").innerHTML = `<tr><th>연도</th>${lines.map((l) => `<th>${l.label}</th>`).join("")}</tr>`;
+  $("#bt-yearly tbody").innerHTML = yrs[0].map((y, i) => `<tr><td class="txt">${y.year}</td>${yrs.map((col) => { const r = col[i]?.ret; return `<td class="${sgn(r)}">${r == null || !isFinite(r) ? "–" : fmt.pct(r, 1)}</td>`; }).join("")}</tr>`).join("");
+  // 매매 내역 (첫 종목)
   const tr = res.trades.slice(-30).reverse();
-  $("#bt-trades-note").textContent = isDca ? `매수 ${res.trades.length}회 (최근 30건 표시)` : res.trades.length > 30 ? `총 ${res.trades.length}회 중 최근 30건` : `총 ${res.trades.length}회`;
+  $("#bt-trades-note").textContent = `${main.short} · ` + (isDca ? `매수 ${res.trades.length}회 (최근 30건 표시)` : res.trades.length > 30 ? `총 ${res.trades.length}회 중 최근 30건` : `총 ${res.trades.length}회`);
   $("#bt-trades tbody").innerHTML = tr.length ? tr.map((t) => `<tr><td class="txt">${t.buyDate}</td><td class="txt">${t.sellDate || "보유 중"}</td><td>${fmt.n(t.buyPrice)}</td><td>${fmt.n(t.sellPrice)}</td><td class="${sgn(t.pnl)}">${fmt.pct(t.pnl, 1)}</td><td>${t.days}</td></tr>`).join("") : `<tr><td class="txt faint" colspan="6">매매 없음</td></tr>`;
   $("#bt-results").hidden = false;
   $("#bt-results").scrollIntoView({ behavior: "smooth", block: "start" });
 }
-function verdict(cfg, m, mb, data, note) {
+function verdict(cfg, m, mb, data, note, mBench, second) {
   const curName = cfg.currency === "KRW" ? "원화" : "달러", name = cfg.seriesLabel || $("#bt-asset option:checked").textContent, period = `${data.dates[0]} ~ ${data.dates.at(-1)}`;
   const lines = [];
   if (note) lines.push(`<span class="faint">${note}</span>`);
+  const extra = [];
+  if (mBench) {
+    const key = cfg.strategy === "dca" ? "xirr" : "cagr", mine = m[key], spy = mBench[key];
+    if (mine != null && spy != null) extra.push(`같은 기간 <strong>${mBench.name}</strong> 는 연 ${fmt.pct(spy)}${cfg.strategy === "dca" ? " (같은 적립 방식)" : ""} 였고, 이 결과는 그보다 연 <strong>${fmt.n(Math.abs(mine - spy) * 100, 1)}%p ${mine >= spy ? "높습니다" : "낮습니다"}</strong>. 최대 낙폭은 ${mBench.name} ${fmt.pct(mBench.mdd)} 대 ${fmt.pct(m.mdd)} 입니다.`);
+  }
+  if (second) extra.push(`비교 종목 <strong>${second.short}</strong> 는 같은 조건에서 연 ${fmt.pct(second.m[cfg.strategy === "dca" ? "xirr" : "cagr"])}, 최대 낙폭 ${fmt.pct(second.m.mdd)} 입니다.`);
   if (cfg.strategy === "bh") {
     lines.push(`<strong>${name}</strong> · ${period} · ${curName} 기준. 이 기간 내내 보유했다면 총 <strong>${fmt.pct(m.total)}</strong> (연평균 ${fmt.pct(m.cagr)}) 수익이며, 중간에 최대 <strong>${fmt.pct(m.mdd)}</strong>까지 빠지는 구간(${m.mddFrom} → ${m.mddTo})을 견뎌야 했습니다.`);
   } else if (cfg.strategy === "dca") {
@@ -927,6 +1043,7 @@ function verdict(cfg, m, mb, data, note) {
     else lines.push(`이 구간에서는 단순 보유가 더 나았습니다. 강한 상승 추세 자산에서는 매매 규칙이 오히려 수익을 깎는 경우가 흔합니다.`);
     if (cfg.cash === "KRW" && cfg.currency === "KRW") lines.push(`현금은 원화로 보유한다고 가정했으므로 매도 중에는 환율 변동의 영향을 받지 않습니다.`);
   }
+  lines.push(...extra);
   if (cfg.currency === "KRW") lines.push(`<span class="faint">원화 기준이라 달러 자산 가격과 환율 변동이 함께 반영되어 있습니다. 달러 약세 구간에서는 원화 수익률이 낮아집니다.</span>`);
   return lines.map((l) => `<p>${l}</p>`).join("");
 }
@@ -934,24 +1051,29 @@ function verdict(cfg, m, mb, data, note) {
 // ───────────────────────── 탭 · 이벤트 ─────────────────────────
 function selectTab(name) {
   $$(".tab").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.tab === name)));
-  ["quotes", "stocks", "compare", "backtest", "guide"].forEach((p) => { $(`#panel-${p}`).hidden = p !== name; });
+  ["quotes", "stocks", "compare", "backtest", "buffett", "guide"].forEach((p) => { $(`#panel-${p}`).hidden = p !== name; });
+  if (name === "buffett") ensureFilings().catch(() => {});
   try { localStorage.setItem("md:tab", name); } catch {}
   if (name === "quotes") renderQuotes();
+  if (name === "backtest" && !state.history) { /* 일봉이 오면 initBacktestForm 이 채움 */ }
   if (name === "backtest" && state.lastBacktest) renderBacktest();
   if (name === "stocks") ensureStockIndex().catch(() => {});
   if (name === "compare") ensureStockIndex().catch(() => {}).then(() => { if (state.cmpLast) renderCompare(); else if (state.history) runCompare(true); });
 }
 $$(".tab").forEach((t) => t.addEventListener("click", () => selectTab(t.dataset.tab)));
 $("#refresh").addEventListener("click", loadAll);
+$("#strip").addEventListener("click", () => { const open = $("#tiles").hidden; $("#tiles").hidden = !open; $("#strip").setAttribute("aria-expanded", String(open)); try { localStorage.setItem("md:tiles", open ? "1" : "0"); } catch {} if (open) renderQuotes(); });
+$("#bt-asset2-add").addEventListener("click", () => { $("#bt-asset2-wrap").hidden = false; $("#bt-asset2-add-wrap").hidden = true; $("#bt-asset2").focus(); });
+$("#bt-asset2-remove").addEventListener("click", () => { $("#bt-asset2-wrap").hidden = true; $("#bt-asset2-add-wrap").hidden = false; $("#bt-asset2").value = ""; });
+$("#bt-asset2").addEventListener("keydown", (e) => { if (e.key === "Enter") runFromForm(); });
 $("#bt-run").addEventListener("click", runFromForm);
 $("#bt-strategy").addEventListener("change", updateParamVisibility);
 $("#bt-currency").addEventListener("change", onCurrencyChange);
 $("#bt-asset").addEventListener("change", () => { if (state.history) refreshSeriesInfo(); });
 $("#bt-div").addEventListener("change", () => { if (state.history) refreshSeriesInfo(); });
-$("#bt-log").addEventListener("change", () => state.lastBacktest && renderBacktest());
 $$(".chip[data-years]").forEach((c) => c.addEventListener("click", () => setYears(+c.dataset.years)));
 window.addEventListener("resize", () => { if (!$("#panel-quotes").hidden) renderQuotes(); });
-const rerenderAll = () => { renderQuotes(); if (state.lastBacktest) renderBacktest(); if (state.stockSel) renderStockDetail(); if (state.cmpLast) renderCompare(); };
+const rerenderAll = () => { renderQuotes(); if (state.lastBacktest) renderBacktest(); if (state.stockSel) renderStockDetail(); if (state.cmpLast) renderCompare(); if (state.filings) renderBuffett(); };
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", rerenderAll);
 new MutationObserver(rerenderAll).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 // 종목 탭 이벤트
@@ -1199,12 +1321,113 @@ function addToCompare(sym) {
   selectTab("compare"); runCompare(false);
 }
 
+// ───────────────────────── 버핏 (버크셔 13F) ─────────────────────────
+let filingsPromise = null;
+function ensureFilings() {
+  if (state.filings) return Promise.resolve(state.filings);
+  if (!filingsPromise) filingsPromise = fetch(`${FILINGS_BASE}berkshire.json?t=${Date.now()}`, { cache: "no-store" }).then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }).then((f) => {
+    state.filings = analyzeFilings(f); renderBuffett(); return state.filings;
+  }).catch((err) => {
+    filingsPromise = null;
+    $("#bf-status").textContent = "13F 데이터 없음";
+    $("#bf-head").innerHTML = `<div class="empty" style="grid-column:1/-1">아직 13F 스냅샷이 없습니다. Actions 탭에서 <code>Berkshire 13F snapshot</code> 워크플로를 한 번 실행하세요. (${err.message})</div>`;
+    throw err;
+  });
+  return filingsPromise;
+}
+// 분기별 변화·연속 매수 계산. 주식수가 2배 이상 뛰는데 평가액이 그만큼 안 늘면 액면분할로 본다.
+function analyzeFilings(f) {
+  const qs = f.quarters.map((q) => ({ ...q, map: new Map(q.holdings.map((h) => [h.cusip, h])) }));
+  qs.forEach((q, i) => {
+    const prev = qs[i - 1];
+    q.exits = [];
+    for (const h of q.holdings) {
+      h.weight = q.totalValue ? h.value / q.totalValue : 0;
+      const p = prev?.map.get(h.cusip);
+      if (!prev) { h.change = "first"; h.pct = null; continue; }
+      if (!p) { h.change = "new"; h.pct = null; continue; }
+      const r = h.shares / p.shares, vr = p.value ? h.value / p.value : null;
+      if ((r >= 1.9 || r <= 0.55) && vr != null && Math.abs(vr / r - 1) > 0.35) { h.change = "split"; h.pct = null; h.splitRatio = r; continue; }
+      h.pct = r - 1;
+      h.change = h.pct > 0.005 ? "inc" : h.pct < -0.005 ? "dec" : "same";
+    }
+    if (prev) for (const p of prev.holdings) if (!q.map.has(p.cusip)) q.exits.push(p);
+  });
+  const latest = qs.at(-1);
+  const isBuy = (c) => c === "inc" || c === "new";
+  for (const h of latest.holdings) {
+    // 연속 매수: 최근 분기부터 거슬러 올라가며 매수(증가·신규)가 이어진 분기 수
+    let streak = 0;
+    for (let i = qs.length - 1; i >= 0; i--) { const x = qs[i].map.get(h.cusip); if (x && isBuy(x.change)) streak++; else break; }
+    h.streak = streak;
+    const last8 = qs.slice(-8).map((q) => q.map.get(h.cusip)?.change || "none");
+    h.hist = last8;
+    h.buys8 = last8.filter(isBuy).length;
+    h.lastBuy = [...qs].reverse().find((q) => isBuy(q.map.get(h.cusip)?.change))?.period || null;
+    h.since = qs.find((q) => q.map.has(h.cusip))?.period || null;
+  }
+  return { ...f, quarters: qs, latest };
+}
+const CH_LABEL = { new: "신규", inc: "증가", dec: "감소", same: "변동 없음", split: "분할", first: "–", none: "" };
+function histHtml(hist) { return `<span class="hist">${hist.map((c) => c === "inc" ? '<span class="u">▲</span>' : c === "new" ? '<span class="x">N</span>' : c === "dec" ? '<span class="d">▼</span>' : c === "same" ? '<span class="n">·</span>' : c === "split" ? '<span class="n">S</span>' : '<span class="n"> </span>').join("")}</span>`; }
+function tickerHtml(h) {
+  const inIdx = h.ticker && state.stockIndex?.items.some((x) => x.symbol === h.ticker);
+  return `<span class="tk ${inIdx ? "" : "plain"}" ${inIdx ? `data-stock="${h.ticker}"` : ""}>${h.ticker || "–"}</span><span class="nm">${h.name}</span>`;
+}
+function changeHtml(h) {
+  if (h.change === "new") return '<span class="tag new">신규</span>';
+  if (h.change === "split") return `<span class="tag">분할 ×${fmt.n(h.splitRatio, 0)}</span>`;
+  if (h.change === "inc") return `<span class="pos">+${fmt.n(h.pct * 100, 1)}%</span><span class="tag inc">매수</span>`;
+  if (h.change === "dec") return `<span class="neg">${fmt.n(h.pct * 100, 1)}%</span><span class="tag dec">매도</span>`;
+  if (h.change === "same") return '<span class="faint">변동 없음</span>';
+  return "–";
+}
+const fmtB = (v) => v >= 1e9 ? `$${fmt.n(v / 1e9, 1)}B` : `$${fmt.n(v / 1e6, 0)}M`;
+const fmtSh = (v) => v >= 1e6 ? `${fmt.n(v / 1e6, 1)}M` : fmt.n(v, 0);
+function renderBuffett() {
+  const f = state.filings; if (!f) return;
+  const L = f.latest, qs = f.quarters;
+  $("#bf-status").textContent = `${L.period} 분기 · ${L.filed} 공시 · 스냅샷 ${fmt.ago(f.updated)}`;
+  const streaks = L.holdings.filter((h) => h.streak >= 2).sort((a, b) => b.streak - a.streak || b.weight - a.weight);
+  const often = L.holdings.filter((h) => h.streak < 2 && h.buys8 >= 2).sort((a, b) => b.buys8 - a.buys8 || b.weight - a.weight);
+  const newOnes = L.holdings.filter((h) => h.change === "new");
+  $("#bf-head").innerHTML = [
+    kpi("포트폴리오 평가액", fmtB(L.totalValue), `${L.count}종목 · ${L.period} 기준`),
+    kpi("연속 매수 중", `${streaks.length}종목`, streaks.slice(0, 4).map((h) => h.ticker || h.name.split(" ")[0]).join(", ") || "없음"),
+    kpi("이번 분기 신규", `${newOnes.length}종목`, newOnes.map((h) => h.ticker || h.name.split(" ")[0]).join(", ") || "없음"),
+    kpi("이번 분기 청산", `${L.exits.length}종목`, L.exits.map((h) => h.ticker || h.name.split(" ")[0]).join(", ") || "없음"),
+  ].join("");
+  $("#bf-streak tbody").innerHTML = streaks.length ? streaks.map((h) => `<tr class="${h.streak >= 4 ? "hl4" : h.streak >= 3 ? "hl3" : ""}"><td class="txt">${tickerHtml(h)}</td><td><span class="streak s${Math.min(h.streak, 4)}">${h.streak}분기</span></td><td class="txt">${changeHtml(h)}</td><td>${histHtml(h.hist)}</td><td>${h.buys8}회</td><td>${fmtSh(h.shares)}</td><td>${fmt.n(h.weight * 100, 1)}%</td></tr>`).join("") : `<tr><td class="txt faint" colspan="7">최근 분기까지 2분기 이상 연속 매수한 종목이 없습니다</td></tr>`;
+  $("#bf-often tbody").innerHTML = often.length ? often.map((h) => `<tr><td class="txt">${tickerHtml(h)}</td><td>${h.buys8}회</td><td>${histHtml(h.hist)}</td><td class="txt">${h.lastBuy || "–"}</td><td>${fmtSh(h.shares)}</td><td>${fmt.n(h.weight * 100, 1)}%</td></tr>`).join("") : `<tr><td class="txt faint" colspan="6">해당 종목 없음</td></tr>`;
+  const sel = $("#bf-quarter");
+  if (!sel.options.length) { sel.innerHTML = [...qs].reverse().map((q) => `<option value="${q.period}">${q.period}${q.amended ? " (정정 반영)" : ""}</option>`).join(""); sel.value = state.bfQuarter || L.period; }
+  renderBuffettQuarter();
+  const labels = qs.map((q) => q.period.slice(0, 7));
+  const opts = baseOptions(labels, { yFmt: (v) => `$${fmt.n(v / 1e9, 0)}B`, tooltipLabel: (it) => `평가액 ${fmtB(it.parsed.y)}` });
+  opts.scales.x.ticks.maxTicksLimit = 8;
+  makeChart("chart-bf", { type: "line", data: { datasets: [{ label: "평가액", data: qs.map((q, i) => ({ x: i, y: q.totalValue })), borderColor: css("--accent"), backgroundColor: css("--accent") + "22", fill: true }] }, options: opts });
+}
+function renderBuffettQuarter() {
+  const f = state.filings; if (!f) return;
+  const period = $("#bf-quarter").value || f.latest.period; state.bfQuarter = period;
+  const q = f.quarters.find((x) => x.period === period) || f.latest;
+  const idx = f.quarters.indexOf(q);
+  const cnt = (c) => q.holdings.filter((h) => h.change === c).length;
+  $("#bf-sum").innerHTML = idx === 0 ? `데이터 범위의 첫 분기라 전분기 비교가 없습니다.` : `전분기(${f.quarters[idx - 1].period}) 대비 신규 <strong>${cnt("new")}</strong> · 매수 <strong>${cnt("inc")}</strong> · 매도 <strong>${cnt("dec")}</strong> · 청산 <strong>${q.exits.length}</strong>${q.exits.length ? ` (${q.exits.map((h) => h.ticker || h.name).join(", ")})` : ""}${cnt("split") ? ` · 분할 ${cnt("split")}` : ""}`;
+  const hist8 = (h) => f.quarters.slice(Math.max(0, idx - 7), idx + 1).map((x) => x.map.get(h.cusip)?.change || "none");
+  $("#bf-holdings tbody").innerHTML = q.holdings.map((h) => `<tr><td class="txt">${tickerHtml(h)}</td><td>${fmt.n(h.weight * 100, 1)}%</td><td>${fmtB(h.value)}</td><td>${fmtSh(h.shares)}</td><td class="txt">${changeHtml(h)}</td><td>${histHtml(hist8(h))}</td></tr>`).join("");
+}
+$("#bf-quarter").addEventListener("change", renderBuffettQuarter);
+$("#panel-buffett").addEventListener("click", (e) => { const t = e.target.closest("[data-stock]"); if (t) { selectTab("stocks"); ensureStockIndex().then(() => selectStock(t.dataset.stock)).catch(() => {}); } });
+
 // ───────────────────────── 시작 ─────────────────────────
 updateParamVisibility();
 const cachedLatest = cacheGet("md:latest"), cachedIntraday = cacheGet("md:intraday");
 if (cachedLatest) { state.latest = cachedLatest; state.intraday = cachedIntraday; renderQuotes(); }
 try { state.stockRange = localStorage.getItem("md:range") || "1Y"; const ss = localStorage.getItem("md:stock"); if (ss) state.stockSel = ss; } catch {}
-try { const t = localStorage.getItem("md:tab"); if (t && t !== "quotes") selectTab(t); } catch {}
+try { if (localStorage.getItem("md:tiles") === "1") { $("#tiles").hidden = false; $("#strip").setAttribute("aria-expanded", "true"); } } catch {}
+let savedTab = "stocks"; try { savedTab = localStorage.getItem("md:tab") || "stocks"; } catch {}
+selectTab(savedTab);
 loadAll().then(() => { if (!$("#panel-compare").hidden && !state.cmpLast) runCompare(true); });
 })();
 </script>

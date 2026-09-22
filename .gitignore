@@ -1,4 +1,5 @@
 invest/data/
 invest/stocks-data/
+invest/filings-data/
 out/
 node_modules/

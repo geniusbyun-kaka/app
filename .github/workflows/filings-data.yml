@@ -1,0 +1,48 @@
+name: Berkshire 13F snapshot
+
+# 매주 월요일 버크셔 해서웨이의 13F-HR 보고서를 SEC EDGAR 에서 받아 `filings` 브랜치에 저장합니다.
+# 13F 는 분기 종료 45일 뒤(2월·5월·8월·11월 중순)에 나오므로 그 무렵 자동으로 새 분기가 추가됩니다.
+on:
+  schedule:
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: filings-data
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Restore previous snapshot (already-read filings are reused)
+        run: |
+          git clone -q --depth 1 --branch filings "https://github.com/${GITHUB_REPOSITORY}.git" out 2>/dev/null || mkdir -p out
+          rm -rf out/.git
+
+      - name: Fetch 13F filings
+        env:
+          EDGAR_USER_AGENT: ${{ secrets.EDGAR_USER_AGENT }}
+        run: node scripts/fetch-filings.mjs out
+
+      - name: Publish to filings branch
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd out
+          git init -q -b filings
+          git config user.name "market-data-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add .
+          git commit -q -m "Berkshire 13F snapshot $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          git push -q --force "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" filings
