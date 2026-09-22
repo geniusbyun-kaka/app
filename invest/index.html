@@ -523,7 +523,8 @@ function alignFx(dates, fxSym) {
 }
 function renderDailyTable() {
   const h = state.history?.symbols; if (!h) return;
-  const nq = h["NQ=F"], fx = h["KRW=X"]; if (!nq) return;
+  const nq = h["NQ=F"], fx = h["KRW=X"];
+  if (!nq) { $("#daily-table tbody").innerHTML = `<tr><td class="txt faint" colspan="6">이번 스냅샷에 NQ 일봉이 없습니다</td></tr>`; return; }
   const n = 12, start = Math.max(1, nq.dates.length - n);
   const fxAligned = fx ? alignFx(nq.dates, fx) : [];
   const rows = [];
@@ -657,11 +658,15 @@ const STRATEGY_DESC = {
   dca: "초기 투자금을 첫날 매수하고, 이후 매월 첫 거래일 종가에 월 적립금만큼 추가 매수합니다. 수익률은 납입 시점을 반영한 연환산 내부수익률(IRR)로 보여줍니다.",
 };
 function initBacktestForm() {
-  const h = state.history.symbols, fx = h["KRW=X"];
-  const asset = h[$("#bt-asset").value];
+  const h = state.history.symbols, fx = h["KRW=X"], select = $("#bt-asset");
+  // 이번 스냅샷에 실제로 들어 있는 종목만 남긴다 (일부 소스가 실패해도 나머지로 동작)
+  $$("option", select).forEach((o) => { o.hidden = !h[o.value]; o.disabled = !h[o.value]; });
+  if (!h[select.value]) { const first = $$("option", select).find((o) => h[o.value]); if (first) select.value = first.value; }
+  const asset = h[select.value];
+  if (!asset) { $("#bt-datarange").textContent = "백테스트할 일봉 데이터가 없습니다"; $("#bt-run").disabled = true; return; }
   $("#bt-datarange").textContent = `일봉 ${asset.from} ~ ${asset.to} · 환율 ${fx ? `${fx.from} ~ ${fx.to}` : "없음"}`;
-  const start = $("#bt-start"), end = $("#bt-end");
-  if (!start.value) { setYears(10); }
+  if (!$("#bt-start").value) setYears(10);
+  const end = $("#bt-end");
   end.value = end.value || asset.to;
 }
 function setYears(years) {
@@ -692,6 +697,7 @@ function readConfig() {
 function runFromForm() {
   const h = state.history?.symbols; if (!h) return;
   const cfg = readConfig(), sym = h[cfg.asset], fxSym = h["KRW=X"];
+  if (!sym) return alert("이 종목의 일봉 데이터가 이번 스냅샷에 없습니다.");
   if (cfg.strategy === "smax" && cfg.fast >= cfg.slow) return alert("단기 이평은 장기 이평보다 짧아야 합니다.");
   if (cfg.strategy === "rsi" && cfg.rsiBuy >= cfg.rsiSell) return alert("매수 RSI 기준은 매도 기준보다 낮아야 합니다.");
   if (!(cfg.capital > 0)) return alert("초기 투자금을 입력하세요.");
@@ -805,7 +811,7 @@ $("#refresh").addEventListener("click", loadAll);
 $("#bt-run").addEventListener("click", runFromForm);
 $("#bt-strategy").addEventListener("change", updateParamVisibility);
 $("#bt-currency").addEventListener("change", onCurrencyChange);
-$("#bt-asset").addEventListener("change", () => { if (state.history) { const a = state.history.symbols[$("#bt-asset").value]; $("#bt-datarange").textContent = `일봉 ${a.from} ~ ${a.to}`; if ($("#bt-start").value < a.from) $("#bt-start").value = a.from; if ($("#bt-end").value > a.to) $("#bt-end").value = a.to; } });
+$("#bt-asset").addEventListener("change", () => { if (state.history) { const a = state.history.symbols[$("#bt-asset").value]; if (!a) return; $("#bt-datarange").textContent = `일봉 ${a.from} ~ ${a.to}`; if ($("#bt-start").value < a.from) $("#bt-start").value = a.from; if ($("#bt-end").value > a.to) $("#bt-end").value = a.to; } });
 $("#bt-log").addEventListener("change", () => state.lastBacktest && renderBacktest());
 $$(".chip").forEach((c) => c.addEventListener("click", () => setYears(+c.dataset.years)));
 window.addEventListener("resize", () => { if (!$("#panel-quotes").hidden) renderQuotes(); });
