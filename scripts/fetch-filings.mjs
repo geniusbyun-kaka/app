@@ -21,7 +21,8 @@ const EDGAR_WWW = process.env.EDGAR_BASE || "https://www.sec.gov";
 const FIGI_BASE = process.env.FIGI_BASE || "https://api.openfigi.com";
 const QUARTERS = Number(process.env.QUARTERS || 21);
 // SEC 는 요청자를 식별할 수 있는 User-Agent 를 요구한다
-const UA = process.env.EDGAR_USER_AGENT || `market-desk/1.0 (${process.env.GITHUB_REPOSITORY || "personal"} via GitHub Actions)`;
+const UA = process.env.EDGAR_USER_AGENT?.trim() || `market-desk/1.0 (${process.env.GITHUB_REPOSITORY || "personal"} via GitHub Actions)`;
+if (!process.env.EDGAR_USER_AGENT?.trim()) console.warn("[13f] EDGAR_USER_AGENT 가 비어 있습니다. SEC 는 \"이름 이메일\" 형식의 User-Agent 를 요구하므로 403 이 날 수 있습니다.");
 
 // OpenFIGI 가 막혔을 때를 위한 최소 매핑 (버크셔 대형 보유 종목)
 const KNOWN = {
@@ -42,6 +43,7 @@ async function edgar(url, asText = false) {
     const res = await fetch(url, { headers: { "User-Agent": UA, "Accept-Encoding": "gzip, deflate", Accept: asText ? "*/*" : "application/json" } });
     if (res.ok) return asText ? res.text() : res.json();
     if (res.status === 429 || res.status >= 500) { await sleep(3000 * (i + 1)); continue; }
+    if (res.status === 403) throw new Error(`SEC 가 요청을 거부했습니다 (403). SEC 는 자동 조회에 "이름 이메일" 형식의 User-Agent 를 요구합니다. 저장소 Settings → Secrets and variables → Actions 에 EDGAR_USER_AGENT 를 예: "Hong Gildong hong@example.com" 으로 추가하세요. 현재 UA: "${UA}"`);
     throw new Error(`${res.status} ${res.statusText} for ${url}`);
   }
   throw new Error(`EDGAR 응답 없음: ${url}`);
