@@ -1,0 +1,42 @@
+name: Market data snapshot
+
+# 10분마다 나스닥 선물 · 원달러 시세와 일봉 히스토리를 받아 `data` 브랜치에 저장합니다.
+# 앱(invest/index.html)은 raw.githubusercontent.com 의 `data` 브랜치 파일을 읽습니다.
+# 예약 실행은 저장소의 기본 브랜치에 있는 워크플로만 동작합니다.
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: market-data
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Fetch quotes and history
+        run: node scripts/fetch-market-data.mjs out
+
+      - name: Publish to data branch
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd out
+          git init -q -b data
+          git config user.name "market-data-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add .
+          git commit -q -m "Market data snapshot $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          git push -q --force "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" data
