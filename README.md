@@ -31,3 +31,40 @@
 ## 참고
 
 권장 범위는 미국수면재단(NSF)·소아과의 일반적인 권장치를 참고한 것으로, 의학적 진단이 아닌 참고용입니다.
+
+---
+
+# 마켓 데스크 — 나스닥 선물 · 원달러 · 백테스트 (`invest/`)
+
+나스닥 100 선물(NQ=F)과 원달러 환율(USD/KRW)의 지연 시세를 보여주고, 일봉 데이터로 투자 전략을 백테스트하는 웹앱입니다. `invest/index.html` 하나로 동작하며 API 키나 유료 서비스가 필요 없습니다.
+
+## 구조
+
+```
+invest/index.html               앱 화면 (시세 타일, 5분봉 차트, 백테스트)
+invest/vendor/chart.umd.js      Chart.js 4.4.7 (MIT)
+scripts/fetch-market-data.mjs   Yahoo Finance 에서 시세·일봉을 받아 JSON 으로 저장
+.github/workflows/market-data.yml  10분마다 위 스크립트를 실행해 `data` 브랜치에 저장
+```
+
+- **시세**: GitHub Actions 가 10분마다 Yahoo Finance(약 15분 지연)에서 받아 `data` 브랜치의 `latest.json`, `intraday.json` 에 저장합니다. 앱은 `raw.githubusercontent.com` 에서 이 파일을 읽고 5분마다 다시 확인합니다. 실제 시세 대비 최대 20~25분 정도 늦을 수 있습니다.
+- **백테스트**: `history.json` 의 일봉(NQ 선물 2000년~, 나스닥 100 지수 1985년~, QQQ 1999년~, S&P 500, 원달러 2003년~)으로 브라우저에서 계산합니다. 전략은 바이 앤 홀드, 이동평균 교차, 이동평균 필터, RSI 역추세, 적립식(DCA). 달러 기준과 원화 환산 기준을 고를 수 있고, 매도 후 현금을 달러/원화 중 어느 쪽으로 두는지도 선택할 수 있습니다.
+- 신호는 당일 종가로 계산하고 다음 거래일 종가에 체결하는 것으로 가정합니다. 선물 롤오버·증거금·레버리지는 반영하지 않습니다.
+
+## 처음 켤 때
+
+1. 이 폴더와 워크플로가 **기본 브랜치**에 있어야 예약 실행이 됩니다 (GitHub 은 기본 브랜치의 워크플로만 스케줄로 돌립니다).
+2. 저장소 **Actions** 탭 → `Market data snapshot` → **Run workflow** 로 한 번 수동 실행합니다. 성공하면 `data` 브랜치가 생깁니다.
+3. **Settings → Pages** 에서 배포 브랜치를 고르면 `https://<계정>.github.io/app/invest/` 에서 열립니다.
+4. 공개 저장소는 Actions 실행이 무료입니다. 60일간 커밋이 없으면 GitHub 이 예약 실행을 자동으로 멈추므로, 멈추면 Actions 탭에서 다시 켜 주세요.
+
+## 로컬에서 확인
+
+```
+node scripts/fetch-market-data.mjs invest/data   # 시세 JSON 생성
+cd invest && python3 -m http.server 8790         # 브라우저에서 http://localhost:8790/?data=./data/
+```
+
+## 유의
+
+개인 참고용 도구이며 투자 권유가 아닙니다. 무료 지연 시세라 값이 누락되거나 틀릴 수 있으니 실제 주문 전에는 증권사 화면으로 확인하세요.

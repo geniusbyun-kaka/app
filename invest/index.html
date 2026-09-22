@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>마켓 데스크</title>
+<meta name="description" content="나스닥 100 선물과 원달러 환율 지연 시세, 그리고 일봉 기반 전략 백테스트">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#F3F5F4; --surface:#FFFFFF; --surface-2:#EAEEEC; --ink:#151A1E; --ink-2:#4C575E; --ink-3:#7B868D; --line:#D8DEDB; --line-2:#E8ECEA;
+  --accent:#1E6E8C; --accent-ink:#FFFFFF; --up:#CF3639; --down:#2A62D4; --flat:#7B868D;
+  --nq:#1E6E8C; --fx:#B0651C; --strat:#6A47B8; --bench:#7A868E; --grid:#E4E8E6;
+  --shadow:0 1px 2px rgba(20,30,40,.06), 0 6px 20px -12px rgba(20,30,40,.18);
+  --radius:10px; --font:"IBM Plex Sans KR","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0F1417; --surface:#171D22; --surface-2:#1F272D; --ink:#E8ECEE; --ink-2:#A9B4BA; --ink-3:#74818A; --line:#2A343B; --line-2:#222B31;
+    --accent:#4FA3C4; --accent-ink:#0B1216; --up:#F0625F; --down:#6C93F0; --flat:#8A969E;
+    --nq:#4FA3C4; --fx:#E1934A; --strat:#A48BE6; --bench:#8A969E; --grid:#232D33;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 20px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0F1417; --surface:#171D22; --surface-2:#1F272D; --ink:#E8ECEE; --ink-2:#A9B4BA; --ink-3:#74818A; --line:#2A343B; --line-2:#222B31;
+  --accent:#4FA3C4; --accent-ink:#0B1216; --up:#F0625F; --down:#6C93F0; --flat:#8A969E;
+  --nq:#4FA3C4; --fx:#E1934A; --strat:#A48BE6; --bench:#8A969E; --grid:#232D33;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 20px -12px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:16px 16px 48px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+h1,h2,h3{margin:0;text-wrap:balance;line-height:1.25}
+h1{font-size:22px;font-weight:700;letter-spacing:-.01em}
+h2{font-size:16px;font-weight:600}
+h3{font-size:14px;font-weight:600}
+p{margin:0}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:var(--accent)}
+[hidden]{display:none!important}
+.eyebrow{font-size:11.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.muted{color:var(--ink-2)} .faint{color:var(--ink-3)}
+.small{font-size:12.5px}
+
+/* header */
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 20px;padding-bottom:14px;border-bottom:1px solid var(--line);margin-bottom:16px}
+.brand p{color:var(--ink-2);font-size:13px;margin-top:2px}
+.status{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-2)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--flat);display:inline-block;margin-right:6px;vertical-align:1px}
+.dot.ok{background:#2E9E5B}.dot.warn{background:#D9A400}.dot.bad{background:var(--up)}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 12px;font-size:13px;font-weight:500;color:var(--ink)}
+.btn:hover{border-color:var(--ink-3)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600;padding:9px 18px;font-size:14px}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn:focus-visible,select:focus-visible,input:focus-visible,.tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* notices */
+.notice{background:var(--surface);border:1px solid var(--line);border-left:4px solid #D9A400;border-radius:var(--radius);padding:12px 14px;margin-bottom:16px;font-size:13.5px}
+.notice code{font-family:var(--mono);font-size:12px;background:var(--surface-2);padding:1px 5px;border-radius:4px}
+.notice.error{border-left-color:var(--up)}
+
+/* quote tiles */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-bottom:18px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px 12px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.tile::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--series)}
+.tile .head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.tile .sym{font-family:var(--mono);font-size:12px;color:var(--ink-3)}
+.tile .price{font-family:var(--mono);font-size:34px;font-weight:600;letter-spacing:-.02em;line-height:1.1;margin-top:6px;font-variant-numeric:tabular-nums}
+.tile .price .cur{font-size:14px;font-weight:500;color:var(--ink-3);margin-left:6px;font-family:var(--font)}
+.chg{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:14px;font-weight:600;padding:3px 9px;border-radius:999px;margin-top:8px;font-variant-numeric:tabular-nums}
+.chg.up{color:var(--up);background:color-mix(in srgb,var(--up) 12%,transparent)}
+.chg.down{color:var(--down);background:color-mix(in srgb,var(--down) 12%,transparent)}
+.chg.flat{color:var(--flat);background:var(--surface-2)}
+.tile .meta{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;margin-top:12px;font-size:12.5px}
+.tile .meta div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed var(--line-2);padding:3px 0}
+.tile .meta span:last-child{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--ink)}
+.tile .meta span:first-child{color:var(--ink-3)}
+.range{margin-top:10px;font-size:11.5px;color:var(--ink-3)}
+.range .bar{position:relative;height:4px;background:var(--surface-2);border-radius:2px;margin:5px 0 3px}
+.range .bar i{position:absolute;top:-3px;width:10px;height:10px;border-radius:50%;background:var(--series);border:2px solid var(--surface);transform:translateX(-50%)}
+.range .ends{display:flex;justify-content:space-between;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.spark{display:block;width:100%;height:46px;margin-top:10px}
+.tile .foot{font-size:11.5px;color:var(--ink-3);margin-top:8px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.skeleton{color:transparent!important;background:var(--surface-2);border-radius:6px;animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.5}}
+
+/* tabs */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:16px;overflow-x:auto}
+.tab{background:none;border:0;border-bottom:2px solid transparent;padding:8px 14px;font-size:14px;font-weight:500;color:var(--ink-2);margin-bottom:-1px;white-space:nowrap}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+.panel{display:grid;gap:14px}
+.panel>*{min-width:0}
+
+/* cards */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px}
+.card .card-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.card .card-head .legend{display:flex;gap:14px;font-size:12px;color:var(--ink-2);flex-wrap:wrap}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px;background:var(--c)}
+.legend i.dash{background:repeating-linear-gradient(90deg,var(--c) 0 4px,transparent 4px 7px)}
+.chart{position:relative;width:100%;height:240px}
+.chart.tall{height:300px}
+.chart.short{height:150px}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.two>*,.tiles>*,.kpis>*,.form>*{min-width:0}
+.chart{min-width:0}
+
+/* notional table */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line-2);text-align:right;white-space:nowrap}
+th{font-weight:600;color:var(--ink-3);font-size:11.5px;letter-spacing:.04em;text-transform:uppercase}
+th:first-child,td:first-child{text-align:left}
+td{font-family:var(--mono);font-variant-numeric:tabular-nums}
+td.txt{font-family:var(--font)}
+.tablewrap{overflow-x:auto}
+.pos{color:var(--up)} .neg{color:var(--down)}
+
+/* backtest form */
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px 14px}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field label{font-size:12px;font-weight:600;color:var(--ink-2)}
+.field select,.field input{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 10px;font-size:14px;min-width:0;width:100%}
+.field input[type=number]{font-family:var(--mono)}
+.field .hint{font-size:11.5px;color:var(--ink-3)}
+.form-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--surface-2);border-radius:999px;padding:4px 10px;font-size:12px;color:var(--ink-2)}
+.chip:hover{color:var(--ink);border-color:var(--ink-3)}
+.strategy-desc{font-size:13px;color:var(--ink-2);background:var(--surface-2);border-radius:8px;padding:10px 12px;margin-top:12px}
+
+/* KPI */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px}
+.kpi .k{font-size:11.5px;color:var(--ink-3);font-weight:600;letter-spacing:.04em}
+.kpi .v{font-family:var(--mono);font-size:22px;font-weight:600;margin-top:4px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.kpi .b{font-size:11.5px;color:var(--ink-3);margin-top:3px;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.verdict{font-size:13.5px;line-height:1.6}
+.verdict strong{font-weight:600}
+
+/* guide */
+.guide p+p{margin-top:8px}
+.guide ol,.guide ul{margin:8px 0 0;padding-left:20px}
+.guide li+li{margin-top:4px}
+footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
+@media (max-width:480px){
+  .tile .price{font-size:30px}
+  .card{padding:14px}
+  .kpi .v{font-size:19px}
+}
+@media (prefers-reduced-motion: reduce){.skeleton{animation:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>마켓 데스크</h1>
+      <p>나스닥 100 선물 · 원달러 환율 · 전략 백테스트</p>
+    </div>
+    <div class="status">
+      <span id="status"><span class="dot"></span>데이터 불러오는 중</span>
+      <button class="btn" id="refresh" type="button">새로고침</button>
+    </div>
+  </header>
+
+  <div id="notice" class="notice" hidden></div>
+
+  <section class="tiles" aria-label="현재 시세">
+    <article class="tile" id="tile-NQ" style="--series:var(--nq)">
+      <div class="head"><h2>나스닥 100 선물</h2><span class="sym">NQ=F · CME</span></div>
+      <div class="price skeleton">00000.00</div>
+      <div class="chg flat skeleton">+0.00 (0.00%)</div>
+      <canvas class="spark" aria-hidden="true"></canvas>
+      <div class="meta">
+        <div><span>전일 종가</span><span data-f="previousClose">–</span></div>
+        <div><span>당일 고가</span><span data-f="dayHigh">–</span></div>
+        <div><span>당일 저가</span><span data-f="dayLow">–</span></div>
+        <div><span>1계약 명목가치</span><span data-f="notional">–</span></div>
+      </div>
+      <div class="range"><span>52주 범위</span><div class="bar"><i style="left:50%"></i></div><div class="ends"><span data-f="fiftyTwoWeekLow">–</span><span data-f="fiftyTwoWeekHigh">–</span></div></div>
+      <div class="foot"><span data-f="time">기준 시각 –</span><span>최근 5거래일 5분봉</span></div>
+    </article>
+    <article class="tile" id="tile-FX" style="--series:var(--fx)">
+      <div class="head"><h2>원달러 환율</h2><span class="sym">USD/KRW · 역외</span></div>
+      <div class="price skeleton">0000.00</div>
+      <div class="chg flat skeleton">+0.00 (0.00%)</div>
+      <canvas class="spark" aria-hidden="true"></canvas>
+      <div class="meta">
+        <div><span>전일 종가</span><span data-f="previousClose">–</span></div>
+        <div><span>당일 고가</span><span data-f="dayHigh">–</span></div>
+        <div><span>당일 저가</span><span data-f="dayLow">–</span></div>
+        <div><span>NQ 1계약 원화</span><span data-f="notional">–</span></div>
+      </div>
+      <div class="range"><span>52주 범위</span><div class="bar"><i style="left:50%"></i></div><div class="ends"><span data-f="fiftyTwoWeekLow">–</span><span data-f="fiftyTwoWeekHigh">–</span></div></div>
+      <div class="foot"><span data-f="time">기준 시각 –</span><span>최근 5거래일 5분봉</span></div>
+    </article>
+  </section>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-tab="quotes" id="tab-quotes">시세</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="backtest" id="tab-backtest">백테스트</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="guide" id="tab-guide">안내</button>
+  </div>
+
+  <!-- 시세 -->
+  <section class="panel" id="panel-quotes" role="tabpanel">
+    <div class="two">
+      <div class="card">
+        <div class="card-head"><h3>나스닥 100 선물 · 5분봉</h3><div class="legend"><span><i style="--c:var(--nq)"></i>NQ</span><span><i class="dash" style="--c:var(--ink-3)"></i>전일 종가</span></div></div>
+        <div class="chart"><canvas id="chart-nq"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>원달러 환율 · 5분봉</h3><div class="legend"><span><i style="--c:var(--fx)"></i>USD/KRW</span><span><i class="dash" style="--c:var(--ink-3)"></i>전일 종가</span></div></div>
+        <div class="chart"><canvas id="chart-fx"></canvas></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>최근 일봉 · 종가 기준</h3><span class="small faint">일봉 히스토리는 백테스트 데이터와 동일한 소스입니다</span></div>
+      <div class="tablewrap"><table id="daily-table"><thead><tr><th>날짜</th><th>NQ 종가</th><th>전일비</th><th>USD/KRW</th><th>전일비</th><th>NQ 원화 환산 (×20)</th></tr></thead><tbody><tr><td class="txt faint" colspan="6">일봉 데이터를 불러오는 중입니다</td></tr></tbody></table></div>
+    </div>
+  </section>
+
+  <!-- 백테스트 -->
+  <section class="panel" id="panel-backtest" role="tabpanel" hidden>
+    <div class="card">
+      <div class="card-head"><h3>전략 설정</h3><span class="small faint" id="bt-datarange">일봉 데이터 불러오는 중</span></div>
+      <div class="form">
+        <div class="field"><label for="bt-asset">투자 대상</label><select id="bt-asset">
+          <option value="NQ=F">나스닥 100 선물 (NQ)</option>
+          <option value="^NDX">나스닥 100 지수</option>
+          <option value="QQQ">QQQ ETF (배당 재투자)</option>
+          <option value="^GSPC">S&amp;P 500 지수</option>
+        </select></div>
+        <div class="field"><label for="bt-strategy">전략</label><select id="bt-strategy">
+          <option value="bh">바이 앤 홀드</option>
+          <option value="smax">이동평균 교차 (골든/데드크로스)</option>
+          <option value="smaf">이동평균 필터 (추세 위에서만 보유)</option>
+          <option value="rsi">RSI 역추세</option>
+          <option value="dca">적립식 매수 (DCA)</option>
+        </select></div>
+        <div class="field" data-p="smax"><label for="bt-fast">단기 이평 (일)</label><input id="bt-fast" type="number" min="2" max="400" value="50"></div>
+        <div class="field" data-p="smax smaf"><label for="bt-slow">장기 이평 (일)</label><input id="bt-slow" type="number" min="5" max="600" value="200"></div>
+        <div class="field" data-p="rsi"><label for="bt-rsi-n">RSI 기간 (일)</label><input id="bt-rsi-n" type="number" min="2" max="100" value="14"></div>
+        <div class="field" data-p="rsi"><label for="bt-rsi-buy">매수 RSI 이하</label><input id="bt-rsi-buy" type="number" min="1" max="99" value="30"></div>
+        <div class="field" data-p="rsi"><label for="bt-rsi-sell">매도 RSI 이상</label><input id="bt-rsi-sell" type="number" min="1" max="99" value="70"></div>
+        <div class="field" data-p="dca"><label for="bt-monthly">월 적립금</label><input id="bt-monthly" type="number" min="0" step="100" value="1000"><span class="hint">매월 첫 거래일 종가에 매수</span></div>
+        <div class="field"><label for="bt-start">시작일</label><input id="bt-start" type="date"></div>
+        <div class="field"><label for="bt-end">종료일</label><input id="bt-end" type="date"></div>
+        <div class="field"><label for="bt-currency">기준 통화</label><select id="bt-currency"><option value="USD">달러 (USD)</option><option value="KRW">원화 환산 (KRW)</option></select><span class="hint">원화 기준이면 환율 변동이 수익률에 반영됩니다</span></div>
+        <div class="field"><label for="bt-capital">초기 투자금</label><input id="bt-capital" type="number" min="0" step="1000" value="10000"></div>
+        <div class="field" data-p="smax smaf rsi"><label for="bt-cash">현금 보유 통화</label><select id="bt-cash"><option value="USD">달러로 보유</option><option value="KRW">원화로 보유 (환전)</option></select><span class="hint">매도 후 현금을 어떤 통화로 두는지</span></div>
+        <div class="field"><label for="bt-fee">거래 비용 (bp)</label><input id="bt-fee" type="number" min="0" max="500" step="1" value="5"><span class="hint">매매 1회당 금액의 만분율. 5bp = 0.05%</span></div>
+      </div>
+      <div class="strategy-desc" id="bt-desc"></div>
+      <div class="form-actions">
+        <button class="btn primary" id="bt-run" type="button">백테스트 실행</button>
+        <div class="chips" aria-label="기간 빠른 선택">
+          <button class="chip" type="button" data-years="3">최근 3년</button>
+          <button class="chip" type="button" data-years="5">최근 5년</button>
+          <button class="chip" type="button" data-years="10">최근 10년</button>
+          <button class="chip" type="button" data-years="15">최근 15년</button>
+          <button class="chip" type="button" data-years="0">전체 기간</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="bt-results" hidden>
+      <div class="panel">
+        <div class="kpis" id="bt-kpis"></div>
+        <div class="card"><div class="verdict" id="bt-verdict"></div></div>
+        <div class="card">
+          <div class="card-head"><h3>자산 곡선</h3><div class="legend"><span><i style="--c:var(--strat)"></i>전략</span><span><i style="--c:var(--bench)"></i>바이 앤 홀드</span><label class="small" style="margin-left:6px"><input type="checkbox" id="bt-log"> 로그 스케일</label></div></div>
+          <div class="chart tall"><canvas id="chart-equity"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h3>고점 대비 낙폭 (드로다운)</h3><div class="legend"><span><i style="--c:var(--strat)"></i>전략</span><span><i style="--c:var(--bench)"></i>바이 앤 홀드</span></div></div>
+          <div class="chart short"><canvas id="chart-dd"></canvas></div>
+        </div>
+        <div class="two">
+          <div class="card">
+            <div class="card-head"><h3>연도별 수익률</h3></div>
+            <div class="tablewrap"><table id="bt-yearly"><thead><tr><th>연도</th><th>전략</th><th>바이 앤 홀드</th><th>차이</th></tr></thead><tbody></tbody></table></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>매매 내역</h3><span class="small faint" id="bt-trades-note"></span></div>
+            <div class="tablewrap"><table id="bt-trades"><thead><tr><th>매수일</th><th>매도일</th><th>매수가</th><th>매도가</th><th>손익</th><th>보유일</th></tr></thead><tbody></tbody></table></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 안내 -->
+  <section class="panel guide" id="panel-guide" role="tabpanel" hidden>
+    <div class="card">
+      <h3>데이터는 어디서 오나요</h3>
+      <p style="margin-top:8px">GitHub Actions 가 10분마다 Yahoo Finance 에서 나스닥 100 선물(NQ=F)과 원달러 환율(KRW=X) 시세를 받아 이 저장소의 <code>data</code> 브랜치에 저장하고, 이 페이지는 그 파일을 읽어 보여줍니다. Yahoo 자체가 거래소 대비 10~15분 지연이라 화면의 시세는 실제보다 최대 20~25분 정도 늦을 수 있습니다. 페이지는 5분마다 자동으로 새 스냅샷을 확인합니다.</p>
+      <p>백테스트에 쓰는 일봉은 NQ 선물(2000년~), 나스닥 100 지수(1985년~), QQQ(1999년~, 배당 재투자 반영), S&amp;P 500, 원달러 환율(2003년~)입니다. 원화 기준 백테스트는 환율 데이터가 있는 구간으로 자동으로 맞춰집니다.</p>
+    </div>
+    <div class="card">
+      <h3>전략 설명</h3>
+      <ul>
+        <li><strong>바이 앤 홀드</strong> 시작일에 전액 매수 후 종료일까지 보유. 다른 전략의 비교 기준입니다.</li>
+        <li><strong>이동평균 교차</strong> 단기 이평이 장기 이평을 위로 뚫으면(골든크로스) 매수, 아래로 뚫으면(데드크로스) 전량 매도 후 현금 보유.</li>
+        <li><strong>이동평균 필터</strong> 종가가 장기 이평 위에 있을 때만 보유, 아래로 내려가면 현금. 큰 하락장을 피하는 대신 잦은 매매로 비용이 생깁니다.</li>
+        <li><strong>RSI 역추세</strong> RSI 가 매수 기준 이하로 떨어지면 매수, 매도 기준 이상으로 오르면 매도. 상승 추세 자산에서는 보유 기간이 짧아 수익을 놓치기 쉽습니다.</li>
+        <li><strong>적립식 매수</strong> 초기 투자금에 더해 매월 첫 거래일에 정해진 금액을 매수. 수익률은 납입 시점을 반영한 내부수익률(연환산)로 표시합니다.</li>
+      </ul>
+      <p>신호는 당일 종가로 계산하고 매매는 다음 거래일 종가에 체결되는 것으로 가정합니다(미래 정보 사용 방지). 선물의 롤오버 비용·증거금·레버리지는 반영하지 않으며, NQ 는 가격 지수처럼 취급합니다.</p>
+    </div>
+    <div class="card">
+      <h3>처음 설정할 때</h3>
+      <ol>
+        <li>저장소 Actions 탭에서 <strong>Market data snapshot</strong> 워크플로를 한 번 수동 실행(Run workflow)하면 <code>data</code> 브랜치가 생기고 시세가 표시됩니다.</li>
+        <li>예약 실행은 기본 브랜치의 워크플로만 동작하므로 이 폴더가 기본 브랜치에 있어야 합니다.</li>
+        <li>GitHub Pages 로 배포하면 폰에서도 열립니다. 공개 저장소는 Actions 실행이 무료입니다. 60일간 커밋이 없으면 GitHub 이 예약 실행을 자동으로 멈추니 가끔 Actions 탭에서 다시 켜주세요.</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h3>유의</h3>
+      <p>이 페이지는 개인 참고용 도구이며 투자 권유가 아닙니다. 지연 시세와 무료 데이터 소스의 특성상 값이 누락되거나 틀릴 수 있으니 실제 주문 전에는 증권사 화면으로 확인하세요. 과거 성과는 미래 수익을 보장하지 않습니다.</p>
+    </div>
+  </section>
+
+  <footer>데이터: Yahoo Finance (지연 시세). NQ 1계약 = 지수 × $20, 마이크로(MNQ) = 지수 × $2. 화면 색상은 한국식(상승 빨강, 하락 파랑)입니다.</footer>
+</div>
+
+<script src="vendor/chart.umd.js"></script>
+<script>
+(() => {
+"use strict";
+// ───────────────────────── 설정 ─────────────────────────
+const OWNER = "geniusbyun-kaka", REPO = "app";
+const params = new URLSearchParams(location.search);
+const DATA_BASE = params.get("data") || `https://raw.githubusercontent.com/${OWNER}/${REPO}/data/`;
+const REFRESH_MS = 5 * 60 * 1000;
+const NQ_MULTIPLIER = 20;
+
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const fmt = {
+  n: (v, d = 2) => v == null || !isFinite(v) ? "–" : v.toLocaleString("ko-KR", { minimumFractionDigits: d, maximumFractionDigits: d }),
+  pct: (v, d = 2, sign = true) => v == null || !isFinite(v) ? "–" : `${sign && v > 0 ? "+" : ""}${fmt.n(v * 100, d)}%`,
+  signed: (v, d = 2) => v == null || !isFinite(v) ? "–" : `${v > 0 ? "+" : ""}${fmt.n(v, d)}`,
+  money: (v, cur) => v == null || !isFinite(v) ? "–" : cur === "KRW" ? `₩${fmt.n(v, 0)}` : `$${fmt.n(v, v >= 1e5 ? 0 : 2)}`,
+  krw: (v) => v == null || !isFinite(v) ? "–" : `₩${fmt.n(v, 0)}`,
+  time: (iso) => { if (!iso) return "–"; const d = new Date(iso); return d.toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false }); },
+  ago: (iso) => { if (!iso) return ""; const m = Math.round((Date.now() - new Date(iso)) / 60000); return m < 1 ? "방금" : m < 60 ? `${m}분 전` : m < 1440 ? `${Math.floor(m / 60)}시간 ${m % 60}분 전` : `${Math.floor(m / 1440)}일 전`; },
+};
+const state = { latest: null, intraday: null, history: null, charts: {}, lastBacktest: null };
+
+// ───────────────────────── 데이터 로딩 ─────────────────────────
+async function getJson(name) {
+  const res = await fetch(`${DATA_BASE}${name}?t=${Date.now()}`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`${name}: HTTP ${res.status}`);
+  return res.json();
+}
+function setStatus(kind, text) { $("#status").innerHTML = `<span class="dot ${kind}"></span>${text}`; }
+function showNotice(html, error) { const n = $("#notice"); n.innerHTML = html; n.classList.toggle("error", !!error); n.hidden = false; }
+function hideNotice() { $("#notice").hidden = true; }
+function cacheSet(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} }
+function cacheGet(key) { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } }
+
+async function loadLive() {
+  setStatus("", "시세 확인 중");
+  try {
+    const [latest, intraday] = await Promise.all([getJson("latest.json"), getJson("intraday.json")]);
+    state.latest = latest; state.intraday = intraday;
+    cacheSet("md:latest", latest); cacheSet("md:intraday", intraday);
+    renderQuotes(); hideNotice();
+    const age = (Date.now() - new Date(latest.updated)) / 60000;
+    setStatus(age > 45 ? "warn" : "ok", `스냅샷 ${fmt.time(latest.updated)} (${fmt.ago(latest.updated)})${age > 45 ? " · 갱신이 지연되고 있습니다" : ""}`);
+  } catch (err) {
+    if (state.latest) { setStatus("warn", `새 데이터를 받지 못해 이전 스냅샷 표시 (${fmt.ago(state.latest.updated)})`); return; }
+    setStatus("bad", "시세 데이터 없음");
+    showNotice(`<strong>아직 시세 스냅샷이 없습니다.</strong> 저장소 Actions 탭에서 <code>Market data snapshot</code> 워크플로를 한 번 실행하면 <code>data</code> 브랜치가 만들어지고 이 화면이 채워집니다. (오류: ${err.message})`, true);
+  }
+}
+async function loadHistory() {
+  try {
+    const history = await getJson("history.json");
+    state.history = history;
+    renderDailyTable(); initBacktestForm();
+  } catch (err) {
+    $("#bt-datarange").textContent = `일봉 데이터를 불러오지 못했습니다 (${err.message})`;
+    $("#daily-table tbody").innerHTML = `<tr><td class="txt faint" colspan="6">일봉 데이터를 불러오지 못했습니다</td></tr>`;
+  }
+}
+async function loadAll() { await loadLive(); await loadHistory(); }
+
+// ───────────────────────── 시세 타일 ─────────────────────────
+function renderQuotes() {
+  const q = state.latest?.quotes || {};
+  const nq = q["NQ=F"], fx = q["KRW=X"];
+  renderTile($("#tile-NQ"), nq, state.intraday?.series?.["NQ=F"], "USD");
+  renderTile($("#tile-FX"), fx, state.intraday?.series?.["KRW=X"], "KRW");
+  if (nq?.price != null) {
+    const usd = nq.price * NQ_MULTIPLIER;
+    $('#tile-NQ [data-f="notional"]').textContent = `$${fmt.n(usd, 0)}`;
+    $('#tile-FX [data-f="notional"]').textContent = fx?.price != null ? fmt.krw(usd * fx.price) : "–";
+  }
+  drawIntradayChart("chart-nq", state.intraday?.series?.["NQ=F"], css("--nq"), 2);
+  drawIntradayChart("chart-fx", state.intraday?.series?.["KRW=X"], css("--fx"), 2);
+}
+function renderTile(tile, quote, series, cur) {
+  const price = $(".price", tile), chg = $(".chg", tile);
+  price.classList.remove("skeleton"); chg.classList.remove("skeleton");
+  if (!quote) { price.textContent = "–"; chg.className = "chg flat"; chg.textContent = "데이터 없음"; return; }
+  price.innerHTML = `${fmt.n(quote.price)}<span class="cur">${cur === "KRW" ? "원" : "pt"}</span>`;
+  const dir = quote.change > 0 ? "up" : quote.change < 0 ? "down" : "flat";
+  const arrow = dir === "up" ? "▲" : dir === "down" ? "▼" : "";
+  chg.className = `chg ${dir}`;
+  chg.textContent = quote.change == null ? "전일 대비 –" : `${arrow} ${fmt.n(Math.abs(quote.change))} (${fmt.signed(quote.changePercent)}%)`;
+  for (const f of ["previousClose", "dayHigh", "dayLow", "fiftyTwoWeekLow", "fiftyTwoWeekHigh"]) {
+    const el = $(`[data-f="${f}"]`, tile); if (el) el.textContent = fmt.n(quote[f]);
+  }
+  const lo = quote.fiftyTwoWeekLow, hi = quote.fiftyTwoWeekHigh;
+  if (lo != null && hi != null && hi > lo) $(".range .bar i", tile).style.left = `${Math.max(0, Math.min(100, (quote.price - lo) / (hi - lo) * 100))}%`;
+  const stateLabel = { REGULAR: "장중", PRE: "장전", POST: "장후", CLOSED: "휴장", PREPRE: "장전", POSTPOST: "장후" }[quote.marketState] || "";
+  $('[data-f="time"]', tile).textContent = `${stateLabel ? stateLabel + " · " : ""}기준 ${fmt.time(quote.marketTime)}`;
+  drawSpark($(".spark", tile), series, quote);
+}
+function drawSpark(canvas, series, quote) {
+  if (!series?.c?.length) return;
+  const dpr = window.devicePixelRatio || 1, W = canvas.clientWidth, H = canvas.clientHeight;
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  const ctx = canvas.getContext("2d"); ctx.scale(dpr, dpr); ctx.clearRect(0, 0, W, H);
+  const data = series.c, n = data.length, min = Math.min(...data), max = Math.max(...data), span = max - min || 1;
+  const x = (i) => (i / (n - 1)) * (W - 2) + 1, y = (v) => H - 4 - ((v - min) / span) * (H - 8);
+  const color = getComputedStyle(canvas.closest(".tile")).getPropertyValue("--series").trim() || css("--accent");
+  const prev = series.previousClose ?? quote?.previousClose;
+  if (prev != null && prev >= min && prev <= max) { ctx.setLineDash([3, 3]); ctx.strokeStyle = css("--ink-3"); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, y(prev)); ctx.lineTo(W, y(prev)); ctx.stroke(); ctx.setLineDash([]); }
+  ctx.beginPath(); data.forEach((v, i) => i ? ctx.lineTo(x(i), y(v)) : ctx.moveTo(x(i), y(v)));
+  ctx.strokeStyle = color; ctx.lineWidth = 1.6; ctx.lineJoin = "round"; ctx.stroke();
+  const grad = ctx.createLinearGradient(0, 0, 0, H); grad.addColorStop(0, color + "33"); grad.addColorStop(1, color + "00");
+  ctx.lineTo(x(n - 1), H); ctx.lineTo(x(0), H); ctx.closePath(); ctx.fillStyle = grad; ctx.fill();
+  ctx.beginPath(); ctx.arc(x(n - 1), y(data[n - 1]), 3, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill();
+}
+
+// ───────────────────────── Chart.js 공통 ─────────────────────────
+const crosshair = {
+  id: "crosshair",
+  afterDraw(chart) {
+    const active = chart.tooltip?.getActiveElements?.() || [];
+    if (!active.length) return;
+    const { x } = active[0].element, { top, bottom } = chart.chartArea, ctx = chart.ctx;
+    ctx.save(); ctx.strokeStyle = css("--ink-3"); ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x, bottom); ctx.stroke(); ctx.restore();
+  },
+};
+Chart.register(crosshair);
+function baseOptions(labels, { yFmt, tooltipTitle, tooltipLabel, xTick, yType = "linear", yMin, yMax } = {}) {
+  const ink2 = css("--ink-2"), grid = css("--grid"), font = { family: css("--mono") || "monospace", size: 11 };
+  return {
+    responsive: true, maintainAspectRatio: false, animation: false, normalized: true, parsing: false,
+    interaction: { mode: "index", intersect: false }, spanGaps: true,
+    scales: {
+      x: { type: "linear", min: 0, max: Math.max(0, labels.length - 1), grid: { color: grid, drawTicks: false }, border: { display: false },
+        ticks: { color: ink2, font, maxRotation: 0, autoSkip: true, maxTicksLimit: 7, includeBounds: false, callback: (v) => xTick ? xTick(Math.round(v)) : (labels[Math.round(v)] ?? "") } },
+      y: { type: yType, position: "right", min: yMin, max: yMax, grid: { color: grid, drawTicks: false }, border: { display: false },
+        ticks: { color: ink2, font, maxTicksLimit: 6, callback: (v) => yFmt ? yFmt(v) : fmt.n(v, 0) } },
+    },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: css("--surface"), titleColor: css("--ink"), bodyColor: css("--ink-2"), borderColor: css("--line"), borderWidth: 1,
+        titleFont: { family: css("--font"), size: 12, weight: "600" }, bodyFont: font, padding: 10, displayColors: true, boxWidth: 8, boxHeight: 8, usePointStyle: true,
+        callbacks: { title: (items) => tooltipTitle ? tooltipTitle(items[0].parsed.x) : labels[items[0].parsed.x], label: (item) => tooltipLabel ? tooltipLabel(item) : `${item.dataset.label}: ${fmt.n(item.parsed.y)}` },
+      },
+    },
+    elements: { point: { radius: 0, hitRadius: 8, hoverRadius: 4 }, line: { borderWidth: 2, tension: 0 } },
+  };
+}
+function makeChart(id, config) {
+  state.charts[id]?.destroy();
+  state.charts[id] = new Chart($(`#${id}`), config);
+  return state.charts[id];
+}
+function drawIntradayChart(id, series, color, digits) {
+  if (!series?.c?.length) return;
+  const tz = series.timezone || "America/New_York";
+  const dayFmt = new Intl.DateTimeFormat("en-US", { timeZone: tz, month: "numeric", day: "numeric" });
+  const timeFmt = new Intl.DateTimeFormat("ko-KR", { timeZone: tz, month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
+  const days = series.t.map((t) => dayFmt.format(new Date(t * 1000)));
+  const dayStart = new Set(); const seen = new Set();
+  days.forEach((d, i) => { if (!seen.has(d)) { seen.add(d); dayStart.add(i); } });
+  const points = series.c.map((v, i) => ({ x: i, y: v }));
+  const prev = series.previousClose;
+  const datasets = [{ label: id === "chart-nq" ? "NQ" : "USD/KRW", data: points, borderColor: color, backgroundColor: color + "22", fill: true }];
+  if (prev != null) datasets.push({ label: "전일 종가", data: [{ x: 0, y: prev }, { x: points.length - 1, y: prev }], borderColor: css("--ink-3"), borderDash: [4, 4], borderWidth: 1, fill: false, pointHitRadius: 0 });
+  const opts = baseOptions(days, {
+    yFmt: (v) => fmt.n(v, 0),
+    tooltipTitle: (i) => timeFmt.format(new Date(series.t[i] * 1000)) + " (거래소 시간)",
+    tooltipLabel: (item) => item.datasetIndex === 0 ? `${fmt.n(item.parsed.y, digits)}${prev != null ? `  (${fmt.pct(item.parsed.y / prev - 1)} 전일비)` : ""}` : `전일 종가 ${fmt.n(prev, digits)}`,
+    xTick: (i) => dayStart.has(i) || i === 0 ? days[i] : "",
+  });
+  opts.scales.x.ticks.autoSkip = true; opts.scales.x.ticks.autoSkipPadding = 24; opts.scales.x.ticks.maxTicksLimit = undefined;
+  opts.scales.x.afterBuildTicks = (scale) => { // 날짜 경계마다 눈금, 너무 붙은 것은 생략
+    const minGap = Math.ceil(points.length * 56 / Math.max(scale.chart.width || 320, 1)); let last = -Infinity;
+    scale.ticks = [...dayStart].filter((v) => { if (v - last < minGap) return false; last = v; return true; }).map((v) => ({ value: v }));
+  };
+  makeChart(id, { type: "line", data: { datasets }, options: opts });
+}
+
+// ───────────────────────── 일봉 테이블 ─────────────────────────
+function alignFx(dates, fxSym) {
+  // 각 날짜에 대해 같은 날 또는 직전 영업일의 환율 (forward fill)
+  const fxd = fxSym.dates, fxc = fxSym.close, out = new Array(dates.length).fill(null);
+  let j = 0;
+  for (let i = 0; i < dates.length; i++) {
+    while (j + 1 < fxd.length && fxd[j + 1] <= dates[i]) j++;
+    out[i] = fxd[j] <= dates[i] ? fxc[j] : null;
+  }
+  return out;
+}
+function renderDailyTable() {
+  const h = state.history?.symbols; if (!h) return;
+  const nq = h["NQ=F"], fx = h["KRW=X"]; if (!nq) return;
+  const n = 12, start = Math.max(1, nq.dates.length - n);
+  const fxAligned = fx ? alignFx(nq.dates, fx) : [];
+  const rows = [];
+  for (let i = nq.dates.length - 1; i >= start; i--) {
+    const c = nq.close[i], p = nq.close[i - 1], r = fxAligned[i], rp = fxAligned[i - 1];
+    const cls = (v) => v > 0 ? "pos" : v < 0 ? "neg" : "";
+    rows.push(`<tr><td class="txt">${nq.dates[i]}</td><td>${fmt.n(c)}</td><td class="${cls(c - p)}">${fmt.pct(c / p - 1)}</td><td>${fmt.n(r)}</td><td class="${cls(r - rp)}">${r && rp ? fmt.pct(r / rp - 1) : "–"}</td><td>${r ? fmt.krw(c * NQ_MULTIPLIER * r) : "–"}</td></tr>`);
+  }
+  $("#daily-table tbody").innerHTML = rows.join("");
+}
+
+// ───────────────────────── 백테스트 엔진 ─────────────────────────
+function sma(arr, n) {
+  const out = new Array(arr.length).fill(null); let sum = 0;
+  for (let i = 0; i < arr.length; i++) { sum += arr[i]; if (i >= n) sum -= arr[i - n]; if (i >= n - 1) out[i] = sum / n; }
+  return out;
+}
+function rsi(arr, n) {
+  const out = new Array(arr.length).fill(null); let g = 0, l = 0;
+  for (let i = 1; i < arr.length; i++) {
+    const d = arr[i] - arr[i - 1], up = Math.max(d, 0), dn = Math.max(-d, 0);
+    if (i <= n) { g += up / n; l += dn / n; if (i === n) out[i] = l === 0 ? 100 : 100 - 100 / (1 + g / l); }
+    else { g = (g * (n - 1) + up) / n; l = (l * (n - 1) + dn) / n; out[i] = l === 0 ? 100 : 100 - 100 / (1 + g / l); }
+  }
+  return out;
+}
+// 목표 포지션(1=보유, 0=현금)을 날짜별로 계산. 신호는 당일 종가 기준.
+function signals(close, cfg) {
+  const n = close.length, want = new Array(n).fill(1);
+  if (cfg.strategy === "smax") {
+    const f = sma(close, cfg.fast), s = sma(close, cfg.slow); let pos = 0;
+    for (let i = 0; i < n; i++) { if (f[i] != null && s[i] != null) pos = f[i] > s[i] ? 1 : 0; want[i] = pos; }
+  } else if (cfg.strategy === "smaf") {
+    const s = sma(close, cfg.slow); let pos = 0;
+    for (let i = 0; i < n; i++) { if (s[i] != null) pos = close[i] > s[i] ? 1 : 0; want[i] = pos; }
+  } else if (cfg.strategy === "rsi") {
+    const r = rsi(close, cfg.rsiN); let pos = 0;
+    for (let i = 0; i < n; i++) { if (r[i] != null) { if (pos === 0 && r[i] <= cfg.rsiBuy) pos = 1; else if (pos === 1 && r[i] >= cfg.rsiSell) pos = 0; } want[i] = pos; }
+  }
+  return want;
+}
+// cfg: {strategy, currency:'USD'|'KRW', cash:'USD'|'KRW', capital, feeBp, monthly, ...}
+// data: {dates, close, fx (KRW per USD, aligned; null 이면 환율 미사용)}
+function runBacktest(data, cfg, presetWant) {
+  const { dates, close, fx } = data, n = dates.length, fee = cfg.feeBp / 10000;
+  const useFx = cfg.currency === "KRW" || cfg.cash === "KRW";
+  const rate = (i) => (useFx && fx ? fx[i] : 1); // 1 USD = rate KRW (환율 미사용이면 1)
+  const toUsd = (amountBase, i) => cfg.currency === "KRW" ? amountBase / rate(i) : amountBase;
+  const want = cfg.strategy === "dca" ? new Array(n).fill(1) : presetWant || signals(close, cfg);
+  let units = 0, cashUsd = 0, cashKrw = 0, invested = 0;
+  const equity = new Array(n), flows = [], trades = []; let open = null, daysIn = 0;
+  const fund = (amountBase, i) => { // 자금 유입 (기준 통화)
+    const usd = toUsd(amountBase, i); invested += amountBase;
+    if (cfg.cash === "KRW" && useFx) cashKrw += usd * rate(i); else cashUsd += usd;
+    flows.push({ i, amount: -amountBase });
+  };
+  const buyAll = (i) => {
+    const usd = cashUsd + (useFx ? cashKrw / rate(i) : cashKrw); if (usd <= 0) return;
+    const net = usd * (1 - fee); units += net / close[i]; cashUsd = 0; cashKrw = 0;
+    open = { buyDate: dates[i], buyPrice: close[i], i, usd: net };
+  };
+  const sellAll = (i) => {
+    if (units <= 0) return;
+    const usd = units * close[i] * (1 - fee); units = 0;
+    if (cfg.cash === "KRW" && useFx) cashKrw += usd * rate(i); else cashUsd += usd;
+    if (open) { trades.push({ ...open, sellDate: dates[i], sellPrice: close[i], pnl: close[i] / open.buyPrice * (1 - fee) * (1 - fee) - 1, days: i - open.i }); open = null; }
+  };
+  fund(cfg.capital, 0);
+  let lastMonth = dates[0].slice(0, 7);
+  for (let i = 0; i < n; i++) {
+    if (cfg.strategy === "dca") {
+      const m = dates[i].slice(0, 7);
+      if (i === 0 || m !== lastMonth) { if (i > 0 && cfg.monthly > 0) fund(cfg.monthly, i); lastMonth = m; buyAll(i); }
+    } else {
+      const target = i === 0 ? want[0] : want[i - 1]; // 전일 신호를 오늘 종가에 체결
+      if (target === 1 && units === 0) buyAll(i); else if (target === 0 && units > 0) sellAll(i);
+    }
+    if (units > 0) daysIn++;
+    const usdValue = units * close[i] + cashUsd + (useFx ? cashKrw / rate(i) : cashKrw);
+    equity[i] = cfg.currency === "KRW" ? usdValue * rate(i) : usdValue;
+  }
+  if (open) trades.push({ ...open, sellDate: null, sellPrice: close[n - 1], pnl: close[n - 1] / open.buyPrice * (1 - fee) - 1, days: n - 1 - open.i, openTrade: true });
+  flows.push({ i: n - 1, amount: equity[n - 1] });
+  return { equity, trades, invested, flows, exposure: daysIn / n };
+}
+function metrics(equity, dates, { invested, flows, trades, exposure }) {
+  const n = equity.length, first = equity[0], last = equity[n - 1];
+  const days = (new Date(dates[n - 1]) - new Date(dates[0])) / 864e5;
+  const years = Math.max(days / 365.25, 1 / 365.25);
+  let peak = -Infinity, mdd = 0, ddStart = 0, mddFrom = null, mddTo = null, ddDays = 0, maxDdDays = 0;
+  const dd = new Array(n);
+  for (let i = 0; i < n; i++) {
+    if (equity[i] > peak) { peak = equity[i]; ddStart = i; }
+    dd[i] = equity[i] / peak - 1;
+    if (dd[i] < mdd) { mdd = dd[i]; mddFrom = dates[ddStart]; mddTo = dates[i]; }
+    ddDays = equity[i] < peak ? i - ddStart : 0; if (ddDays > maxDdDays) maxDdDays = ddDays;
+  }
+  const rets = []; for (let i = 1; i < n; i++) if (equity[i - 1] > 0) rets.push(Math.log(equity[i] / equity[i - 1]));
+  const mean = rets.reduce((a, b) => a + b, 0) / (rets.length || 1);
+  const sd = Math.sqrt(rets.reduce((a, b) => a + (b - mean) ** 2, 0) / (rets.length > 1 ? rets.length - 1 : 1));
+  const vol = sd * Math.sqrt(252), sharpe = sd ? (mean / sd) * Math.sqrt(252) : 0;
+  const total = last / first - 1, cagr = first > 0 ? Math.pow(last / first, 1 / years) - 1 : null;
+  const closed = trades.filter((t) => !t.openTrade), wins = closed.filter((t) => t.pnl > 0).length;
+  return { total, cagr, mdd, mddFrom, mddTo, maxDdDays, vol, sharpe, years, invested, finalValue: last, profit: last - invested,
+    xirr: flows.length > 2 ? xirr(flows, dates) : null, trades: trades.length, winRate: closed.length ? wins / closed.length : null, exposure, dd };
+}
+function xirr(flows, dates) { // 연환산 내부수익률 (이분법)
+  const t0 = new Date(dates[flows[0].i]);
+  const cf = flows.map((f) => ({ t: (new Date(dates[f.i]) - t0) / 864e5 / 365.25, a: f.amount }));
+  const npv = (r) => cf.reduce((s, c) => s + c.a / Math.pow(1 + r, c.t), 0);
+  let lo = -0.99, hi = 10; if (npv(lo) * npv(hi) > 0) return null;
+  for (let k = 0; k < 100; k++) { const mid = (lo + hi) / 2; if (npv(lo) * npv(mid) <= 0) hi = mid; else lo = mid; }
+  return (lo + hi) / 2;
+}
+function yearlyReturns(equity, dates) {
+  const out = []; let yStart = equity[0], year = dates[0].slice(0, 4);
+  for (let i = 1; i < equity.length; i++) {
+    const y = dates[i].slice(0, 4);
+    if (y !== year) { out.push({ year, ret: equity[i - 1] / yStart - 1 }); yStart = equity[i - 1]; year = y; }
+  }
+  out.push({ year, ret: equity[equity.length - 1] / yStart - 1 });
+  return out;
+}
+
+// ───────────────────────── 백테스트 UI ─────────────────────────
+const STRATEGY_DESC = {
+  bh: "시작일에 전액 매수하고 종료일까지 그대로 보유합니다. 다른 전략을 평가하는 기준선입니다.",
+  smax: "단기 이동평균이 장기 이동평균 위로 올라가면(골든크로스) 전액 매수, 아래로 내려가면(데드크로스) 전량 매도 후 현금으로 대기합니다.",
+  smaf: "종가가 장기 이동평균 위에 있는 날만 보유하고, 아래로 내려가면 현금으로 대기합니다. 큰 하락장을 피하는 대신 횡보장에서 잦은 매매 비용이 생깁니다.",
+  rsi: "RSI가 매수 기준 이하로 떨어지면(과매도) 매수, 매도 기준 이상으로 오르면(과매수) 매도합니다. 장기 상승 자산에서는 보유 기간이 짧아 지수 상승을 놓치기 쉽습니다.",
+  dca: "초기 투자금을 첫날 매수하고, 이후 매월 첫 거래일 종가에 월 적립금만큼 추가 매수합니다. 수익률은 납입 시점을 반영한 연환산 내부수익률(IRR)로 보여줍니다.",
+};
+function initBacktestForm() {
+  const h = state.history.symbols, fx = h["KRW=X"];
+  const asset = h[$("#bt-asset").value];
+  $("#bt-datarange").textContent = `일봉 ${asset.from} ~ ${asset.to} · 환율 ${fx ? `${fx.from} ~ ${fx.to}` : "없음"}`;
+  const start = $("#bt-start"), end = $("#bt-end");
+  if (!start.value) { setYears(10); }
+  end.value = end.value || asset.to;
+}
+function setYears(years) {
+  const asset = state.history?.symbols?.[$("#bt-asset").value]; if (!asset) return;
+  const end = asset.to; let start = asset.from;
+  if (years > 0) { const d = new Date(end); d.setFullYear(d.getFullYear() - years); start = d.toISOString().slice(0, 10); if (start < asset.from) start = asset.from; }
+  $("#bt-start").value = start; $("#bt-end").value = end;
+}
+function updateParamVisibility() {
+  const s = $("#bt-strategy").value;
+  $$("[data-p]").forEach((el) => { el.hidden = !el.dataset.p.split(" ").includes(s); });
+  $("#bt-desc").textContent = STRATEGY_DESC[s];
+  const cur = $("#bt-currency").value;
+  $("#bt-capital").step = cur === "KRW" ? 1000000 : 1000;
+  $("#bt-monthly").step = cur === "KRW" ? 100000 : 100;
+}
+function onCurrencyChange() {
+  const cur = $("#bt-currency").value, cap = $("#bt-capital"), mo = $("#bt-monthly");
+  if (cur === "KRW" && Number(cap.value) < 100000) { cap.value = 10000000; mo.value = 1000000; }
+  if (cur === "USD" && Number(cap.value) >= 100000) { cap.value = 10000; mo.value = 1000; }
+  updateParamVisibility();
+}
+function readConfig() {
+  const v = (id) => $(`#${id}`).value;
+  return { asset: v("bt-asset"), strategy: v("bt-strategy"), fast: +v("bt-fast"), slow: +v("bt-slow"), rsiN: +v("bt-rsi-n"), rsiBuy: +v("bt-rsi-buy"), rsiSell: +v("bt-rsi-sell"),
+    monthly: +v("bt-monthly"), start: v("bt-start"), end: v("bt-end"), currency: v("bt-currency"), capital: +v("bt-capital"), cash: v("bt-cash"), feeBp: +v("bt-fee") };
+}
+function runFromForm() {
+  const h = state.history?.symbols; if (!h) return;
+  const cfg = readConfig(), sym = h[cfg.asset], fxSym = h["KRW=X"];
+  if (cfg.strategy === "smax" && cfg.fast >= cfg.slow) return alert("단기 이평은 장기 이평보다 짧아야 합니다.");
+  if (cfg.strategy === "rsi" && cfg.rsiBuy >= cfg.rsiSell) return alert("매수 RSI 기준은 매도 기준보다 낮아야 합니다.");
+  if (!(cfg.capital > 0)) return alert("초기 투자금을 입력하세요.");
+  const useFx = cfg.currency === "KRW" || (cfg.cash === "KRW" && cfg.strategy !== "bh" && cfg.strategy !== "dca");
+  if (cfg.strategy === "bh" || cfg.strategy === "dca") cfg.cash = "USD";
+  let start = cfg.start || sym.from, end = cfg.end || sym.to, note = "";
+  if (useFx) { if (!fxSym) return alert("환율 데이터가 없어 원화 기준 백테스트를 할 수 없습니다."); if (start < fxSym.from) { note = `환율 데이터가 ${fxSym.from}부터 있어 시작일을 맞췄습니다. `; start = fxSym.from; } }
+  // 지표 계산에 필요한 워밍업 구간을 시작일 앞에 확보
+  const warm = cfg.strategy === "smax" || cfg.strategy === "smaf" ? cfg.slow : cfg.strategy === "rsi" ? cfg.rsiN + 1 : 0;
+  let i0 = sym.dates.findIndex((d) => d >= start), i1 = sym.dates.findLastIndex((d) => d <= end);
+  if (i0 < 0 || i1 < 0 || i1 - i0 < 30) return alert("기간이 너무 짧거나 데이터가 없습니다.");
+  const w0 = Math.max(0, i0 - warm);
+  const closeAll = sym.close.slice(w0, i1 + 1), datesAll = sym.dates.slice(w0, i1 + 1);
+  const want = cfg.strategy === "dca" ? null : signals(closeAll, cfg);
+  const off = i0 - w0;
+  const dates = datesAll.slice(off), close = closeAll.slice(off);
+  const fx = useFx ? alignFx(dates, fxSym) : null;
+  if (fx && fx.some((r) => r == null)) return alert("선택한 구간의 환율 데이터가 비어 있습니다. 시작일을 늦춰 보세요.");
+  // 워밍업 구간을 포함해 계산한 신호를 시작일 이후 구간만 잘라 사용
+  const data = { dates, close, fx };
+  const cfgRun = { ...cfg };
+  const res = runBacktest(data, cfgRun, want ? want.slice(off) : null);
+  const bhCfg = { ...cfg, strategy: "bh", cash: "USD" };
+  const bh = runBacktest(data, bhCfg, null);
+  state.lastBacktest = { cfg, data, res, bh, note };
+  renderBacktest();
+}
+function kpi(k, v, b, cls = "") { return `<div class="kpi"><div class="k">${k}</div><div class="v ${cls}">${v}</div><div class="b">${b || ""}</div></div>`; }
+function renderBacktest() {
+  const { cfg, data, res, bh, note } = state.lastBacktest, cur = cfg.currency;
+  const m = metrics(res.equity, data.dates, res), mb = metrics(bh.equity, data.dates, bh);
+  const isDca = cfg.strategy === "dca";
+  const sgn = (v) => v > 0 ? "pos" : v < 0 ? "neg" : "";
+  const kpis = [];
+  if (isDca) {
+    kpis.push(kpi("총 납입금", fmt.money(m.invested, cur), `${data.dates[0]} ~ ${data.dates.at(-1)}`));
+    kpis.push(kpi("최종 평가액", fmt.money(m.finalValue, cur), `손익 ${fmt.signed(m.profit, 0)}`, sgn(m.profit)));
+    kpis.push(kpi("단순 수익률", fmt.pct(m.finalValue / m.invested - 1), "평가액 ÷ 납입금", sgn(m.profit)));
+    kpis.push(kpi("연환산 IRR", fmt.pct(m.xirr), "납입 시점 반영", sgn(m.xirr)));
+  } else {
+    kpis.push(kpi("총 수익률", fmt.pct(m.total), `바이앤홀드 ${fmt.pct(mb.total)}`, sgn(m.total)));
+    kpis.push(kpi("연평균 (CAGR)", fmt.pct(m.cagr), `바이앤홀드 ${fmt.pct(mb.cagr)}`, sgn(m.cagr)));
+    kpis.push(kpi("최종 평가액", fmt.money(m.finalValue, cur), `시작 ${fmt.money(cfg.capital, cur)}`));
+  }
+  kpis.push(kpi("최대 낙폭 (MDD)", fmt.pct(m.mdd), `${m.mddFrom || ""} → ${m.mddTo || ""}`, "neg"));
+  kpis.push(kpi("연 변동성", fmt.pct(m.vol, 1, false), `바이앤홀드 ${fmt.pct(mb.vol, 1, false)}`));
+  kpis.push(kpi("샤프 비율", fmt.n(m.sharpe), `바이앤홀드 ${fmt.n(mb.sharpe)}`));
+  if (!isDca && cfg.strategy !== "bh") kpis.push(kpi("매매 횟수 · 승률", `${m.trades}회 · ${m.winRate == null ? "–" : fmt.n(m.winRate * 100, 0) + "%"}`, `시장 노출 ${fmt.n(m.exposure * 100, 0)}%`));
+  kpis.push(kpi("최장 회복 기간", `${m.maxDdDays}거래일`, `약 ${fmt.n(m.maxDdDays / 21, 0)}개월`));
+  $("#bt-kpis").innerHTML = kpis.join("");
+  $("#bt-verdict").innerHTML = verdict(cfg, m, mb, data, note);
+
+  // 자산 곡선
+  const labels = data.dates;
+  const eq = res.equity.map((v, i) => ({ x: i, y: v })), eqb = bh.equity.map((v, i) => ({ x: i, y: v }));
+  const log = $("#bt-log").checked;
+  const opts = baseOptions(labels, { xTick: (i) => labels[i]?.slice(0, 7) ?? "", yFmt: (v) => cur === "KRW" ? (v >= 1e8 ? `${fmt.n(v / 1e8, 1)}억` : `${fmt.n(v / 1e4, 0)}만`) : `$${v >= 1e6 ? fmt.n(v / 1e6, 1) + "M" : v >= 1e3 ? fmt.n(v / 1e3, 0) + "k" : fmt.n(v, 0)}`,
+    tooltipLabel: (it) => `${it.dataset.label}: ${fmt.money(it.parsed.y, cur)}`, yType: log ? "logarithmic" : "linear" });
+  makeChart("chart-equity", { type: "line", data: { datasets: [
+    { label: isDca ? "적립식" : "전략", data: eq, borderColor: css("--strat"), backgroundColor: css("--strat") + "1A", fill: !isDca && cfg.strategy === "bh" ? false : "origin" },
+    { label: isDca ? "일시납 바이앤홀드 (초기 투자금만)" : "바이 앤 홀드", data: eqb, borderColor: css("--bench"), borderWidth: 1.5, fill: false, hidden: cfg.strategy === "bh" },
+  ] }, options: opts });
+  // 드로다운
+  const ddOpts = baseOptions(labels, { xTick: (i) => labels[i]?.slice(0, 7) ?? "", yFmt: (v) => `${fmt.n(v * 100, 0)}%`, tooltipLabel: (it) => `${it.dataset.label}: ${fmt.pct(it.parsed.y, 1, false)}`, yMax: 0 });
+  makeChart("chart-dd", { type: "line", data: { datasets: [
+    { label: "전략", data: m.dd.map((v, i) => ({ x: i, y: v })), borderColor: css("--strat"), backgroundColor: css("--strat") + "26", fill: "origin", borderWidth: 1.5 },
+    { label: "바이 앤 홀드", data: mb.dd.map((v, i) => ({ x: i, y: v })), borderColor: css("--bench"), borderWidth: 1, fill: false, hidden: cfg.strategy === "bh" },
+  ] }, options: ddOpts });
+  // 연도별
+  const ys = yearlyReturns(res.equity, data.dates), yb = yearlyReturns(bh.equity, data.dates);
+  $("#bt-yearly tbody").innerHTML = ys.map((y, i) => { const d = y.ret - yb[i].ret; return `<tr><td class="txt">${y.year}</td><td class="${sgn(y.ret)}">${fmt.pct(y.ret, 1)}</td><td class="${sgn(yb[i].ret)}">${fmt.pct(yb[i].ret, 1)}</td><td class="${sgn(d)}">${isDca ? "–" : fmt.pct(d, 1)}</td></tr>`; }).join("");
+  // 매매 내역
+  const tr = res.trades.slice(-30).reverse();
+  $("#bt-trades-note").textContent = isDca ? `매수 ${res.trades.length}회 (최근 30건 표시)` : res.trades.length > 30 ? `총 ${res.trades.length}회 중 최근 30건` : `총 ${res.trades.length}회`;
+  $("#bt-trades tbody").innerHTML = tr.length ? tr.map((t) => `<tr><td class="txt">${t.buyDate}</td><td class="txt">${t.sellDate || "보유 중"}</td><td>${fmt.n(t.buyPrice)}</td><td>${fmt.n(t.sellPrice)}</td><td class="${sgn(t.pnl)}">${fmt.pct(t.pnl, 1)}</td><td>${t.days}</td></tr>`).join("") : `<tr><td class="txt faint" colspan="6">매매 없음</td></tr>`;
+  $("#bt-results").hidden = false;
+  $("#bt-results").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+function verdict(cfg, m, mb, data, note) {
+  const curName = cfg.currency === "KRW" ? "원화" : "달러", name = $("#bt-asset option:checked").textContent, period = `${data.dates[0]} ~ ${data.dates.at(-1)}`;
+  const lines = [];
+  if (note) lines.push(`<span class="faint">${note}</span>`);
+  if (cfg.strategy === "bh") {
+    lines.push(`<strong>${name}</strong> · ${period} · ${curName} 기준. 이 기간 내내 보유했다면 총 <strong>${fmt.pct(m.total)}</strong> (연평균 ${fmt.pct(m.cagr)}) 수익이며, 중간에 최대 <strong>${fmt.pct(m.mdd)}</strong>까지 빠지는 구간(${m.mddFrom} → ${m.mddTo})을 견뎌야 했습니다.`);
+  } else if (cfg.strategy === "dca") {
+    lines.push(`${period} 동안 총 <strong>${fmt.money(m.invested, cfg.currency)}</strong>를 나눠 넣어 최종 <strong>${fmt.money(m.finalValue, cfg.currency)}</strong>가 되었습니다. 납입 시점을 반영한 연환산 수익률은 <strong>${fmt.pct(m.xirr)}</strong>, 같은 기간 일시납 바이앤홀드의 연평균은 ${fmt.pct(mb.cagr)}입니다.`);
+    lines.push(`적립식은 평가액이 계속 커지므로 후반부 하락의 금액 충격이 큽니다. 최대 낙폭 ${fmt.pct(m.mdd)}는 평가액 기준입니다.`);
+  } else {
+    const better = m.cagr > mb.cagr, safer = m.mdd > mb.mdd;
+    lines.push(`${period} 동안 이 전략의 연평균 수익률은 <strong>${fmt.pct(m.cagr)}</strong>로 바이앤홀드(${fmt.pct(mb.cagr)})보다 <strong>${better ? "높고" : "낮고"}</strong>, 최대 낙폭은 <strong>${fmt.pct(m.mdd)}</strong>로 바이앤홀드(${fmt.pct(mb.mdd)})보다 <strong>${safer ? "얕습니다" : "깊습니다"}</strong>.`);
+    if (better && safer) lines.push(`수익과 방어 모두 앞선 결과입니다. 다만 매개변수(이평 기간 등)를 이 구간에 맞춘 것일 수 있으니, 기간을 바꿔 다시 돌려보고도 유지되는지 확인하는 것을 권합니다.`);
+    else if (!better && safer) lines.push(`수익은 양보하고 낙폭을 줄이는 전형적인 추세추종 결과입니다. 하락장을 피하는 대가로 상승장 초기 구간을 놓치며, 총 ${m.trades}회 매매 비용(${cfg.feeBp}bp)이 누적됩니다.`);
+    else if (better && !safer) lines.push(`수익은 높지만 낙폭이 더 깊어 위험 대비 효율(샤프 ${fmt.n(m.sharpe)} 대 ${fmt.n(mb.sharpe)})을 함께 봐야 합니다.`);
+    else lines.push(`이 구간에서는 단순 보유가 더 나았습니다. 강한 상승 추세 자산에서는 매매 규칙이 오히려 수익을 깎는 경우가 흔합니다.`);
+    if (cfg.cash === "KRW" && cfg.currency === "KRW") lines.push(`현금은 원화로 보유한다고 가정했으므로 매도 중에는 환율 변동의 영향을 받지 않습니다.`);
+  }
+  if (cfg.currency === "KRW") lines.push(`<span class="faint">원화 기준이라 달러 자산 가격과 환율 변동이 함께 반영되어 있습니다. 달러 약세 구간에서는 원화 수익률이 낮아집니다.</span>`);
+  return lines.map((l) => `<p>${l}</p>`).join("");
+}
+
+// ───────────────────────── 탭 · 이벤트 ─────────────────────────
+function selectTab(name) {
+  $$(".tab").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.tab === name)));
+  ["quotes", "backtest", "guide"].forEach((p) => { $(`#panel-${p}`).hidden = p !== name; });
+  try { localStorage.setItem("md:tab", name); } catch {}
+  if (name === "quotes") renderQuotes();
+  if (name === "backtest" && state.lastBacktest) renderBacktest();
+}
+$$(".tab").forEach((t) => t.addEventListener("click", () => selectTab(t.dataset.tab)));
+$("#refresh").addEventListener("click", loadAll);
+$("#bt-run").addEventListener("click", runFromForm);
+$("#bt-strategy").addEventListener("change", updateParamVisibility);
+$("#bt-currency").addEventListener("change", onCurrencyChange);
+$("#bt-asset").addEventListener("change", () => { if (state.history) { const a = state.history.symbols[$("#bt-asset").value]; $("#bt-datarange").textContent = `일봉 ${a.from} ~ ${a.to}`; if ($("#bt-start").value < a.from) $("#bt-start").value = a.from; if ($("#bt-end").value > a.to) $("#bt-end").value = a.to; } });
+$("#bt-log").addEventListener("change", () => state.lastBacktest && renderBacktest());
+$$(".chip").forEach((c) => c.addEventListener("click", () => setYears(+c.dataset.years)));
+window.addEventListener("resize", () => { if (!$("#panel-quotes").hidden) renderQuotes(); });
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { renderQuotes(); if (state.lastBacktest) renderBacktest(); });
+new MutationObserver(() => { renderQuotes(); if (state.lastBacktest) renderBacktest(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+setInterval(() => { if (document.visibilityState === "visible") loadLive(); }, REFRESH_MS);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && state.latest && Date.now() - new Date(state.latest.updated) > REFRESH_MS) loadLive(); });
+
+// ───────────────────────── 시작 ─────────────────────────
+updateParamVisibility();
+const cachedLatest = cacheGet("md:latest"), cachedIntraday = cacheGet("md:intraday");
+if (cachedLatest) { state.latest = cachedLatest; state.intraday = cachedIntraday; renderQuotes(); }
+try { const t = localStorage.getItem("md:tab"); if (t && t !== "quotes") selectTab(t); } catch {}
+loadAll();
+})();
+</script>
+</body>
+</html>
