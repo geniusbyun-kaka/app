@@ -30,6 +30,11 @@ const ETFS = [
   ["TLT", "iShares 20+ Year Treasury Bond ETF"], ["IEF", "iShares 7-10 Year Treasury Bond ETF"], ["BND", "Vanguard Total Bond Market ETF"], ["GLD", "SPDR Gold Shares"],
   ["SLV", "iShares Silver Trust"], ["USO", "United States Oil Fund"], ["VNQ", "Vanguard Real Estate ETF"], ["VEA", "Vanguard FTSE Developed Markets ETF"],
   ["VWO", "Vanguard FTSE Emerging Markets ETF"], ["EWY", "iShares MSCI South Korea ETF"], ["IBIT", "iShares Bitcoin Trust"], ["BITO", "ProShares Bitcoin Strategy ETF"],
+  // 배당·분배 ETF
+  ["VYM", "Vanguard High Dividend Yield ETF"], ["VIG", "Vanguard Dividend Appreciation ETF"], ["DGRO", "iShares Core Dividend Growth ETF"], ["HDV", "iShares Core High Dividend ETF"],
+  ["SPYD", "SPDR S&P 500 High Dividend ETF"], ["DVY", "iShares Select Dividend ETF"], ["SDY", "SPDR S&P Dividend ETF"], ["NOBL", "ProShares S&P 500 Dividend Aristocrats"],
+  ["DIVO", "Amplify CWP Enhanced Dividend Income"], ["QYLD", "Global X Nasdaq 100 Covered Call (월배당)"], ["XYLD", "Global X S&P 500 Covered Call (월배당)"], ["RYLD", "Global X Russell 2000 Covered Call (월배당)"],
+  ["SPHD", "Invesco S&P 500 High Div Low Vol (월배당)"], ["TLTW", "iShares 20+ Treasury BuyWrite (월배당)"], ["MAIN", "Main Street Capital (월배당 BDC)"], ["ARCC", "Ares Capital (BDC)"],
 ];
 
 const decode = (s) => s.replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&#39;|&rsquo;/g, "'").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
@@ -74,6 +79,39 @@ async function retry(fn, label) {
       await new Promise((r) => setTimeout(r, w));
     }
   }
+}
+
+// 배당 이력 요약: 지급 주기, 최근 12개월 합계, 최근 1회 금액, 다음 배당락 예상일 (과거 간격으로 추정)
+function summarizeDividends(divs, tz, price) {
+  const items = divs.map((d) => ({ d: dateInTz(d.t, tz), a: round(d.amount, 4) })).filter((x) => x.a > 0);
+  if (!items.length) return null;
+  const last = items.at(-1);
+  const today = new Date().toISOString().slice(0, 10);
+  const cutoff = new Date(); cutoff.setFullYear(cutoff.getFullYear() - 1);
+  const ttmItems = items.filter((x) => x.d > cutoff.toISOString().slice(0, 10) && x.d <= today);
+  const ttm = round(ttmItems.reduce((s, x) => s + x.a, 0), 4);
+  // 최근 2년 배당락 간격의 중앙값으로 주기 판단
+  const recent = items.slice(-9);
+  const gaps = []; for (let i = 1; i < recent.length; i++) gaps.push((new Date(recent[i].d) - new Date(recent[i - 1].d)) / 86400000);
+  gaps.sort((a, b) => a - b);
+  const gap = gaps.length ? gaps[Math.floor(gaps.length / 2)] : null;
+  const freq = gap == null ? "irregular" : gap <= 40 ? "monthly" : gap <= 110 ? "quarterly" : gap <= 220 ? "semiannual" : gap <= 400 ? "annual" : "irregular";
+  const perYear = { monthly: 12, quarterly: 4, semiannual: 2, annual: 1, irregular: ttmItems.length || 1 }[freq];
+  // 정기 배당 금액: 최근 지급들의 중앙값 (특별배당 제외 효과)
+  const amts = recent.map((x) => x.a).sort((a, b) => a - b);
+  const regular = amts.length ? amts[Math.floor(amts.length / 2)] : last.a;
+  let nextEx = null;
+  if (gap != null && freq !== "irregular") {
+    const d = new Date(last.d); d.setDate(d.getDate() + Math.round(gap));
+    while (d.toISOString().slice(0, 10) < today) d.setDate(d.getDate() + Math.round(gap)); // 이미 지난 예상일은 다음 주기로
+    if (d.getUTCDay() === 6) d.setDate(d.getDate() + 2); if (d.getUTCDay() === 0) d.setDate(d.getDate() + 1);
+    nextEx = d.toISOString().slice(0, 10);
+  }
+  return {
+    lastEx: last.d, lastAmount: last.a, freq, perYear, regular: round(regular, 4), ttm, count12: ttmItems.length,
+    yieldTtm: price ? round(ttm / price, 5) : null, yieldFwd: price ? round((regular * perYear) / price, 5) : null,
+    nextEx, gapDays: gap == null ? null : Math.round(gap),
+  };
 }
 
 function packDaily(rows, tz) {
@@ -126,6 +164,9 @@ async function fetchOne(item) {
       marketTime: marketTime ? new Date(marketTime * 1000).toISOString() : null, marketState: meta.marketState || null,
     },
     daily: { d0: packed.d0, gaps: packed.gaps, close: packed.close, tr: packed.tr, from: packed.from, to: packed.to },
+    // 배당 이력 (최근 6년, 배당락일 기준 주당 금액)과 요약
+    dividends: daily.dividends.filter((d) => d.t > Date.now() / 1000 - 6 * 365.25 * 86400).map((d) => [dateInTz(d.t, tz), round(d.amount, 4)]),
+    div: summarizeDividends(daily.dividends, tz, price),
     intraday: { previousClose: round(prev, d), t: intra.rows.map((r) => r.t), c: intra.rows.map((r) => round(r.c, d)) },
   };
 }
@@ -159,7 +200,7 @@ async function main() {
       try {
         const data = await fetchOne(item);
         await writeFile(path.join(OUT_DIR, "stocks", `${item.symbol}.json`), JSON.stringify(data));
-        results.push({ symbol: item.symbol, name: item.name, sector: item.sector, kind: item.kind, price: data.quote.price, changePercent: data.quote.changePercent, from: data.daily.from, to: data.daily.to, updated: data.updated });
+        results.push({ symbol: item.symbol, name: item.name, sector: item.sector, kind: item.kind, price: data.quote.price, changePercent: data.quote.changePercent, from: data.daily.from, to: data.daily.to, updated: data.updated, div: data.div });
       } catch (err) {
         const prev = prevItems.get(item.symbol);
         failed.push(item.symbol);
