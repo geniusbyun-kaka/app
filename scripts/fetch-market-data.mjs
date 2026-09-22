@@ -62,8 +62,13 @@ async function withRetry(fn, tries = 3) {
 }
 
 // Yahoo chart API 한 번 호출. { meta, rows:[{t,o,h,l,c,v,adj}] } 로 정규화.
-async function yahooChart(symbol, { range, interval }) {
-  const q = `interval=${interval}&range=${range}&includePrePost=false&events=div%2Csplit`;
+// range 대신 period1/period2(유닉스 초)를 주면 그 구간을 명시적으로 요청한다.
+// range=max 는 야후가 일봉 요청을 무시하고 월봉 수준으로 내려보내는 경우가 있어 히스토리에는 쓰지 않는다.
+async function yahooChart(symbol, { range, interval, period1, period2 }) {
+  const parts = [`interval=${interval}`, "includePrePost=false", "includeAdjustedClose=true", "events=div%2Csplit"];
+  if (period1 != null) parts.push(`period1=${Math.floor(period1)}`, `period2=${Math.floor(period2 ?? Date.now() / 1000)}`);
+  else parts.push(`range=${range}`);
+  const q = parts.join("&");
   const call = async (base) => {
     const url = `${base}/v8/finance/chart/${encodeURIComponent(symbol)}?${q}`;
     const json = await fetchJson(url);
@@ -108,6 +113,59 @@ function dateInTz(unixSec, tz) {
   }
 }
 
+// 연속한 날짜 사이 간격(일)의 중앙값. 일봉이면 1~4 정도(주말·휴일 포함).
+function medianGapDays(dates) {
+  if (dates.length < 3) return Infinity;
+  const gaps = [];
+  for (let i = 1; i < dates.length; i++) gaps.push((new Date(dates[i]) - new Date(dates[i - 1])) / 86400000);
+  gaps.sort((a, b) => a - b);
+  return gaps[Math.floor(gaps.length / 2)];
+}
+
+// Yahoo 일봉. 일봉이 아닌 granularity 로 돌아오면 실패로 간주해 호출부가 대체 소스로 넘어가게 한다.
+async function yahooDaily(symbol, adjust) {
+  const daily = await yahooChart(symbol, { interval: "1d", period1: 0 });
+  const tz = daily.meta.exchangeTimezoneName;
+  const gran = daily.meta.dataGranularity;
+  const seen = new Set();
+  const dates = [], close = [];
+  for (const r of daily.rows) {
+    const d = dateInTz(r.t, tz);
+    if (seen.has(d)) continue; // 같은 날짜 중복 봉 방지
+    const value = adjust && r.adj != null ? r.adj : r.c;
+    if (!Number.isFinite(value) || value <= 0) continue;
+    seen.add(d);
+    dates.push(d);
+    close.push(round(value, 4));
+  }
+  const gap = medianGapDays(dates);
+  console.log(`[history] ${symbol} yahoo granularity=${gran} rows=${dates.length} medianGap=${gap}d`);
+  if (gran && gran !== "1d") throw new Error(`granularity is ${gran}, not 1d`);
+  if (gap > 5) throw new Error(`median gap ${gap} days — not daily data`);
+  if (dates.length < 250) throw new Error(`only ${dates.length} rows`);
+  return { dates, close, source: "yahoo" };
+}
+
+// 직전 스냅샷(data 브랜치)에서 해당 심볼의 일봉을 재사용. 모든 소스가 실패했을 때의 마지막 보루.
+let previousHistory;
+async function previousSnapshot(symbol) {
+  if (previousHistory === undefined) {
+    previousHistory = null;
+    const repo = process.env.GITHUB_REPOSITORY;
+    const url = process.env.PREV_HISTORY_URL || (repo ? `https://raw.githubusercontent.com/${repo}/data/history.json` : null);
+    if (url) {
+      try {
+        previousHistory = await fetchJson(url);
+      } catch (err) {
+        console.warn(`[history] no previous snapshot to fall back on (${err.message})`);
+      }
+    }
+  }
+  const prev = previousHistory?.symbols?.[symbol];
+  if (!prev?.dates?.length) return null;
+  return { dates: prev.dates, close: prev.close, source: `previous snapshot (${prev.to})` };
+}
+
 // Stooq 일봉 CSV → rows
 async function stooqDaily(stooqSymbol) {
   const url = `${STOOQ_BASE}/q/d/l/?s=${encodeURIComponent(stooqSymbol)}&i=d`;
@@ -125,7 +183,8 @@ async function stooqDaily(stooqSymbol) {
     dates.push(d);
     close.push(num);
   }
-  return { dates, close };
+  if (dates.length < 250) throw new Error(`stooq returned only ${dates.length} rows for ${stooqSymbol}`);
+  return { dates, close, source: "stooq" };
 }
 
 function round(n, digits) {
@@ -200,44 +259,40 @@ async function buildLive() {
 
 async function buildHistory() {
   const history = { updated: new Date().toISOString(), symbols: {} };
+  const failed = [];
   for (const item of HISTORY) {
-    let dates, close, source;
-    try {
-      const daily = await yahooChart(item.symbol, { range: "max", interval: "1d" });
-      const tz = daily.meta.exchangeTimezoneName;
-      const seen = new Set();
-      dates = [];
-      close = [];
-      for (const r of daily.rows) {
-        const d = dateInTz(r.t, tz);
-        if (seen.has(d)) continue; // 같은 날짜 중복 봉 방지
-        const value = item.adjust && r.adj != null ? r.adj : r.c;
-        if (!Number.isFinite(value) || value <= 0) continue;
-        seen.add(d);
-        dates.push(d);
-        close.push(round(value, 4));
+    let got = null;
+    for (const [label, attempt] of [
+      ["yahoo", () => yahooDaily(item.symbol, item.adjust)],
+      ["stooq", () => stooqDaily(item.stooq)],
+      ["previous", () => previousSnapshot(item.symbol)],
+    ]) {
+      try {
+        got = await attempt();
+        if (got) break;
+      } catch (err) {
+        console.warn(`[history] ${item.symbol} via ${label} failed: ${err.message}`);
       }
-      source = "yahoo";
-    } catch (err) {
-      console.warn(`[history] yahoo failed for ${item.symbol}: ${err.message}. trying stooq ${item.stooq}`);
-      const alt = await stooqDaily(item.stooq);
-      dates = alt.dates;
-      close = alt.close;
-      source = "stooq";
     }
-    if (dates.length < 250) throw new Error(`too little history for ${item.symbol}: ${dates.length} rows`);
+    if (!got) {
+      failed.push(item.symbol);
+      console.warn(`[history] ${item.symbol} unavailable from every source — skipping`);
+      continue;
+    }
     history.symbols[item.symbol] = {
       symbol: item.symbol,
       name: item.name,
       adjusted: !!item.adjust,
-      source,
-      from: dates[0],
-      to: dates.at(-1),
-      dates,
-      close,
+      source: got.source,
+      from: got.dates[0],
+      to: got.dates.at(-1),
+      dates: got.dates,
+      close: got.close,
     };
-    console.log(`[history] ${item.symbol} ${dates[0]} → ${dates.at(-1)} (${dates.length} rows, ${source})`);
+    console.log(`[history] ${item.symbol} ${got.dates[0]} → ${got.dates.at(-1)} (${got.dates.length} rows, ${got.source})`);
   }
+  if (failed.length) console.warn(`[history] skipped symbols: ${failed.join(", ")}`);
+  if (!Object.keys(history.symbols).length) throw new Error("no history available for any symbol");
   return history;
 }
 
