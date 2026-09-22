@@ -97,8 +97,8 @@ function summarizeDividends(divs, tz, price) {
   const gap = gaps.length ? gaps[Math.floor(gaps.length / 2)] : null;
   const freq = gap == null ? "irregular" : gap <= 40 ? "monthly" : gap <= 110 ? "quarterly" : gap <= 220 ? "semiannual" : gap <= 400 ? "annual" : "irregular";
   const perYear = { monthly: 12, quarterly: 4, semiannual: 2, annual: 1, irregular: ttmItems.length || 1 }[freq];
-  // 정기 배당 금액: 최근 지급들의 중앙값 (특별배당 제외 효과)
-  const amts = recent.map((x) => x.a).sort((a, b) => a - b);
+  // 정기 배당 금액: 최근 3회의 중앙값. 한 번짜리 특별배당은 걸러지고, 배당 인상은 두 번째 지급부터 반영된다
+  const amts = items.slice(-3).map((x) => x.a).sort((a, b) => a - b);
   const regular = amts.length ? amts[Math.floor(amts.length / 2)] : last.a;
   let nextEx = null;
   if (gap != null && freq !== "irregular") {
