@@ -1002,6 +1002,7 @@ function ensureStockIndex() {
   }).catch((err) => {
     stockIndexPromise = null;
     $("#stocks-status").textContent = "종목 데이터 없음";
+    $("#stock-count").textContent = "";
     $("#stock-table tbody").innerHTML = `<tr><td class="txt faint" colspan="5">종목 스냅샷이 아직 없습니다. Actions 탭에서 <code>Stock history snapshot</code> 워크플로를 한 번 실행하세요. (${err.message})</td></tr>`;
     throw err;
   });
@@ -1135,6 +1136,7 @@ async function runCompare(auto) {
   if (inputs.length < 1) return;
   $("#cmp-note").innerHTML = "불러오는 중";
   const notes = [], series = [];
+  if (!state.stockIndex) notes.push('<span class="warn">종목 스냅샷이 아직 없어 개별 종목·ETF 는 찾을 수 없습니다. Actions 탭에서 Stock history snapshot 워크플로를 실행하세요. 지수(^NDX, ^GSPC)와 NQ=F, QQQ, SPY 는 비교됩니다.</span>');
   for (const [i, raw] of inputs.entries()) {
     let s;
     try { s = await getSeries(raw, reinvest); } catch (err) { notes.push(`<span class="warn">${normSym(raw)}: 불러오지 못했습니다 (${err.message})</span>`); continue; }
