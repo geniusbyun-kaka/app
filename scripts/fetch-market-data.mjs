@@ -28,11 +28,17 @@ const LIVE = [
 ];
 
 // 백테스트용 일봉 대상. stooq 는 대체 소스 심볼.
+// adjust:true 인 ETF 는 가격(close)과 배당 재투자 총수익(tr, Yahoo adjclose) 을 둘 다 저장한다.
+// 가격 지수(^NDX, ^GSPC)는 배당이 없으므로 총수익 지수(^XNDX, ^SP500TR)를 별도 심볼로 받아 앱에서 짝지어 쓴다.
+// stooq: null 이면 Stooq 대체 소스가 없는 심볼.
 const HISTORY = [
   { symbol: "NQ=F", name: "나스닥 100 선물 (NQ)", stooq: "nq.f", adjust: false },
   { symbol: "^NDX", name: "나스닥 100 지수", stooq: "^ndx", adjust: false },
-  { symbol: "QQQ", name: "QQQ ETF (배당 재투자)", stooq: "qqq.us", adjust: true },
+  { symbol: "^XNDX", name: "나스닥 100 총수익 지수", stooq: null, adjust: false },
+  { symbol: "QQQ", name: "QQQ ETF", stooq: "qqq.us", adjust: true },
   { symbol: "^GSPC", name: "S&P 500 지수", stooq: "^spx", adjust: false },
+  { symbol: "^SP500TR", name: "S&P 500 총수익 지수", stooq: null, adjust: false },
+  { symbol: "SPY", name: "SPY ETF", stooq: "spy.us", adjust: true },
   { symbol: "KRW=X", name: "원달러 환율", stooq: "usdkrw", adjust: false },
 ];
 
@@ -128,22 +134,23 @@ async function yahooDaily(symbol, adjust) {
   const tz = daily.meta.exchangeTimezoneName;
   const gran = daily.meta.dataGranularity;
   const seen = new Set();
-  const dates = [], close = [];
+  const dates = [], close = [], tr = [];
   for (const r of daily.rows) {
     const d = dateInTz(r.t, tz);
     if (seen.has(d)) continue; // 같은 날짜 중복 봉 방지
-    const value = adjust && r.adj != null ? r.adj : r.c;
-    if (!Number.isFinite(value) || value <= 0) continue;
+    if (!Number.isFinite(r.c) || r.c <= 0) continue;
     seen.add(d);
     dates.push(d);
-    close.push(round(value, 4));
+    close.push(round(r.c, r.c >= 100 ? 2 : 4));
+    // 배당 재투자 총수익: Yahoo adjclose (분할·배당 반영). 없으면 가격으로 대체해 길이를 맞춘다.
+    if (adjust) tr.push(round(Number.isFinite(r.adj) && r.adj > 0 ? r.adj : r.c, 4));
   }
   const gap = medianGapDays(dates);
   console.log(`[history] ${symbol} yahoo granularity=${gran} rows=${dates.length} medianGap=${gap}d`);
   if (gran && gran !== "1d") throw new Error(`granularity is ${gran}, not 1d`);
   if (gap > 5) throw new Error(`median gap ${gap} days — not daily data`);
   if (dates.length < 250) throw new Error(`only ${dates.length} rows`);
-  return { dates, close, source: "yahoo" };
+  return { dates, close, tr: adjust ? tr : null, source: "yahoo" };
 }
 
 // 직전 스냅샷(data 브랜치)에서 해당 심볼의 일봉을 재사용. 모든 소스가 실패했을 때의 마지막 보루.
@@ -163,7 +170,7 @@ async function previousSnapshot(symbol) {
   }
   const prev = previousHistory?.symbols?.[symbol];
   if (!prev?.dates?.length) return null;
-  return { dates: prev.dates, close: prev.close, source: `previous snapshot (${prev.to})` };
+  return { dates: prev.dates, close: prev.close, tr: prev.tr ?? null, source: `previous snapshot (${prev.to})` };
 }
 
 // Stooq 일봉 CSV → rows
@@ -264,7 +271,7 @@ async function buildHistory() {
     let got = null;
     for (const [label, attempt] of [
       ["yahoo", () => yahooDaily(item.symbol, item.adjust)],
-      ["stooq", () => stooqDaily(item.stooq)],
+      ["stooq", () => (item.stooq ? stooqDaily(item.stooq) : null)],
       ["previous", () => previousSnapshot(item.symbol)],
     ]) {
       try {
@@ -282,12 +289,12 @@ async function buildHistory() {
     history.symbols[item.symbol] = {
       symbol: item.symbol,
       name: item.name,
-      adjusted: !!item.adjust,
       source: got.source,
       from: got.dates[0],
       to: got.dates.at(-1),
       dates: got.dates,
-      close: got.close,
+      close: got.close, // 가격 (분할만 반영)
+      tr: got.tr || null, // 배당 재투자 총수익 (ETF 만). Stooq 대체 시에는 없음
     };
     console.log(`[history] ${item.symbol} ${got.dates[0]} → ${got.dates.at(-1)} (${got.dates.length} rows, ${got.source})`);
   }
