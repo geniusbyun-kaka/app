@@ -69,7 +69,12 @@ export async function yahooChart(symbol, { range, interval, period1, period2 }) 
       adj: adj[i] ?? null,
     });
   }
-  return { meta: result.meta || {}, rows };
+  // 배당 이력 (배당락일 기준, 주당 금액). events=div 를 요청했을 때만 온다.
+  const dividends = Object.values(result.events?.dividends || {})
+    .filter((d) => Number.isFinite(d?.amount) && d.amount > 0 && d.date)
+    .map((d) => ({ t: d.date, amount: d.amount }))
+    .sort((a, b) => a.t - b.t);
+  return { meta: result.meta || {}, rows, dividends };
 }
 
 // 거래소 시간대 기준 YYYY-MM-DD
