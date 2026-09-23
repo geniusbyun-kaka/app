@@ -111,6 +111,20 @@ header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:spac
 .panel{display:grid;gap:14px}
 .panel>*{min-width:0}
 
+/* 뉴스 */
+.news-card{padding:0;overflow:hidden}
+.news-card img{display:block;width:100%;max-height:280px;object-fit:cover;border-bottom:1px solid var(--line-2)}
+.news-body{padding:16px 18px}
+.news-body h3{font-size:17px;line-height:1.4}
+.news-body h3 a{color:var(--ink);text-decoration:none}
+.news-body h3 a:hover{color:var(--accent)}
+.news-orig{font-size:12.5px;color:var(--ink-3);margin-top:4px}
+.news-kp{margin:12px 0 0;padding:10px 14px 10px 30px;background:var(--surface-2);border-radius:8px;font-size:13.5px}
+.news-kp li+li{margin-top:4px}
+.news-paras{margin-top:12px}
+.news-paras p{margin:0 0 10px;font-size:14px;line-height:1.7;color:var(--ink-2)}
+.news-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;padding-top:10px;border-top:1px solid var(--line-2);font-size:12.5px;color:var(--ink-3)}
+
 /* 초보 가이드 */
 .quote{margin:12px 0 0;padding:10px 14px;border-left:3px solid var(--accent);background:var(--surface-2);border-radius:0 8px 8px 0;font-size:14px;line-height:1.7}
 .lesson{margin-top:14px;padding-top:12px;border-top:1px solid var(--line-2)}
@@ -317,11 +331,21 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
   <div class="tabs" role="tablist">
     <button class="tab" role="tab" aria-selected="false" data-tab="starter" id="tab-starter">초보</button>
     <button class="tab" role="tab" aria-selected="true" data-tab="buffett" id="tab-buffett">버핏</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="news" id="tab-news">뉴스</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="backtest" id="tab-backtest">백테스트</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="stocks" id="tab-stocks">종목</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="dividend" id="tab-dividend">배당</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="compare" id="tab-compare">비교</button>
   </div>
+
+  <!-- 뉴스 -->
+  <section class="panel" id="panel-news" role="tabpanel" hidden>
+    <div class="card">
+      <div class="card-head"><h3>오늘의 CNBC 월드 헤드라인</h3><span class="small faint" id="news-status">불러오는 중</span></div>
+      <p class="small muted">매일 한국시간 오전 6시에 <a href="https://www.cnbc.com/world/" target="_blank" rel="noopener">CNBC World</a> 메인의 상위 3개 기사를 가져와 자동 번역한 것입니다. 기계 번역이라 표현이 어색하거나 부정확할 수 있으니 중요한 내용은 원문을 확인하세요. 저작권 보호를 위해 본문은 앞부분 일부만 싣고 전문은 원문 링크로 안내합니다.</p>
+    </div>
+    <div id="news-list"></div>
+  </section>
 
   <!-- 초보 -->
   <section class="panel" id="panel-starter" role="tabpanel" hidden>
@@ -573,6 +597,7 @@ const params = new URLSearchParams(location.search);
 const DATA_BASE = params.get("data") || `https://raw.githubusercontent.com/${OWNER}/${REPO}/data/`;
 const STOCKS_BASE = params.get("stocks") || `https://raw.githubusercontent.com/${OWNER}/${REPO}/stocks/`;
 const FILINGS_BASE = params.get("filings") || `https://raw.githubusercontent.com/${OWNER}/${REPO}/filings/`;
+const NEWS_BASE = params.get("news") || `https://raw.githubusercontent.com/${OWNER}/${REPO}/news/`;
 const REFRESH_MS = 5 * 60 * 1000;
 const NQ_MULTIPLIER = 20;
 
@@ -1065,6 +1090,41 @@ function verdict(cfg, m, mb, data, note, mBench, second) {
   return lines.map((l) => `<p>${l}</p>`).join("");
 }
 
+// ───────────────────────── 뉴스 (CNBC 번역) ─────────────────────────
+let newsPromise = null;
+function ensureNews() {
+  if (!newsPromise) newsPromise = fetch(`${NEWS_BASE}news.json?t=${Date.now()}`, { cache: "no-store" }).then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }).then((n) => {
+    state.news = n; renderNews(); return n;
+  }).catch((err) => {
+    newsPromise = null;
+    $("#news-status").textContent = "뉴스 데이터 없음";
+    $("#news-list").innerHTML = `<div class="card"><div class="empty">아직 뉴스 스냅샷이 없습니다. Actions 탭에서 <code>CNBC news snapshot</code> 워크플로를 한 번 실행하세요. (${err.message})</div></div>`;
+  });
+  return newsPromise;
+}
+const escHtml = (t) => String(t ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+function renderNews() {
+  const n = state.news; if (!n) return;
+  $("#news-status").textContent = `${fmt.time(n.updated)} 수집 (${fmt.ago(n.updated)})`;
+  $("#news-list").innerHTML = n.articles.map((a, i) => {
+    const paras = a.bodyKo || [];
+    const shown = paras.slice(0, 3), rest = paras.slice(3);
+    return `<div class="card news-card">
+      ${a.image ? `<img src="${escHtml(a.image)}" alt="" loading="lazy">` : ""}
+      <div class="news-body">
+        <h3><a href="${escHtml(a.url)}" target="_blank" rel="noopener">${escHtml(a.titleKo || a.title)}</a></h3>
+        ${a.titleKo && a.title && a.titleKo !== a.title ? `<div class="news-orig">${escHtml(a.title)}</div>` : ""}
+        ${a.note ? `<p class="small faint" style="margin-top:8px">${escHtml(a.note)}</p>` : ""}
+        ${a.keyPointsKo?.length ? `<ul class="news-kp">${a.keyPointsKo.map((k) => `<li>${escHtml(k)}</li>`).join("")}</ul>` : ""}
+        <div class="news-paras">${shown.map((p) => `<p>${escHtml(p)}</p>`).join("")}</div>
+        ${rest.length ? `<div class="news-paras" id="news-more-${i}" hidden>${rest.map((p) => `<p>${escHtml(p)}</p>`).join("")}</div><button class="btn" type="button" data-more="${i}">계속 읽기 (${rest.length}문단)</button>` : ""}
+        <div class="news-foot"><span>${a.published ? fmt.time(a.published) + " 발행" : ""}</span><a href="${escHtml(a.url)}" target="_blank" rel="noopener">CNBC 원문 보기 →</a></div>
+      </div>
+    </div>`;
+  }).join("");
+}
+$("#news-list").addEventListener("click", (e) => { const b = e.target.closest("[data-more]"); if (!b) return; $(`#news-more-${b.dataset.more}`).hidden = false; b.hidden = true; });
+
 // ───────────────────────── 초보 가이드 ─────────────────────────
 let lessonsPromise = null;
 function ensureLessons() {
@@ -1101,10 +1161,11 @@ $("#sc-buffett").addEventListener("click", () => alert("워렌 버핏 투자 따
 // ───────────────────────── 탭 · 이벤트 ─────────────────────────
 function selectTab(name) {
   $$(".tab").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.tab === name)));
-  ["starter", "buffett", "backtest", "stocks", "dividend", "compare"].forEach((p) => { $(`#panel-${p}`).hidden = p !== name; });
+  ["starter", "buffett", "news", "backtest", "stocks", "dividend", "compare"].forEach((p) => { $(`#panel-${p}`).hidden = p !== name; });
   if (name === "dividend") ensureStockIndex().then(renderDividend).catch(() => {});
   if (name === "buffett") ensureFilings().catch(() => {});
   if (name === "starter") ensureLessons();
+  if (name === "news") ensureNews();
   try { localStorage.setItem("md:tab", name); } catch {}
   if (name === "backtest" && !state.history) { /* 일봉이 오면 initBacktestForm 이 채움 */ }
   if (name === "backtest" && state.lastBacktest) renderBacktest();
@@ -1586,7 +1647,7 @@ const cachedLatest = cacheGet("md:latest"), cachedIntraday = cacheGet("md:intrad
 if (cachedLatest) { state.latest = cachedLatest; state.intraday = cachedIntraday; renderQuotes(); }
 try { state.stockRange = localStorage.getItem("md:range") || "1Y"; const ss = localStorage.getItem("md:stock"); if (ss) state.stockSel = ss; } catch {}
 try { if (localStorage.getItem("md:tiles") === "1") { $("#tiles").hidden = false; $("#strip").setAttribute("aria-expanded", "true"); } } catch {}
-const TABS = ["starter", "buffett", "backtest", "stocks", "dividend", "compare"];
+const TABS = ["starter", "buffett", "news", "backtest", "stocks", "dividend", "compare"];
 let savedTab = "buffett"; try { savedTab = localStorage.getItem("md:tab") || "buffett"; } catch {}
 if (!TABS.includes(savedTab)) savedTab = "buffett";
 selectTab(savedTab);
