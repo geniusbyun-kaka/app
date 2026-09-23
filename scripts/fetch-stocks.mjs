@@ -44,6 +44,11 @@ const KR_DIV = [
   ["017670.KS", "SK텔레콤"], ["030200.KS", "KT"], ["033780.KS", "KT&G"], ["010950.KS", "S-Oil"], ["088980.KS", "맥쿼리인프라"],
   ["024110.KS", "기업은행"], ["029780.KS", "삼성카드"], ["000810.KS", "삼성화재"], ["032640.KS", "LG유플러스"], ["003550.KS", "LG"], ["034730.KS", "SK"],
 ];
+// 국내 상장 리츠
+const KR_REIT = [
+  ["395400.KS", "SK리츠"], ["330590.KS", "롯데리츠"], ["348950.KS", "제이알글로벌리츠"], ["293940.KS", "신한알파리츠"],
+  ["088260.KS", "이리츠코크렙"], ["365550.KS", "ESR켄달스퀘어리츠"], ["357120.KS", "코람코라이프인프라리츠"],
+];
 // 국내 커버드콜·월배당 ETF
 const KR_CC = [
   ["458730.KS", "TIGER 미국배당다우존스"], ["458760.KS", "TIGER 미국배당다우존스타겟커버드콜2호"],
@@ -207,6 +212,7 @@ async function main() {
   // LIMIT 은 테스트용: 주식만 앞에서 N 개로 줄이고 ETF 는 항상 포함
   const krItems = [
     ...KR_DIV.map(([symbol, name]) => ({ symbol, name, sector: "국내 배당주", kind: "stock" })),
+    ...KR_REIT.map(([symbol, name]) => ({ symbol, name, sector: "국내 리츠", kind: "stock" })),
     ...KR_CC.map(([symbol, name]) => ({ symbol, name, sector: "국내 커버드콜", kind: "etf" })),
   ];
   const items = [...(LIMIT ? stocks.slice(0, LIMIT) : stocks), ...extraEtfs, ...krItems];
