@@ -37,6 +37,20 @@ const ETFS = [
   ["SPHD", "Invesco S&P 500 High Div Low Vol (월배당)"], ["TLTW", "iShares 20+ Treasury BuyWrite (월배당)"], ["MAIN", "Main Street Capital (월배당 BDC)"], ["ARCC", "Ares Capital (BDC)"],
 ];
 
+// 국내 배당주 (유가증권시장 .KS). 이름은 야후 메타로 갱신된다.
+const KR_DIV = [
+  ["005930.KS", "삼성전자"], ["005380.KS", "현대차"], ["000270.KS", "기아"], ["105560.KS", "KB금융"], ["055550.KS", "신한지주"],
+  ["086790.KS", "하나금융지주"], ["316140.KS", "우리금융지주"], ["138040.KS", "메리츠금융지주"], ["005490.KS", "POSCO홀딩스"],
+  ["017670.KS", "SK텔레콤"], ["030200.KS", "KT"], ["033780.KS", "KT&G"], ["010950.KS", "S-Oil"], ["088980.KS", "맥쿼리인프라"],
+  ["024110.KS", "기업은행"], ["029780.KS", "삼성카드"], ["000810.KS", "삼성화재"], ["032640.KS", "LG유플러스"], ["003550.KS", "LG"], ["034730.KS", "SK"],
+];
+// 국내 커버드콜·월배당 ETF
+const KR_CC = [
+  ["458730.KS", "TIGER 미국배당다우존스"], ["458760.KS", "TIGER 미국배당다우존스타겟커버드콜2호"],
+  ["441680.KS", "TIGER 미국나스닥100커버드콜(합성)"], ["289480.KS", "TIGER 200커버드콜"],
+  ["161510.KS", "PLUS 고배당주"], ["279530.KS", "KODEX 고배당"],
+];
+
 const decode = (s) => s.replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&#39;|&rsquo;/g, "'").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
 
 // 위키백과 "List of S&P 500 companies" 의 constituents 표에서 심볼·회사명·섹터를 읽는다.
@@ -152,8 +166,11 @@ async function fetchOne(item) {
   }
   const change = price != null && prev != null ? price - prev : null;
   const d = price >= 100 ? 2 : 4;
+  // 국내 종목은 야후가 주는 이름을 우선한다 (코드 오기입 시 바로 드러나도록)
+  const metaName = meta.shortName || meta.longName || daily.meta.shortName || daily.meta.longName;
+  const name = /\.(KS|KQ)$/.test(item.symbol) && metaName ? metaName : item.name;
   return {
-    symbol: item.symbol, name: item.name, sector: item.sector, kind: item.kind,
+    symbol: item.symbol, name, sector: item.sector, kind: item.kind,
     currency: meta.currency || "USD", timezone: tz, updated: new Date().toISOString(),
     quote: {
       price: round(price, d), previousClose: round(prev, d), change: round(change, d),
@@ -188,7 +205,11 @@ async function main() {
   const stockSet = new Set(stocks.map((s) => s.symbol));
   const extraEtfs = etfs.filter((e) => !stockSet.has(e.symbol));
   // LIMIT 은 테스트용: 주식만 앞에서 N 개로 줄이고 ETF 는 항상 포함
-  const items = [...(LIMIT ? stocks.slice(0, LIMIT) : stocks), ...extraEtfs];
+  const krItems = [
+    ...KR_DIV.map(([symbol, name]) => ({ symbol, name, sector: "국내 배당주", kind: "stock" })),
+    ...KR_CC.map(([symbol, name]) => ({ symbol, name, sector: "국내 커버드콜", kind: "etf" })),
+  ];
+  const items = [...(LIMIT ? stocks.slice(0, LIMIT) : stocks), ...extraEtfs, ...krItems];
 
   const prevItems = new Map((prevIndex?.items || []).map((x) => [x.symbol, x]));
   const results = [];
@@ -200,7 +221,7 @@ async function main() {
       try {
         const data = await fetchOne(item);
         await writeFile(path.join(OUT_DIR, "stocks", `${item.symbol}.json`), JSON.stringify(data));
-        results.push({ symbol: item.symbol, name: item.name, sector: item.sector, kind: item.kind, price: data.quote.price, changePercent: data.quote.changePercent, from: data.daily.from, to: data.daily.to, updated: data.updated, div: data.div });
+        results.push({ symbol: item.symbol, name: data.name, sector: item.sector, kind: item.kind, currency: data.currency, price: data.quote.price, changePercent: data.quote.changePercent, from: data.daily.from, to: data.daily.to, updated: data.updated, div: data.div });
       } catch (err) {
         const prev = prevItems.get(item.symbol);
         failed.push(item.symbol);

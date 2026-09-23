@@ -147,6 +147,9 @@ td.txt{font-family:var(--font)}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chip{border:1px solid var(--line);background:var(--surface-2);border-radius:999px;padding:4px 10px;font-size:12px;color:var(--ink-2)}
 .chip:hover{color:var(--ink);border-color:var(--ink-3)}
+.dv-cats{margin-bottom:10px}
+.dv-cats .chip{font-size:13.5px;font-weight:600;padding:7px 14px}
+.dv-cats .chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .strategy-desc{font-size:13px;color:var(--ink-2);background:var(--surface-2);border-radius:8px;padding:10px 12px;margin-top:12px}
 
 /* KPI */
@@ -494,12 +497,20 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
     <div class="card">
       <div class="card-head"><h3>배당 캘린더</h3><span class="small faint" id="dv-status">불러오는 중</span></div>
       <p class="desc">배당락일 전날까지 사야 그 회차 배당을 받습니다. 앞으로의 날짜는 지급 간격으로 계산한 <strong>예상일</strong>이고, 세후는 미국 원천징수 15%를 뺀 값입니다.</p>
+      <div class="chips dv-cats" aria-label="분야">
+        <button class="chip" data-dvscope="kr-div" type="button">국장 배당주</button>
+        <button class="chip" data-dvscope="kr-cc" type="button">국장 커버드콜</button>
+        <button class="chip" data-dvscope="etf" type="button">미국 배당 ETF</button>
+        <button class="chip" data-dvscope="stock" type="button">미국 개별주</button>
+        <button class="chip" data-dvscope="monthly" type="button">월배당</button>
+        <button class="chip" data-dvscope="mine" type="button">내 보유</button>
+        <button class="chip" aria-pressed="true" data-dvscope="all" type="button">전체</button>
+      </div>
       <div class="dv-search-row">
         <input id="dv-search" type="search" placeholder="배당 종목 검색 (티커 또는 회사명, 예: SCHD, Coca-Cola)" autocomplete="off">
         <button class="btn primary" id="dv-search-btn" type="button">검색</button>
       </div>
       <div class="dv-tools">
-        <div class="field"><label for="dv-scope">범위</label><select id="dv-scope"><option value="all">전체</option><option value="etf">ETF 만</option><option value="stock">개별 주식만</option><option value="monthly">월배당만</option><option value="mine">내 보유만</option></select></div>
         <div class="field"><label for="dv-sort">정렬</label><select id="dv-sort"><option value="yield">시가배당률 높은순</option><option value="next">배당락일 가까운순</option><option value="annual">연 배당금 큰순</option><option value="symbol">티커순</option></select></div>
         <div class="field"><label for="dv-tax">세율 %</label><input id="dv-tax" type="number" min="0" max="60" step="0.1" value="15"></div>
         <div class="field"><label for="dv-cur">표시 통화</label><select id="dv-cur"><option value="KRW">원화</option><option value="USD">달러</option></select></div>
@@ -507,8 +518,8 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
       <div class="kpis" id="dv-kpis"></div>
     </div>
     <div class="card">
-      <div class="card-head"><h3>이번 달 배당금 TOP 20</h3><span class="small faint">이번 달 배당락 기준 · 1주당 지급액 큰 순 · *는 예상일</span></div>
-      <div class="tablewrap"><table id="dv-top20"><thead><tr><th>#</th><th>종목</th><th>배당락</th><th>1주당</th><th>세후</th><th>시가배당률</th><th>주기</th></tr></thead><tbody></tbody></table></div>
+      <div class="card-head"><h3>이번 달 배당금 TOP 20</h3><span class="small faint">이번 달 배당락 기준 · 시가배당률 높은 순 · *는 예상일</span></div>
+      <div class="tablewrap"><table id="dv-top20"><thead><tr><th>#</th><th>종목</th><th>시가배당률</th><th>배당락</th><th>1주당</th><th>세후</th><th>주기</th></tr></thead><tbody></tbody></table></div>
     </div>
     <div class="card">
       <div class="card-head"><h3>배당 비교</h3><span class="small faint">연도별 주당 배당금과 성장률</span></div>
@@ -522,16 +533,6 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
       <div id="dvc-results" hidden>
         <div class="tablewrap" style="margin-top:12px"><table id="dvc-table"><thead><tr><th>종목</th><th>주기</th><th>시가배당률</th><th>세후</th><th>연 배당(예상)</th><th>최근 1회</th><th>다음 배당락</th><th>5년 배당 성장률</th></tr></thead><tbody></tbody></table></div>
         <div class="chart" style="margin-top:12px"><canvas id="chart-dvc"></canvas></div>
-      </div>
-    </div>
-    <div class="two">
-      <div class="card">
-        <div class="card-head"><h3>이번 주 배당락</h3><span class="small faint" id="dv-week-range"></span></div>
-        <div class="cal" id="dv-week"></div>
-      </div>
-      <div class="card">
-        <div class="card-head"><h3>이번 달 배당락</h3><span class="small faint" id="dv-month-range"></span></div>
-        <div class="cal" id="dv-month"></div>
       </div>
     </div>
     <div class="card">
@@ -1248,7 +1249,7 @@ function renderStockDetail() {
 
 // ───────────────────────── 비교 ─────────────────────────
 const CMP_COLORS = ["--nq", "--fx", "--strat", "--c4"];
-function normSym(s) { return s.trim().toUpperCase().replace(/\./g, "-"); }
+function normSym(s) { const t = s.trim().toUpperCase(); return /\.(KS|KQ)$/.test(t) ? t : t.replace(/\./g, "-"); }
 // 통합 시계열: 시세 탭의 지수·선물(history.json) 또는 종목 파일. reinvest 면 총수익(tr) 우선.
 async function getSeries(symRaw, reinvest) {
   const sym = normSym(symRaw); if (!sym) return null;
@@ -1262,7 +1263,7 @@ async function getSeries(symRaw, reinvest) {
   const idxItem = state.stockIndex?.items.find((x) => x.symbol === sym);
   if (!idxItem) return null;
   const d = await loadStock(sym);
-  return { symbol: sym, label: d.name, dates: d.daily.dates, close: d.daily.close, tr: d.daily.tr };
+  return { symbol: sym, label: d.name, dates: d.daily.dates, close: d.daily.close, tr: d.daily.tr, currency: d.currency || "USD" };
 }
 function setCompareYears(years) {
   const end = state.history?.symbols?.["^GSPC"]?.to || new Date().toISOString().slice(0, 10);
@@ -1299,12 +1300,19 @@ async function runCompare(auto) {
   let i0 = baseS.dates.findIndex((d) => d >= start), i1 = baseS.dates.findLastIndex((d) => d <= end);
   if (i0 < 0 || i1 < 0 || i1 - i0 < 20) { $("#cmp-note").innerHTML = '<span class="warn">기간이 너무 짧거나 데이터가 없습니다</span>'; return; }
   const dates = baseS.dates.slice(i0, i1 + 1);
-  const fx = cur === "KRW" && fxSym ? alignFx(dates, fxSym) : null;
+  const fxA = fxSym ? alignFx(dates, fxSym) : null;
   const startAmt = Number($("#cmp-amt").value) > 0 ? Number($("#cmp-amt").value) : cur === "KRW" ? 1e7 : 1e4;
   const lines = series.map((s) => {
     const aligned = alignFx(dates, { dates: s.dates, close: s.values });
-    const p0 = aligned[0];
-    const eq = aligned.map((p, i) => p == null || p0 == null ? null : startAmt * (p / p0) * (fx ? fx[i] / fx[0] : 1));
+    const p0 = aligned[0], isK = s.currency === "KRW";
+    // 종목 통화와 표시 통화가 다르면 환율 변동을 반영해 환산한다
+    const eq = aligned.map((p, i) => {
+      if (p == null || p0 == null) return null;
+      let f = 1;
+      if (cur === "KRW" && !isK) f = fxA ? fxA[i] / fxA[0] : 1;
+      if (cur === "USD" && isK) f = fxA ? fxA[0] / fxA[i] : 1;
+      return startAmt * (p / p0) * f;
+    });
     return { ...s, equity: eq };
   }).filter((l) => l.equity[0] != null);
   state.cmpLast = { dates, lines, cur, startAmt, reinvest, start: dates[0], end: dates.at(-1) };
@@ -1448,7 +1456,11 @@ $("#panel-buffett").addEventListener("click", (e) => { const t = e.target.closes
 const FREQ_LABEL = { monthly: "월배당", quarterly: "분기", semiannual: "반기", annual: "연 1회", irregular: "비정기" };
 function dvTax() { const v = Number($("#dv-tax").value); return isFinite(v) && v >= 0 ? v / 100 : 0.15; }
 function dvFx() { return state.latest?.quotes?.["KRW=X"]?.price || null; }
-function dvMoney(usd) { const cur = $("#dv-cur").value, fx = dvFx(); if (cur === "KRW" && fx) return fmt.krw(usd * fx); return `$${fmt.n(usd, usd >= 1000 ? 0 : usd >= 1 ? 2 : 4)}`; }
+const isKRSym = (sym) => /\.(KS|KQ)$/.test(sym);
+const itemCur = (x) => x.currency || (isKRSym(x.symbol) ? "KRW" : "USD");
+// 종목 통화 기준 금액을 표시 통화로 환산 (환율 없으면 null)
+function dvConv(a, c) { const disp = $("#dv-cur").value, fx = dvFx(); if (c === disp) return a; if (!fx) return null; return disp === "KRW" ? a * fx : a / fx; }
+function dvMoney(a, c = "USD") { const v = dvConv(a, c); const [val, vc] = v == null ? [a, c] : [v, $("#dv-cur").value]; return vc === "KRW" ? fmt.krw(val) : `$${fmt.n(val, val >= 1000 ? 0 : val >= 1 ? 2 : 4)}`; }
 function loadHoldings() { try { state.holdings = JSON.parse(localStorage.getItem("md:holdings") || "{}") || {}; } catch { state.holdings = {}; } }
 function saveHoldings() { try { localStorage.setItem("md:holdings", JSON.stringify(state.holdings)); } catch {} }
 function dvItems() { return (state.stockIndex?.items || []).filter((x) => x.div && x.div.ttm > 0 && x.price); }
@@ -1473,40 +1485,38 @@ function renderDividend() {
   if (!items.length) { $("#dv-status").textContent = "배당 데이터 없음"; $("#dv-list").innerHTML = `<div class="empty">이 스냅샷에는 배당 이력이 없습니다. 다음 종목 스냅샷(Stock history snapshot)부터 포함됩니다.</div>`; return; }
   $("#dv-status").textContent = `${items.length}종목 · ${fmt.time(idx.updated)} 기준`;
   const tax = dvTax(), w = dvWindows(), fx = dvFx();
-  // 캘린더 (이번 주 · 이번 달)
   const inRange = ([a, b]) => items.flatMap((x) => dvEvents(x).filter((e) => e.d >= a && e.d <= b).map((e) => ({ ...e, x })));
-  const calHtml = (evs) => {
-    if (!evs.length) return `<div class="empty" style="padding:14px 0">해당 배당락 없음</div>`;
-    const byDay = new Map(); for (const e of evs) { if (!byDay.has(e.d)) byDay.set(e.d, []); byDay.get(e.d).push(e); }
-    const dayName = ["일", "월", "화", "수", "목", "금", "토"];
-    return [...byDay.keys()].sort().map((d) => { const dt = new Date(d + "T00:00:00"); return `<div class="cal-day ${d === w.today ? "today" : ""}"><div class="d">${d.slice(5).replace("-", "/")} ${dayName[dt.getDay()]}<small>${d < w.today ? "지남" : d === w.today ? "오늘" : "예상"}</small></div><div class="items">${byDay.get(d).sort((p, q) => (q.x.div.yieldTtm || 0) - (p.x.div.yieldTtm || 0)).map((e) => `<span class="cal-item ${e.d < w.today ? "done" : ""}"><span class="tk" data-stock="${e.x.symbol}">${e.x.symbol}</span> ${dvMoney(e.a)}${state.holdings[e.x.symbol] ? ` · ${dvMoney(e.a * state.holdings[e.x.symbol] * (1 - tax))} 세후` : ""}</span>`).join("")}</div></div>`; }).join("");
-  };
   const weekEv = inRange(w.week), monthEv = inRange(w.month);
-  $("#dv-week-range").textContent = `${w.week[0].slice(5)} ~ ${w.week[1].slice(5)}`; $("#dv-month-range").textContent = `${w.month[0].slice(0, 7)}`;
-  $("#dv-week").innerHTML = calHtml(weekEv); $("#dv-month").innerHTML = calHtml(monthEv);
-  // 이번 달 배당금 TOP 20 (같은 달에 두 번 지급하는 월배당은 합산)
+  // 이번 달 배당금 TOP 20: 시가배당률 높은 순 (같은 달 두 번 지급하는 월배당은 합산)
   const bySym = new Map();
   for (const e of monthEv) { const t = bySym.get(e.x.symbol) || { x: e.x, amt: 0, dates: [] }; t.amt += e.a || 0; t.dates.push(e.d.slice(5).replace("-", "/") + (e.actual ? "" : "*")); bySym.set(e.x.symbol, t); }
-  const top20 = [...bySym.values()].filter((t) => t.amt > 0).sort((a, b) => b.amt - a.amt).slice(0, 20);
-  $("#dv-top20 tbody").innerHTML = top20.length ? top20.map((t, i) => `<tr><td>${i + 1}</td><td class="txt"><span class="tk" data-stock="${t.x.symbol}" style="font-weight:700;font-family:var(--mono);color:var(--accent);cursor:pointer">${t.x.symbol}</span> <span class="faint small">${t.x.name}</span></td><td class="txt">${t.dates.join(", ")}</td><td><strong>${dvMoney(t.amt)}</strong></td><td>${dvMoney(t.amt * (1 - tax))}</td><td>${fmt.pct(t.x.div.yieldTtm, 2, false)}</td><td class="txt">${FREQ_LABEL[t.x.div.freq]}</td></tr>`).join("") : `<tr><td class="txt faint" colspan="7">이번 달 배당락 종목이 없습니다</td></tr>`;
+  const top20 = [...bySym.values()].filter((t) => t.amt > 0).sort((a, b) => (b.x.div.yieldTtm || 0) - (a.x.div.yieldTtm || 0)).slice(0, 20);
+  $("#dv-top20 tbody").innerHTML = top20.length ? top20.map((t, i) => `<tr><td>${i + 1}</td><td class="txt"><span class="tk" data-stock="${t.x.symbol}" style="font-weight:700;font-family:var(--mono);color:var(--accent);cursor:pointer">${t.x.symbol}</span> <span class="faint small">${t.x.name}</span></td><td><strong>${fmt.pct(t.x.div.yieldTtm, 2, false)}</strong></td><td class="txt">${t.dates.join(", ")}</td><td>${dvMoney(t.amt, itemCur(t.x))}</td><td>${dvMoney(t.amt * (1 - tax), itemCur(t.x))}</td><td class="txt">${FREQ_LABEL[t.x.div.freq]}</td></tr>`).join("") : `<tr><td class="txt faint" colspan="7">이번 달 배당락 종목이 없습니다</td></tr>`;
   // 내 보유 기준 이번 달·연간
   const held = items.filter((x) => state.holdings[x.symbol] > 0);
-  const monthGross = monthEv.filter((e) => state.holdings[e.x.symbol] > 0).reduce((s, e) => s + e.a * state.holdings[e.x.symbol], 0);
-  const yearGross = held.reduce((s, x) => s + x.div.regular * x.div.perYear * state.holdings[x.symbol], 0);
+  const disp = $("#dv-cur").value;
+  const monthGross = monthEv.filter((e) => state.holdings[e.x.symbol] > 0).reduce((s, e) => s + (dvConv(e.a * state.holdings[e.x.symbol], itemCur(e.x)) ?? 0), 0);
+  const yearGross = held.reduce((s, x) => s + (dvConv(x.div.regular * x.div.perYear * state.holdings[x.symbol], itemCur(x)) ?? 0), 0);
   const top = [...items].sort((a, b) => b.div.yieldTtm - a.div.yieldTtm)[0];
   $("#dv-kpis").innerHTML = [
     kpi("이번 주 배당락", `${new Set(weekEv.map((e) => e.x.symbol)).size}종목`, weekEv.slice(0, 4).map((e) => e.x.symbol).join(", ") || "없음"),
     kpi("이번 달 배당락", `${new Set(monthEv.map((e) => e.x.symbol)).size}종목`, `${monthEv.filter((e) => e.d < w.today).length}건 지남 · ${monthEv.filter((e) => e.d >= w.today).length}건 예정`),
-    kpi("내 보유 · 이번 달 예상", held.length ? dvMoney(monthGross * (1 - tax)) : "–", held.length ? `세전 ${dvMoney(monthGross)} · ${held.length}종목 보유` : "보유 수량을 입력하세요"),
-    kpi("내 보유 · 연간 예상", held.length ? dvMoney(yearGross * (1 - tax)) : "–", held.length ? `세전 ${dvMoney(yearGross)}${fx ? "" : " · 환율 없음"}` : "세후 기준"),
+    kpi("내 보유 · 이번 달 예상", held.length ? dvMoney(monthGross * (1 - tax), disp) : "–", held.length ? `세전 ${dvMoney(monthGross, disp)} · ${held.length}종목 보유` : "보유 수량을 입력하세요"),
+    kpi("내 보유 · 연간 예상", held.length ? dvMoney(yearGross * (1 - tax), disp) : "–", held.length ? `세전 ${dvMoney(yearGross, disp)}${fx ? "" : " · 환율 없음"}` : "세후 기준"),
     kpi("최고 시가배당률", top ? fmt.pct(top.div.yieldTtm, 2, false) : "–", top ? `${top.symbol} · 세후 ${fmt.pct(top.div.yieldTtm * (1 - tax), 2, false)}` : ""),
   ].join("");
   renderDividendList();
 }
 function renderDividendList() {
   const items = dvItems(); if (!items.length) return;
-  const tax = dvTax(), scope = $("#dv-scope").value, sort = $("#dv-sort").value, q = $("#dv-search").value.trim().toLowerCase(), w = dvWindows();
-  let list = items.filter((x) => scope === "all" || (scope === "etf" && x.kind === "etf") || (scope === "stock" && x.kind === "stock") || (scope === "monthly" && x.div.freq === "monthly") || (scope === "mine" && state.holdings[x.symbol] > 0));
+  const tax = dvTax(), scope = state.dvScope || "all", sort = $("#dv-sort").value, q = $("#dv-search").value.trim().toLowerCase(), w = dvWindows();
+  let list = items.filter((x) => scope === "all"
+    || (scope === "kr-div" && isKRSym(x.symbol) && x.kind === "stock")
+    || (scope === "kr-cc" && isKRSym(x.symbol) && x.kind === "etf")
+    || (scope === "etf" && !isKRSym(x.symbol) && x.kind === "etf")
+    || (scope === "stock" && !isKRSym(x.symbol) && x.kind === "stock")
+    || (scope === "monthly" && x.div.freq === "monthly")
+    || (scope === "mine" && state.holdings[x.symbol] > 0));
   if (q) list = list.filter((x) => x.symbol.toLowerCase().includes(q) || x.name.toLowerCase().includes(q));
   if (sort === "yield") list.sort((a, b) => b.div.yieldTtm - a.div.yieldTtm);
   else if (sort === "next") list.sort((a, b) => (a.div.nextEx || "9999").localeCompare(b.div.nextEx || "9999"));
@@ -1515,13 +1525,13 @@ function renderDividendList() {
   const shown = list.slice(0, 120);
   $("#dv-count").textContent = list.length > shown.length ? `${list.length}종목 중 ${shown.length}개 표시 · 검색으로 좁혀 보세요` : `${list.length}종목`;
   $("#dv-list").innerHTML = shown.length ? shown.map((x) => {
-    const d = x.div, annual = d.regular * d.perYear, qty = state.holdings[x.symbol] || "";
+    const d = x.div, annual = d.regular * d.perYear, qty = state.holdings[x.symbol] || "", C = itemCur(x);
     const nextSoon = d.nextEx && d.nextEx <= w.month[1];
     return `<div class="dv-row" data-sym="${x.symbol}">
       <div class="id"><span class="tk" data-stock="${x.symbol}">${x.symbol}</span><span class="freq ${d.freq === "monthly" ? "m" : ""}">${FREQ_LABEL[d.freq]}</span><span class="nm">${x.name}</span></div>
-      <div class="dates">다음 배당락 <b>${d.nextEx || "–"}</b> <span class="est">${nextSoon ? "이번 달 · " : ""}예상</span><br>최근 <b>${d.lastEx}</b> · ${dvMoney(d.lastAmount)}</div>
-      <div class="yld"><div class="big">${fmt.pct(d.yieldTtm, 2, false)}</div><div class="sub">${dvMoney(d.regular)} × ${d.perYear} = ${dvMoney(annual)} · 세후 ${fmt.pct(d.yieldTtm * (1 - tax), 2, false)}</div></div>
-      <div class="qty"><label>보유 <input type="number" min="0" step="1" value="${qty}" data-qty="${x.symbol}" placeholder="주"> 주</label>${qty ? `<span>연간 <span class="amt">${dvMoney(annual * qty * (1 - tax))}</span> 세후 <span class="faint">(세전 ${dvMoney(annual * qty)})</span></span><span>1회 <span class="amt">${dvMoney(d.regular * qty * (1 - tax))}</span> 세후</span>` : `<span class="faint">현재가 $${fmt.n(x.price)}</span>`}</div>
+      <div class="dates">다음 배당락 <b>${d.nextEx || "–"}</b> <span class="est">${nextSoon ? "이번 달 · " : ""}예상</span><br>최근 <b>${d.lastEx}</b> · ${dvMoney(d.lastAmount, C)}</div>
+      <div class="yld"><div class="big">${fmt.pct(d.yieldTtm, 2, false)}</div><div class="sub">${dvMoney(d.regular, C)} × ${d.perYear} = ${dvMoney(annual, C)} · 세후 ${fmt.pct(d.yieldTtm * (1 - tax), 2, false)}</div></div>
+      <div class="qty"><label>보유 <input type="number" min="0" step="1" value="${qty}" data-qty="${x.symbol}" placeholder="주"> 주</label>${qty ? `<span>연간 <span class="amt">${dvMoney(annual * qty * (1 - tax), C)}</span> 세후 <span class="faint">(세전 ${dvMoney(annual * qty, C)})</span></span><span>1회 <span class="amt">${dvMoney(d.regular * qty * (1 - tax), C)}</span> 세후</span>` : `<span class="faint">현재가 ${C === "KRW" ? fmt.krw(x.price) : `$${fmt.n(x.price)}`}</span>`}</div>
     </div>`;
   }).join("") : `<div class="empty">조건에 맞는 종목이 없습니다</div>`;
 }
@@ -1544,7 +1554,7 @@ async function runDividendCompare() {
   const thisYear = new Date().getFullYear();
   const years = []; for (let y = thisYear - 5; y <= thisYear; y++) years.push(String(y));
   const growth = (r) => { const a = r.byYear[String(thisYear - 5)], b = r.byYear[String(thisYear - 1)]; return a > 0 && b > 0 ? Math.pow(b / a, 1 / 4) - 1 : null; };
-  $("#dvc-table tbody").innerHTML = rows.map((r) => { const d = r.item.div, g = growth(r); return `<tr><td class="txt"><span class="sw" style="--c:${r.color}"></span><strong>${r.sym}</strong> <span class="faint small">${r.item.name}</span></td><td class="txt">${FREQ_LABEL[d.freq]}</td><td>${fmt.pct(d.yieldTtm, 2, false)}</td><td>${fmt.pct(d.yieldTtm * (1 - tax), 2, false)}</td><td>$${fmt.n(d.regular * d.perYear, 2)}</td><td>$${fmt.n(d.lastAmount, 4)}</td><td class="txt">${d.nextEx || "–"} <span class="est">예상</span></td><td class="${g == null ? "" : g >= 0 ? "pos" : "neg"}">${g == null ? "–" : fmt.pct(g, 1)}</td></tr>`; }).join("");
+  $("#dvc-table tbody").innerHTML = rows.map((r) => { const d = r.item.div, g = growth(r); return `<tr><td class="txt"><span class="sw" style="--c:${r.color}"></span><strong>${r.sym}</strong> <span class="faint small">${r.item.name}</span></td><td class="txt">${FREQ_LABEL[d.freq]}</td><td>${fmt.pct(d.yieldTtm, 2, false)}</td><td>${fmt.pct(d.yieldTtm * (1 - tax), 2, false)}</td><td>${dvMoney(d.regular * d.perYear, itemCur(r.item))}</td><td>${dvMoney(d.lastAmount, itemCur(r.item))}</td><td class="txt">${d.nextEx || "–"} <span class="est">예상</span></td><td class="${g == null ? "" : g >= 0 ? "pos" : "neg"}">${g == null ? "–" : fmt.pct(g, 1)}</td></tr>`; }).join("");
   const opts = baseOptions(years, { yFmt: (v) => `$${fmt.n(v, 2)}`, tooltipLabel: (it) => `${it.dataset.label}: $${fmt.n(it.parsed.y, 4)}` });
   opts.scales.x = { type: "category", grid: { display: false }, ticks: { color: css("--ink-2"), font: { family: css("--mono"), size: 11 } }, border: { display: false } };
   opts.parsing = true; opts.interaction = { mode: "index", intersect: false };
@@ -1552,7 +1562,7 @@ async function runDividendCompare() {
   state.dvcLast = true;
   $("#dvc-results").hidden = false;
 }
-$("#dv-scope").addEventListener("change", renderDividendList);
+$$("[data-dvscope]").forEach((c) => c.addEventListener("click", () => { state.dvScope = c.dataset.dvscope; $$("[data-dvscope]").forEach((x) => x.setAttribute("aria-pressed", String(x === c))); renderDividendList(); }));
 $("#dv-sort").addEventListener("change", renderDividendList);
 $("#dv-search").addEventListener("input", renderDividendList);
 $("#dv-search-btn").addEventListener("click", () => { renderDividendList(); $("#dv-search").blur(); });
