@@ -1,0 +1,42 @@
+name: CNBC news snapshot
+
+# 매일 한국시간 오전 6시(21:00 UTC)에 CNBC 월드 메인 상위 3개 기사를 받아
+# 한국어로 번역해 `news` 브랜치에 저장합니다. 앱의 뉴스 탭이 이 파일을 읽습니다.
+# GitHub 예약 실행은 몇 분에서 수십 분 늦을 수 있습니다.
+on:
+  schedule:
+    - cron: "0 21 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: news-data
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Fetch and translate top stories
+        run: node scripts/fetch-news.mjs out
+
+      - name: Publish to news branch
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd out
+          git init -q -b news
+          git config user.name "news-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add .
+          git commit -q -m "CNBC news snapshot $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          git push -q --force "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" news
