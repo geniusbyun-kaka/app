@@ -52,33 +52,45 @@ const ARTICLE_RE = /https:\/\/www\.cnbc\.com\/\d{4}\/\d{2}\/\d{2}\/[a-z0-9-]+\.h
 // 1순위: 페이지에 심긴 레이아웃 JSON (window.__s_data) 을 순회하며 기사 URL 수집
 // 2순위: HTML 에 나타나는 순서대로 날짜형 기사 링크
 // 3순위: World News RSS
-async function topLinks() {
+// 후보 링크를 넉넉히 모아 돌려준다 (유료 기사 등은 본문 단계에서 걸러 다음 후보로 넘어간다)
+async function topLinks(debug) {
   let html = "";
   try { html = await fetchText(HOME); } catch (err) { console.warn(`[news] 메인 페이지 실패: ${err.message}`); }
   const seen = new Set(), out = [];
-  const push = (u) => { if (u && !seen.has(u) && !/\/(video|select|pro)\//.test(u)) { seen.add(u); out.push(u); } };
-  const jsonBlob = html.match(/window\.__s_data\s*=\s*(\{.*?\});\s*window\.__c_data/s) || html.match(/window\.__s_data\s*=\s*(\{.*?\});\n/s);
+  const push = (u, why) => { if (u && !seen.has(u) && !/\/(video|select|pro)\//.test(u)) { seen.add(u); out.push(u); debug.candidates.push({ url: u, why }); } };
+  // 1순위: 레이아웃 JSON 에서 히어로/피처드 모듈의 기사만, 모듈 순서대로
+  const jsonBlob = html.match(/window\.__s_data\s*=\s*(\{.*?\});\s*window\.__c_data/s) || html.match(/window\.__s_data\s*=\s*(\{[\s\S]*?\});\s*<\/script>/);
   if (jsonBlob) {
     try {
-      const walk = (node) => {
-        if (out.length >= COUNT * 3 || node == null) return;
+      const data = JSON.parse(jsonBlob[1]);
+      const modules = [];
+      (function walk(node) {
+        if (node == null) return;
         if (Array.isArray(node)) { for (const x of node) walk(x); return; }
         if (typeof node === "object") {
-          if (typeof node.url === "string" && /cnbcnewsstory|article/i.test(String(node.type || ""))) { const m = node.url.match(ARTICLE_RE); if (m) push(m[0]); }
+          if (typeof node.name === "string" && Array.isArray(node.data?.assets || node.assets)) modules.push({ name: node.name, assets: node.data?.assets || node.assets });
           for (const k of Object.keys(node)) walk(node[k]);
         }
-      };
-      walk(JSON.parse(jsonBlob[1]));
-      if (out.length) console.log(`[news] 레이아웃 JSON 에서 ${out.length}개 링크`);
-    } catch (err) { console.warn(`[news] 레이아웃 JSON 파싱 실패: ${err.message}`); }
+      })(data);
+      debug.modules = modules.map((m) => `${m.name}(${m.assets.length})`);
+      const heroFirst = [...modules.filter((m) => /hero|featured|river|top/i.test(m.name)), ...modules];
+      for (const m of heroFirst) for (const a of m.assets) {
+        if (a?.premium === true || /premium|pro/i.test(String(a?.contentClassification || ""))) continue;
+        const u = String(a?.url || "").match(ARTICLE_RE); if (u) push(u[0], `module:${m.name}`);
+      }
+      if (out.length) console.log(`[news] 레이아웃 JSON 모듈에서 ${out.length}개 링크`);
+    } catch (err) { console.warn(`[news] 레이아웃 JSON 파싱 실패: ${err.message}`); debug.jsonError = err.message; }
+  } else debug.jsonError = "__s_data 블롭을 못 찾음";
+  // 2순위: RSS World News (편집 순서라 상위가 곧 주요 기사)
+  if (out.length < COUNT * 2) {
+    try {
+      const rss = await fetchText(RSS_TOP);
+      for (const m of rss.matchAll(/<link>\s*(https:\/\/www\.cnbc\.com\/\d{4}\/[^<\s]+)\s*<\/link>/g)) { push(m[1], "rss"); if (out.length >= COUNT * 3) break; }
+    } catch (err) { console.warn(`[news] RSS 실패: ${err.message}`); }
   }
-  if (out.length < COUNT && html) for (const m of html.matchAll(ARTICLE_RE)) { push(m[0]); if (out.length >= COUNT * 3) break; }
-  if (out.length < COUNT) {
-    console.warn("[news] 메인 페이지에서 링크를 못 찾아 RSS 로 폴백");
-    const rss = await fetchText(RSS_TOP);
-    for (const m of rss.matchAll(/<link>\s*(https:\/\/www\.cnbc\.com\/\d{4}\/[^<\s]+)\s*<\/link>/g)) push(m[1]);
-  }
-  return out.slice(0, COUNT);
+  // 3순위: HTML 등장 순서
+  if (out.length < COUNT && html) for (const m of html.matchAll(ARTICLE_RE)) { push(m[0], "html-order"); if (out.length >= COUNT * 3) break; }
+  return out;
 }
 
 const meta = (html, prop) => {
@@ -86,29 +98,53 @@ const meta = (html, prop) => {
   return m ? decode(m[1]) : null;
 };
 
-function parseArticle(html, url) {
+// 문장 단위로 잘라 2~3문장씩 문단으로 묶는다 (articleBody 가 통짜 문자열일 때)
+function toParas(text) {
+  const sents = text.replace(/\s+/g, " ").trim().match(/[^.!?]+[.!?]+(?:["\u201d']+)?(?:\s|$)/g) || [text];
+  const paras = []; let cur = "";
+  for (const sn of sents) { cur += sn; if (cur.length > 320) { paras.push(cur.trim()); cur = ""; } }
+  if (cur.trim()) paras.push(cur.trim());
+  return paras;
+}
+function parseArticle(html, url, debug) {
   const title = meta(html, "og:title") || stripTags((html.match(/<h1[^>]*>(.*?)<\/h1>/s) || [, ""])[1]);
   const desc = meta(html, "og:description") || "";
   const image = meta(html, "og:image");
   const published = meta(html, "article:published_time");
-  // 핵심 포인트 (Key Points 박스)
+  // 유료(PRO) 기사면 건너뛴다
+  const premium = /"isAccessibleForFree"\s*:\s*"?false"?/i.test(html) || /"contentClassification"\s*:\s*"(premium|pro)"/i.test(html);
+  // 핵심 포인트 (Key Points 박스) — 실제 렌더된 클래스만
   const keyPoints = [];
-  const kp = html.match(/RenderKeyPoints[\s\S]{0,6000}?<\/ul>/);
+  const kp = html.match(/class="RenderKeyPoints[^"]*"[\s\S]{0,6000}?<\/ul>/);
   if (kp) for (const li of kp[0].matchAll(/<li[^>]*>([\s\S]*?)<\/li>/g)) { const t = stripTags(li[1]); if (t) keyPoints.push(t); }
-  // 본문 문단
-  const paras = [];
-  const bodyStart = html.indexOf("ArticleBody-articleBody");
-  if (bodyStart >= 0) {
-    const body = html.slice(bodyStart, html.indexOf("RelatedContent", bodyStart) > 0 ? html.indexOf("RelatedContent", bodyStart) : undefined);
-    for (const p of body.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/g)) {
-      const t = stripTags(p[1]);
-      if (!t || t.length < 3) continue;
-      if (/^(Subscribe to|Sign up for|Watch CNBC|Read more|Correction:|Clarification:|Disclosure:|Don't miss)/i.test(t)) continue;
-      paras.push(t);
-      if (paras.length >= MAX_PARAS) break;
+  // 본문: 1순위 ld+json 의 articleBody, 2순위 렌더된 ArticleBody 영역의 <p>
+  let paras = [], via = null;
+  for (const m of html.matchAll(/<script[^>]+application\/ld\+json[^>]*>([\s\S]*?)<\/script>/g)) {
+    try {
+      const j = JSON.parse(m[1].trim());
+      for (const node of Array.isArray(j) ? j : [j]) {
+        const bodyTxt = node?.articleBody || node?.["@graph"]?.find?.((g) => g.articleBody)?.articleBody;
+        if (typeof bodyTxt === "string" && bodyTxt.length > 200) { paras = toParas(decode(bodyTxt)); via = "ld+json"; break; }
+      }
+    } catch {}
+    if (paras.length) break;
+  }
+  if (!paras.length) {
+    const bodyStart = html.search(/class="ArticleBody-articleBody[^"]*"/);
+    if (bodyStart >= 0) {
+      const rel = html.indexOf("RelatedContent", bodyStart);
+      const body = html.slice(bodyStart, rel > 0 ? rel : bodyStart + 120000);
+      for (const p of body.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/g)) {
+        const t = stripTags(p[1]);
+        if (!t || t.length < 30) continue;
+        paras.push(t);
+      }
+      if (paras.length) via = "html";
     }
   }
-  return { url, title, desc, image, published, keyPoints, paras };
+  paras = paras.filter((t) => !/^(Subscribe to|Sign up for|Watch CNBC|Read more|Correction:|Clarification:|Disclosure:|Don't miss|Got a confidential)/i.test(t)).slice(0, MAX_PARAS);
+  if (debug) debug.articles.push({ url, premium, via, kp: keyPoints.length, paras: paras.length, first: (paras[0] || "").slice(0, 160) });
+  return { url, title, desc, image, published, keyPoints, paras, premium, via };
 }
 
 // Google 번역 비공식 엔드포인트 (무료·무키). 하루 수십 건 수준이라 충분하다.
@@ -130,15 +166,18 @@ async function toKorean(text) {
 }
 
 async function main() {
-  const links = await topLinks();
+  const debug = { candidates: [], modules: [], articles: [] };
+  const links = await topLinks(debug);
   if (!links.length) throw new Error("기사 링크를 하나도 찾지 못했습니다");
-  console.log(`[news] 상위 기사:\n  ${links.join("\n  ")}`);
+  console.log(`[news] 후보 기사 ${links.length}개:\n  ${links.join("\n  ")}`);
   const articles = [];
   for (const url of links) {
+    if (articles.length >= COUNT) break;
     try {
-      const a = parseArticle(await fetchText(url), url);
+      const a = parseArticle(await fetchText(url), url, debug);
+      if (a.premium) { console.log(`[news] 유료 기사 건너뜀: ${url}`); continue; }
       let note = null;
-      if (!a.paras.length) { note = "본문을 가져오지 못해 요약만 표시합니다 (유료 기사이거나 형식이 다른 페이지)"; if (a.desc) a.paras = [a.desc]; }
+      if (!a.paras.length) { note = "본문을 가져오지 못해 요약만 표시합니다"; if (a.desc) a.paras = [a.desc]; else continue; }
       const titleKo = (await toKorean(a.title)) || a.title;
       const keyPointsKo = [];
       for (const k of a.keyPoints) keyPointsKo.push((await toKorean(k)) || k);
@@ -154,6 +193,7 @@ async function main() {
   const out = { updated: new Date().toISOString(), source: "CNBC World", home: HOME, maxParas: MAX_PARAS, articles };
   await mkdir(OUT_DIR, { recursive: true });
   await writeFile(path.join(OUT_DIR, "news.json"), JSON.stringify(out, null, 1));
+  if (process.env.NEWS_DEBUG) await writeFile(path.join(OUT_DIR, "debug.json"), JSON.stringify(debug, null, 1));
   console.log(`[news] ${path.join(OUT_DIR, "news.json")} 저장 (기사 ${articles.length}건)`);
 }
 

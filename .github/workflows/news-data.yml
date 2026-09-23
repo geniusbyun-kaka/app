@@ -7,6 +7,13 @@ on:
   schedule:
     - cron: "0 21 * * *"
   workflow_dispatch:
+    inputs:
+      branch:
+        description: "결과를 올릴 브랜치 (테스트는 news-test)"
+        default: "news"
+      debug:
+        description: "debug.json 도 함께 저장 (1이면 켜짐)"
+        default: ""
 
 permissions:
   contents: write
@@ -27,16 +34,19 @@ jobs:
           node-version: "22"
 
       - name: Fetch and translate top stories
+        env:
+          NEWS_DEBUG: ${{ inputs.debug }}
         run: node scripts/fetch-news.mjs out
 
       - name: Publish to news branch
         env:
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ inputs.branch || 'news' }}
         run: |
           cd out
-          git init -q -b news
+          git init -q -b "$BRANCH"
           git config user.name "news-bot"
           git config user.email "actions@users.noreply.github.com"
           git add .
           git commit -q -m "CNBC news snapshot $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
-          git push -q --force "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" news
+          git push -q --force "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$BRANCH"
