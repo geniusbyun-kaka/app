@@ -48,7 +48,8 @@ a{color:var(--accent)}
 [hidden]{display:none!important}
 .eyebrow{font-size:11.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
 .muted{color:var(--ink-2)} .faint{color:var(--ink-3)}
-.small{font-size:12px}
+.desc{font-size:13.5px;color:var(--ink-2);line-height:1.65;max-width:720px}
+.small{font-size:12.5px}
 
 /* header */
 header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 20px;padding-bottom:14px;border-bottom:1px solid var(--line);margin-bottom:16px}
@@ -68,37 +69,16 @@ header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:spac
 .notice.error{border-left-color:var(--up)}
 
 /* ticker strip (접힌 시세) */
-.strip{display:flex;align-items:center;gap:6px 18px;flex-wrap:wrap;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:8px 14px;margin-bottom:14px;font-size:13px;color:var(--ink-2);cursor:pointer}
-.strip:hover{border-color:var(--ink-3)}
+.strip{display:flex;align-items:center;gap:6px 18px;flex-wrap:wrap;width:100%;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:8px 14px;margin-bottom:14px;font-size:13px;color:var(--ink-2)}
 .strip-item{display:inline-flex;align-items:baseline;gap:8px}
 .strip-item .k{font-weight:600;color:var(--ink-3);font-size:12px;letter-spacing:.02em}
 .strip-item .v{color:var(--ink);font-weight:600}
 .strip-item .d{font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums}
 .strip-item .d.up{color:var(--up)}.strip-item .d.down{color:var(--down)}
-.strip-hint{margin-left:auto;font-size:11.5px;color:var(--ink-3)}
-.strip[aria-expanded="true"] .strip-hint::after{content:" ▴"}.strip[aria-expanded="false"] .strip-hint::after{content:" ▾"}
-/* quote tiles */
-.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-bottom:18px}
-.tile{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px 12px;box-shadow:var(--shadow);position:relative;overflow:hidden}
-.tile::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--series)}
-.tile .head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
-.tile .sym{font-family:var(--mono);font-size:12px;color:var(--ink-3)}
-.tile .price{font-family:var(--mono);font-size:34px;font-weight:600;letter-spacing:-.02em;line-height:1.1;margin-top:6px;font-variant-numeric:tabular-nums}
-.tile .price .cur{font-size:14px;font-weight:500;color:var(--ink-3);margin-left:6px;font-family:var(--font)}
 .chg{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:14px;font-weight:600;padding:3px 9px;border-radius:999px;margin-top:8px;font-variant-numeric:tabular-nums}
 .chg.up{color:var(--up);background:color-mix(in srgb,var(--up) 12%,transparent)}
 .chg.down{color:var(--down);background:color-mix(in srgb,var(--down) 12%,transparent)}
 .chg.flat{color:var(--flat);background:var(--surface-2)}
-.tile .meta{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;margin-top:12px;font-size:12.5px}
-.tile .meta div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed var(--line-2);padding:3px 0}
-.tile .meta span:last-child{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--ink)}
-.tile .meta span:first-child{color:var(--ink-3)}
-.range{margin-top:10px;font-size:11.5px;color:var(--ink-3)}
-.range .bar{position:relative;height:4px;background:var(--surface-2);border-radius:2px;margin:5px 0 3px}
-.range .bar i{position:absolute;top:-3px;width:10px;height:10px;border-radius:50%;background:var(--series);border:2px solid var(--surface);transform:translateX(-50%)}
-.range .ends{display:flex;justify-content:space-between;font-family:var(--mono);font-variant-numeric:tabular-nums}
-.spark{display:block;width:100%;height:46px;margin-top:10px}
-.tile .foot{font-size:11.5px;color:var(--ink-3);margin-top:8px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .skeleton{color:transparent!important;background:var(--surface-2);border-radius:6px;animation:pulse 1.4s ease-in-out infinite}
 @keyframes pulse{50%{opacity:.5}}
 
@@ -142,7 +122,7 @@ header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:spac
 .chart.tall{height:300px}
 .chart.short{height:150px}
 .two{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
-.two>*,.tiles>*,.kpis>*,.form>*{min-width:0}
+.two>*,.kpis>*,.form>*{min-width:0}
 .chart{min-width:0}
 
 /* notional table */
@@ -273,7 +253,6 @@ td .nm{font-family:var(--font);color:var(--ink-3);font-size:12px;margin-left:6px
 /* guide */
 footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
 @media (max-width:480px){
-  .tile .price{font-size:30px}
   .card{padding:14px}
   .kpi .v{font-size:19px}
 }
@@ -295,41 +274,10 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
 
   <div id="notice" class="notice" hidden></div>
 
-  <button class="strip" id="strip" type="button" aria-expanded="false" aria-controls="tiles">
+  <div class="strip" id="strip">
     <span class="strip-item" id="strip-nq"><span class="k">NQ 선물</span><span class="v num">–</span></span>
     <span class="strip-item" id="strip-fx"><span class="k">USD/KRW</span><span class="v num">–</span></span>
-    <span class="strip-hint">터치하면 상세</span>
-  </button>
-  <section class="tiles" id="tiles" aria-label="현재 시세" hidden>
-    <article class="tile" id="tile-NQ" style="--series:var(--nq)">
-      <div class="head"><h2>나스닥 100 선물</h2><span class="sym">NQ=F · CME</span></div>
-      <div class="price skeleton">00000.00</div>
-      <div class="chg flat skeleton">+0.00 (0.00%)</div>
-      <canvas class="spark" aria-hidden="true"></canvas>
-      <div class="meta">
-        <div><span>전일 종가</span><span data-f="previousClose">–</span></div>
-        <div><span>당일 고가</span><span data-f="dayHigh">–</span></div>
-        <div><span>당일 저가</span><span data-f="dayLow">–</span></div>
-        <div><span>1계약 명목가치</span><span data-f="notional">–</span></div>
-      </div>
-      <div class="range"><span>52주 범위</span><div class="bar"><i style="left:50%"></i></div><div class="ends"><span data-f="fiftyTwoWeekLow">–</span><span data-f="fiftyTwoWeekHigh">–</span></div></div>
-      <div class="foot"><span data-f="time">기준 시각 –</span><span>최근 5거래일 5분봉</span></div>
-    </article>
-    <article class="tile" id="tile-FX" style="--series:var(--fx)">
-      <div class="head"><h2>원달러 환율</h2><span class="sym">USD/KRW · 역외</span></div>
-      <div class="price skeleton">0000.00</div>
-      <div class="chg flat skeleton">+0.00 (0.00%)</div>
-      <canvas class="spark" aria-hidden="true"></canvas>
-      <div class="meta">
-        <div><span>전일 종가</span><span data-f="previousClose">–</span></div>
-        <div><span>당일 고가</span><span data-f="dayHigh">–</span></div>
-        <div><span>당일 저가</span><span data-f="dayLow">–</span></div>
-        <div><span>NQ 1계약 원화</span><span data-f="notional">–</span></div>
-      </div>
-      <div class="range"><span>52주 범위</span><div class="bar"><i style="left:50%"></i></div><div class="ends"><span data-f="fiftyTwoWeekLow">–</span><span data-f="fiftyTwoWeekHigh">–</span></div></div>
-      <div class="foot"><span data-f="time">기준 시각 –</span><span>최근 5거래일 5분봉</span></div>
-    </article>
-  </section>
+  </div>
 
   <div class="tabs" role="tablist">
     <button class="tab" role="tab" aria-selected="false" data-tab="starter" id="tab-starter">초보</button>
@@ -345,7 +293,7 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
   <section class="panel" id="panel-news" role="tabpanel" hidden>
     <div class="card">
       <div class="card-head"><h3>오늘의 CNBC 월드 헤드라인</h3><span class="small faint" id="news-status">불러오는 중</span></div>
-      <p class="small muted">매일 한국시간 오전 6시에 <a href="https://www.cnbc.com/world/" target="_blank" rel="noopener">CNBC World</a> 메인의 상위 3개 기사를 가져와 자동 번역한 것입니다. 기계 번역이라 표현이 어색하거나 부정확할 수 있으니 중요한 내용은 원문을 확인하세요. 저작권 보호를 위해 본문은 앞부분 일부만 싣고 전문은 원문 링크로 안내합니다.</p>
+      <p class="desc">매일 오전 6시 <a href="https://www.cnbc.com/world/" target="_blank" rel="noopener">CNBC World</a> 메인의 상위 3개 기사를 자동 번역합니다. 기계 번역이라 부정확할 수 있고, 본문은 일부만 싣습니다. 전문은 원문 링크에서 확인하세요.</p>
     </div>
     <div id="news-list"></div>
   </section>
@@ -361,7 +309,7 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
     </div>
     <div class="card">
       <div class="card-head"><h3>S&amp;P 500 투자 따라하기</h3><span class="small faint">매월 일정 금액 적립 시뮬레이션</span></div>
-      <p class="small muted">미국 대표 500개 기업에 나눠 투자하는 가장 기본적인 방법입니다. 수익률은 <strong>연 7%</strong>로 고정했는데, 이는 S&amp;P 500의 약 100년(1926년 이후) 평균 수익률 연 10% 안팎(배당 재투자 포함)에서 물가상승률을 뺀 <strong>실질 수익률</strong>입니다.</p>
+      <p class="desc">미국 대표 500개 기업에 나눠 투자하는 가장 기본적인 방법입니다. 수익률 <strong>연 7%</strong>는 S&amp;P 500의 지난 100년 평균에서 물가상승률을 뺀 실질 수익률입니다.</p>
       <div class="cmp-row" style="margin-top:12px">
         <div class="field"><label for="sc-monthly">매월 적립액 (원)</label><input id="sc-monthly" type="number" min="10000" step="10000" value="100000"></div>
         <div class="field"><label for="sc-years">기간 (년)</label><select id="sc-years"><option>1</option><option>2</option><option>3</option><option>5</option><option selected>10</option><option>15</option><option>20</option><option>30</option></select></div>
@@ -370,12 +318,12 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
       <div id="sc-results" hidden>
         <div class="kpis" id="sc-kpis" style="margin-top:12px"></div>
         <div class="chart" style="margin-top:12px"><canvas id="chart-sc"></canvas></div>
-        <p class="small faint" style="margin-top:8px">매월 초 적립, 월 복리 가정. 실제 수익률은 해마다 크게 다르며 7%는 장기 평균일 뿐입니다.</p>
+        <p class="desc" style="margin-top:8px">매월 초 적립, 월 복리 가정. 실제 수익률은 해마다 크게 다르며 7%는 장기 평균입니다.</p>
       </div>
     </div>
     <div class="card">
       <div class="card-head"><h3>워렌 버핏 투자 따라하기</h3><span class="small faint">구독 서비스</span></div>
-      <p class="small muted">버크셔 해서웨이의 13F 공시를 분석해 버핏이 꾸준히 모으는 종목을 따라 투자하는 프리미엄 기능입니다.</p>
+      <p class="desc">버핏이 꾸준히 모으는 종목을 따라 투자하는 프리미엄 기능입니다.</p>
       <div class="form-actions" style="margin-top:10px"><button class="btn primary" id="sc-buffett" type="button">시작하기</button></div>
     </div>
   </section>
@@ -519,7 +467,7 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
   <section class="panel" id="panel-buffett" role="tabpanel" hidden>
     <div class="card">
       <div class="card-head"><h3>버크셔 해서웨이 포트폴리오 · 13F</h3><span class="small faint" id="bf-status">불러오는 중</span></div>
-      <p class="small muted">SEC 에 분기마다 제출하는 13F 보고서 기준입니다. 분기 종료 45일 뒤에 공개되므로 "지금" 포트폴리오가 아니라 분기 말 시점의 미국 상장 주식 보유분이고, 이후 45일간의 매매는 다음 보고서에 나옵니다. 일본 상사 같은 해외 주식은 13F 에 없습니다.</p>
+      <p class="desc">분기마다 SEC 에 제출하는 13F 보고서 기준입니다. 분기 말 보유분이 45일 뒤에 공개되므로 가장 최근 매매는 다음 보고서에 나옵니다.</p>
       <div class="bf-head" id="bf-head"></div>
     </div>
     <div class="card">
@@ -545,7 +493,7 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
   <section class="panel" id="panel-dividend" role="tabpanel" hidden>
     <div class="card">
       <div class="card-head"><h3>배당 캘린더</h3><span class="small faint" id="dv-status">불러오는 중</span></div>
-      <p class="small muted">배당락일 전날까지 사야 그 회차 배당을 받습니다. 지난 배당락일은 실제 기록이고, 앞으로의 날짜는 최근 지급 간격으로 계산한 <strong>예상</strong>입니다. 정기 배당 종목은 며칠 안에서 맞지만 확정일은 아닙니다. 세후는 미국 원천징수(기본 15%, 한미 조세조약)를 뺀 값이고, 연 금융소득 2천만 원 초과 시 종합과세는 별도입니다.</p>
+      <p class="desc">배당락일 전날까지 사야 그 회차 배당을 받습니다. 앞으로의 날짜는 지급 간격으로 계산한 <strong>예상일</strong>이고, 세후는 미국 원천징수 15%를 뺀 값입니다.</p>
       <div class="dv-search-row">
         <input id="dv-search" type="search" placeholder="배당 종목 검색 (티커 또는 회사명, 예: SCHD, Coca-Cola)" autocomplete="off">
         <button class="btn primary" id="dv-search-btn" type="button">검색</button>
@@ -588,7 +536,7 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
     </div>
     <div class="card">
       <div class="card-head"><h3>배당 종목</h3><span class="small faint" id="dv-count"></span></div>
-      <p class="small faint" style="margin-bottom:10px">보유 수량을 넣으면 연간·이번 달 예상 수령액이 계산되고 이 기기에 저장됩니다.</p>
+      <p class="desc" style="margin-bottom:10px">보유 수량을 넣으면 연간·이번 달 예상 수령액이 계산되고 이 기기에 저장됩니다.</p>
       <div class="dv-list" id="dv-list"></div>
     </div>
   </section>
@@ -669,49 +617,7 @@ function renderQuotes() {
   const nq = q["NQ=F"], fx = q["KRW=X"];
   const strip = (el, q, unit) => { if (!q) return; const dir = q.change > 0 ? "up" : q.change < 0 ? "down" : ""; el.innerHTML = `<span class="k">${el.id === "strip-nq" ? "NQ 선물" : "USD/KRW"}</span><span class="v num">${fmt.n(q.price)}${unit}</span><span class="d ${dir}">${dir === "up" ? "▲" : dir === "down" ? "▼" : ""}${fmt.n(Math.abs(q.change ?? 0))} (${fmt.signed(q.changePercent)}%)</span>`; };
   strip($("#strip-nq"), nq, ""); strip($("#strip-fx"), fx, "원");
-  renderTile($("#tile-NQ"), nq, state.intraday?.series?.["NQ=F"], "USD");
-  renderTile($("#tile-FX"), fx, state.intraday?.series?.["KRW=X"], "KRW");
-  if (nq?.price != null) {
-    const usd = nq.price * NQ_MULTIPLIER;
-    $('#tile-NQ [data-f="notional"]').textContent = `$${fmt.n(usd, 0)}`;
-    $('#tile-FX [data-f="notional"]').textContent = fx?.price != null ? fmt.krw(usd * fx.price) : "–";
-  }
 }
-function renderTile(tile, quote, series, cur) {
-  const price = $(".price", tile), chg = $(".chg", tile);
-  price.classList.remove("skeleton"); chg.classList.remove("skeleton");
-  if (!quote) { price.textContent = "–"; chg.className = "chg flat"; chg.textContent = "데이터 없음"; return; }
-  price.innerHTML = `${fmt.n(quote.price)}<span class="cur">${cur === "KRW" ? "원" : "pt"}</span>`;
-  const dir = quote.change > 0 ? "up" : quote.change < 0 ? "down" : "flat";
-  const arrow = dir === "up" ? "▲" : dir === "down" ? "▼" : "";
-  chg.className = `chg ${dir}`;
-  chg.textContent = quote.change == null ? "전일 대비 –" : `${arrow} ${fmt.n(Math.abs(quote.change))} (${fmt.signed(quote.changePercent)}%)`;
-  for (const f of ["previousClose", "dayHigh", "dayLow", "fiftyTwoWeekLow", "fiftyTwoWeekHigh"]) {
-    const el = $(`[data-f="${f}"]`, tile); if (el) el.textContent = fmt.n(quote[f]);
-  }
-  const lo = quote.fiftyTwoWeekLow, hi = quote.fiftyTwoWeekHigh;
-  if (lo != null && hi != null && hi > lo) $(".range .bar i", tile).style.left = `${Math.max(0, Math.min(100, (quote.price - lo) / (hi - lo) * 100))}%`;
-  const stateLabel = { REGULAR: "장중", PRE: "장전", POST: "장후", CLOSED: "휴장", PREPRE: "장전", POSTPOST: "장후" }[quote.marketState] || "";
-  $('[data-f="time"]', tile).textContent = `${stateLabel ? stateLabel + " · " : ""}기준 ${fmt.time(quote.marketTime)}`;
-  drawSpark($(".spark", tile), series, quote);
-}
-function drawSpark(canvas, series, quote) {
-  if (!series?.c?.length || !canvas.clientWidth) return;
-  const dpr = window.devicePixelRatio || 1, W = canvas.clientWidth, H = canvas.clientHeight;
-  canvas.width = W * dpr; canvas.height = H * dpr;
-  const ctx = canvas.getContext("2d"); ctx.scale(dpr, dpr); ctx.clearRect(0, 0, W, H);
-  const data = series.c, n = data.length, min = Math.min(...data), max = Math.max(...data), span = max - min || 1;
-  const x = (i) => (i / (n - 1)) * (W - 2) + 1, y = (v) => H - 4 - ((v - min) / span) * (H - 8);
-  const color = getComputedStyle(canvas.closest(".tile")).getPropertyValue("--series").trim() || css("--accent");
-  const prev = series.previousClose ?? quote?.previousClose;
-  if (prev != null && prev >= min && prev <= max) { ctx.setLineDash([3, 3]); ctx.strokeStyle = css("--ink-3"); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, y(prev)); ctx.lineTo(W, y(prev)); ctx.stroke(); ctx.setLineDash([]); }
-  ctx.beginPath(); data.forEach((v, i) => i ? ctx.lineTo(x(i), y(v)) : ctx.moveTo(x(i), y(v)));
-  ctx.strokeStyle = color; ctx.lineWidth = 1.6; ctx.lineJoin = "round"; ctx.stroke();
-  const grad = ctx.createLinearGradient(0, 0, 0, H); grad.addColorStop(0, color + "33"); grad.addColorStop(1, color + "00");
-  ctx.lineTo(x(n - 1), H); ctx.lineTo(x(0), H); ctx.closePath(); ctx.fillStyle = grad; ctx.fill();
-  ctx.beginPath(); ctx.arc(x(n - 1), y(data[n - 1]), 3, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill();
-}
-
 // ───────────────────────── Chart.js 공통 ─────────────────────────
 const crosshair = {
   id: "crosshair",
@@ -1184,7 +1090,6 @@ function selectTab(name) {
 }
 $$(".tab").forEach((t) => t.addEventListener("click", () => selectTab(t.dataset.tab)));
 $("#refresh").addEventListener("click", loadAll);
-$("#strip").addEventListener("click", () => { const open = $("#tiles").hidden; $("#tiles").hidden = !open; $("#strip").setAttribute("aria-expanded", String(open)); try { localStorage.setItem("md:tiles", open ? "1" : "0"); } catch {} if (open) renderQuotes(); });
 $("#bt-asset2-add").addEventListener("click", () => { $("#bt-asset2-wrap").hidden = false; $("#bt-asset2-add-wrap").hidden = true; $("#bt-asset2").focus(); });
 $("#bt-asset2-remove").addEventListener("click", () => { $("#bt-asset2-wrap").hidden = true; $("#bt-asset2-add-wrap").hidden = false; $("#bt-asset2").value = ""; });
 $("#bt-asset2").addEventListener("keydown", (e) => { if (e.key === "Enter") runFromForm(); });
@@ -1662,7 +1567,6 @@ updateParamVisibility();
 const cachedLatest = cacheGet("md:latest"), cachedIntraday = cacheGet("md:intraday");
 if (cachedLatest) { state.latest = cachedLatest; state.intraday = cachedIntraday; renderQuotes(); }
 try { state.stockRange = localStorage.getItem("md:range") || "1Y"; const ss = localStorage.getItem("md:stock"); if (ss) state.stockSel = ss; } catch {}
-try { if (localStorage.getItem("md:tiles") === "1") { $("#tiles").hidden = false; $("#strip").setAttribute("aria-expanded", "true"); } } catch {}
 const TABS = ["starter", "buffett", "news", "backtest", "stocks", "dividend", "compare"];
 let savedTab = "buffett"; try { savedTab = localStorage.getItem("md:tab") || "buffett"; } catch {}
 if (!TABS.includes(savedTab)) savedTab = "buffett";
