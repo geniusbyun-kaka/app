@@ -290,14 +290,13 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
     <button class="tab" role="tab" aria-selected="false" data-tab="stocks" id="tab-stocks">종목</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="dividend" id="tab-dividend">배당</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="crypto" id="tab-crypto">코인</button>
-    <button class="tab" role="tab" aria-selected="false" data-tab="compare" id="tab-compare">비교</button>
   </div>
 
   <!-- 뉴스 -->
   <section class="panel" id="panel-news" role="tabpanel" hidden>
     <div class="card">
-      <div class="card-head"><h3>오늘의 CNBC 월드 헤드라인</h3><span class="small faint" id="news-status">불러오는 중</span></div>
-      <p class="desc">매일 오전 6시 <a href="https://www.cnbc.com/world/" target="_blank" rel="noopener">CNBC World</a> 메인의 상위 3개 기사를 자동 번역합니다. 기계 번역이라 부정확할 수 있고, 본문은 일부만 싣습니다. 전문은 원문 링크에서 확인하세요.</p>
+      <div class="card-head"><h3>오늘의 헤드라인 뉴스</h3><span class="small faint" id="news-status">불러오는 중</span></div>
+      <p class="desc">매일 오전 6시 메인의 상위 3개 기사를 자동 번역합니다. 기계 번역이라 부정확할 수 있고, 본문은 일부만 싣습니다. 전문은 원문 링크에서 확인하세요.</p>
     </div>
     <div id="news-list"></div>
   </section>
@@ -420,10 +419,6 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
     <div class="card" id="stock-detail">
       <div class="empty">종목을 선택하면 30년 차트가 여기에 표시됩니다</div>
     </div>
-  </section>
-
-  <!-- 비교 -->
-  <section class="panel" id="panel-compare" role="tabpanel" hidden>
     <div class="card">
       <div class="card-head"><h3>종목 비교</h3><span class="small faint">같은 기간, 같은 금액으로 시작했을 때</span></div>
       <div class="cmp-inputs">
@@ -466,6 +461,7 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
       </div>
     </div>
   </section>
+
 
   <!-- 버핏 (버크셔 13F) -->
   <section class="panel" id="panel-buffett" role="tabpanel" hidden>
@@ -1097,7 +1093,7 @@ $("#sc-buffett").addEventListener("click", () => alert("워렌 버핏 투자 따
 // ───────────────────────── 탭 · 이벤트 ─────────────────────────
 function selectTab(name) {
   $$(".tab").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.tab === name)));
-  ["starter", "buffett", "news", "backtest", "stocks", "dividend", "crypto", "compare"].forEach((p) => { $(`#panel-${p}`).hidden = p !== name; });
+  ["starter", "buffett", "news", "backtest", "stocks", "dividend", "crypto"].forEach((p) => { $(`#panel-${p}`).hidden = p !== name; });
   if (name === "dividend") ensureStockIndex().then(renderDividend).catch(() => {});
   if (name === "buffett") ensureFilings().catch(() => {});
   if (name === "starter") ensureLessons();
@@ -1106,8 +1102,7 @@ function selectTab(name) {
   try { localStorage.setItem("md:tab", name); } catch {}
   if (name === "backtest" && !state.history) { /* 일봉이 오면 initBacktestForm 이 채움 */ }
   if (name === "backtest" && state.lastBacktest) renderBacktest();
-  if (name === "stocks") ensureStockIndex().catch(() => {});
-  if (name === "compare") ensureStockIndex().catch(() => {}).then(() => { if (state.cmpLast) renderCompare(); else if (state.history) runCompare(true); });
+  if (name === "stocks") ensureStockIndex().catch(() => {}).then(() => { if (state.cmpLast) renderCompare(); else if (state.history) runCompare(true); });
 }
 $$(".tab").forEach((t) => t.addEventListener("click", () => selectTab(t.dataset.tab)));
 $("#refresh").addEventListener("click", loadAll);
@@ -1368,7 +1363,7 @@ function addToCompare(sym) {
   const ids = ["cmp-s1", "cmp-s2", "cmp-s3", "cmp-s4"];
   const vals = ids.map((id) => normSym($(`#${id}`).value));
   if (!vals.includes(sym)) { const slot = ids[vals.findIndex((v) => !v)] || ids[3]; $(`#${slot}`).value = sym; }
-  selectTab("compare"); runCompare(false);
+  selectTab("stocks"); runCompare(false);
 }
 
 // ───────────────────────── 버핏 (버크셔 13F) ─────────────────────────
@@ -1652,11 +1647,11 @@ updateParamVisibility();
 const cachedLatest = cacheGet("md:latest"), cachedIntraday = cacheGet("md:intraday");
 if (cachedLatest) { state.latest = cachedLatest; state.intraday = cachedIntraday; renderQuotes(); }
 try { state.stockRange = localStorage.getItem("md:range") || "1Y"; const ss = localStorage.getItem("md:stock"); if (ss) state.stockSel = ss; } catch {}
-const TABS = ["starter", "buffett", "news", "backtest", "stocks", "dividend", "crypto", "compare"];
+const TABS = ["starter", "buffett", "news", "backtest", "stocks", "dividend", "crypto"];
 let savedTab = "buffett"; try { savedTab = localStorage.getItem("md:tab") || "buffett"; } catch {}
 if (!TABS.includes(savedTab)) savedTab = "buffett";
 selectTab(savedTab);
-loadAll().then(() => { if (!$("#panel-compare").hidden && !state.cmpLast) runCompare(true); });
+loadAll().then(() => { if (!$("#panel-stocks").hidden && !state.cmpLast) runCompare(true); });
 })();
 </script>
 </body>
