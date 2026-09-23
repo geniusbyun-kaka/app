@@ -105,11 +105,18 @@ header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:spac
 /* tabs */
 .tabs{display:flex;gap:4px;padding:4px;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);margin-bottom:16px;overflow-x:auto;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
-.tab{flex:1 0 auto;min-width:64px;background:none;border:0;border-radius:8px;padding:9px 16px;font-size:14.5px;font-weight:600;color:var(--ink-2);white-space:nowrap;transition:background .15s,color .15s}
+.tab{flex:1 0 auto;min-width:56px;background:none;border:0;border-radius:8px;padding:9px 11px;font-size:14px;font-weight:600;color:var(--ink-2);white-space:nowrap;transition:background .15s,color .15s}
 .tab:hover{background:var(--surface-2);color:var(--ink)}
 .tab[aria-selected="true"]{background:var(--accent);color:var(--accent-ink);box-shadow:0 1px 3px rgba(20,30,40,.18)}
 .panel{display:grid;gap:14px}
 .panel>*{min-width:0}
+
+/* 초보 가이드 */
+.quote{margin:12px 0 0;padding:10px 14px;border-left:3px solid var(--accent);background:var(--surface-2);border-radius:0 8px 8px 0;font-size:14px;line-height:1.7}
+.lesson{margin-top:14px;padding-top:12px;border-top:1px solid var(--line-2)}
+.lesson h4{margin:0;font-size:14px}
+.lesson .date{font-size:11.5px;color:var(--ink-3);margin:2px 0 6px}
+.lesson p{margin:0 0 6px;font-size:13.5px;color:var(--ink-2)}
 
 /* cards */
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px}
@@ -308,12 +315,43 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
   </section>
 
   <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="false" data-tab="starter" id="tab-starter">초보</button>
     <button class="tab" role="tab" aria-selected="true" data-tab="buffett" id="tab-buffett">버핏</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="backtest" id="tab-backtest">백테스트</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="stocks" id="tab-stocks">종목</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="dividend" id="tab-dividend">배당</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="compare" id="tab-compare">비교</button>
   </div>
+
+  <!-- 초보 -->
+  <section class="panel" id="panel-starter" role="tabpanel" hidden>
+    <div class="card">
+      <div class="card-head"><h3>주식을 시작하는 분들께</h3></div>
+      <p>주식은 절대 투기를 위한 상품이 아닙니다. 국내 부동산 투자와 같이 <strong>장기적인 시각</strong>을 가지고 하셔야 합니다. 좋은 자산을 꾸준히 모아가면 시간이 수익을 만들어 줍니다.</p>
+      <blockquote class="quote">"10년 동안 보유할 생각이 없는 주식은 단 10분도 보유하지 마십시오."<br><span class="small faint">If you aren't willing to own a stock for ten years, don't even think about owning it for ten minutes. — 워렌 버핏, 1996년 버크셔 해서웨이 주주서한</span></blockquote>
+      <div id="lessons"></div>
+      <p class="small faint" style="margin-top:12px"><a href="https://github.com/geniusbyun-kaka/app/edit/claude/baby-sleep-tracking-app-23p7s7/invest/lessons.json" target="_blank" rel="noopener">글 관리 (관리자 전용)</a> · 저장소 관리자만 편집할 수 있고, 저장하면 잠시 뒤 이 페이지에 반영됩니다</p>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>S&amp;P 500 투자 따라하기</h3><span class="small faint">매월 일정 금액 적립 시뮬레이션</span></div>
+      <p class="small muted">미국 대표 500개 기업에 나눠 투자하는 가장 기본적인 방법입니다. 수익률은 <strong>연 7%</strong>로 고정했는데, 이는 S&amp;P 500의 약 100년(1926년 이후) 평균 수익률 연 10% 안팎(배당 재투자 포함)에서 물가상승률을 뺀 <strong>실질 수익률</strong>입니다.</p>
+      <div class="cmp-row" style="margin-top:12px">
+        <div class="field"><label for="sc-monthly">매월 적립액 (원)</label><input id="sc-monthly" type="number" min="10000" step="10000" value="100000"></div>
+        <div class="field"><label for="sc-years">기간 (년)</label><select id="sc-years"><option>1</option><option>2</option><option>3</option><option>5</option><option selected>10</option><option>15</option><option>20</option><option>30</option></select></div>
+        <button class="btn primary" id="sc-run" type="button">계산</button>
+      </div>
+      <div id="sc-results" hidden>
+        <div class="kpis" id="sc-kpis" style="margin-top:12px"></div>
+        <div class="chart" style="margin-top:12px"><canvas id="chart-sc"></canvas></div>
+        <p class="small faint" style="margin-top:8px">매월 초 적립, 월 복리 가정. 실제 수익률은 해마다 크게 다르며 7%는 장기 평균일 뿐입니다.</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>워렌 버핏 투자 따라하기</h3><span class="small faint">구독 서비스</span></div>
+      <p class="small muted">버크셔 해서웨이의 13F 공시를 분석해 버핏이 꾸준히 모으는 종목을 따라 투자하는 프리미엄 기능입니다.</p>
+      <div class="form-actions" style="margin-top:10px"><button class="btn primary" id="sc-buffett" type="button">시작하기</button></div>
+    </div>
+  </section>
 
   <!-- 백테스트 -->
   <section class="panel" id="panel-backtest" role="tabpanel" hidden>
@@ -422,6 +460,7 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
         </div>
         <div class="field cmp-dates"><label for="cmp-start">시작일</label><input id="cmp-start" type="date"></div>
         <div class="field cmp-dates"><label for="cmp-end">종료일</label><input id="cmp-end" type="date"></div>
+        <div class="field"><label for="cmp-amt">시작 금액</label><input id="cmp-amt" type="number" min="0" step="1000" value="10000"></div>
         <div class="field"><label for="cmp-div">배당</label><select id="cmp-div"><option value="tr">재투자</option><option value="pr">미포함</option></select></div>
         <div class="field"><label for="cmp-cur">기준 통화</label><select id="cmp-cur"><option value="USD">달러</option><option value="KRW">원화 환산</option></select></div>
         <button class="btn primary" id="cmp-run" type="button">비교</button>
@@ -433,6 +472,10 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
         <div class="card">
           <div class="card-head"><h3 id="cmp-title">1만 달러의 성장</h3><label class="small"><input type="checkbox" id="cmp-log"> 로그 스케일</label></div>
           <div class="chart tall"><canvas id="chart-cmp"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h3>결과 요약</h3></div>
+          <div class="cmp-note" id="cmp-report" style="margin-top:0"></div>
         </div>
         <div class="card">
           <div class="tablewrap"><table id="cmp-table"><thead><tr><th>종목</th><th>시작</th><th>최종 금액</th><th>총 수익률</th><th>연평균</th><th>최대 낙폭</th><th>연 변동성</th><th>샤프</th><th>최악의 해</th><th>최고의 해</th></tr></thead><tbody></tbody></table></div>
@@ -457,7 +500,7 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
       <div class="tablewrap"><table id="bf-streak"><thead><tr><th>종목</th><th>연속 매수</th><th>최근 분기</th><th>최근 8분기 (오른쪽 최근)</th><th>8분기 매수</th><th>보유 주식</th><th>비중</th></tr></thead><tbody></tbody></table></div>
     </div>
     <div class="card">
-      <div class="card-head"><h3>꾸준히 사는 종목 (연속은 아님)</h3><span class="small faint">현재 보유 중이고 최근 8분기 중 2번 이상 매수했지만 연속은 끊긴 종목. 가장 최근 매매가 매도인 종목은 제외</span></div>
+      <div class="card-head"><h3>꾸준히 사는 종목 (연속은 아님)</h3><span class="small faint">현재 보유 중이고 최근 8분기 중 2번 이상 매수, 그 사이 한 번도 매도하지 않은 종목 (연속 매수는 아님)</span></div>
       <div class="tablewrap"><table id="bf-often"><thead><tr><th>종목</th><th>8분기 매수</th><th>최근 8분기 (오른쪽 최근)</th><th>마지막 매수</th><th>보유 주식</th><th>비중</th></tr></thead><tbody></tbody></table></div>
     </div>
     <div class="card">
@@ -485,6 +528,20 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
       </div>
       <div class="kpis" id="dv-kpis"></div>
     </div>
+    <div class="card">
+      <div class="card-head"><h3>배당 비교</h3><span class="small faint">연도별 주당 배당금과 성장률</span></div>
+      <div class="cmp-inputs">
+        <div class="field"><label for="dvc-1"><span class="sw" style="--c:var(--nq)"></span>종목 1</label><input id="dvc-1" list="sym-list" value="SCHD"></div>
+        <div class="field"><label for="dvc-2"><span class="sw" style="--c:var(--fx)"></span>종목 2</label><input id="dvc-2" list="sym-list" value="JEPI"></div>
+        <div class="field"><label for="dvc-3"><span class="sw" style="--c:var(--strat)"></span>종목 3</label><input id="dvc-3" list="sym-list" placeholder="(선택)"></div>
+        <div class="field"><label for="dvc-4"><span class="sw" style="--c:var(--c4)"></span>종목 4</label><input id="dvc-4" list="sym-list" placeholder="(선택)"></div>
+      </div>
+      <div class="form-actions"><button class="btn primary" id="dvc-run" type="button">비교</button><span class="small faint" id="dvc-note"></span></div>
+      <div id="dvc-results" hidden>
+        <div class="tablewrap" style="margin-top:12px"><table id="dvc-table"><thead><tr><th>종목</th><th>주기</th><th>시가배당률</th><th>세후</th><th>연 배당(예상)</th><th>최근 1회</th><th>다음 배당락</th><th>5년 배당 성장률</th></tr></thead><tbody></tbody></table></div>
+        <div class="chart" style="margin-top:12px"><canvas id="chart-dvc"></canvas></div>
+      </div>
+    </div>
     <div class="two">
       <div class="card">
         <div class="card-head"><h3>이번 주 배당락</h3><span class="small faint" id="dv-week-range"></span></div>
@@ -499,20 +556,6 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
       <div class="card-head"><h3>배당 종목</h3><span class="small faint" id="dv-count"></span></div>
       <p class="small faint" style="margin-bottom:10px">보유 수량을 넣으면 연간·이번 달 예상 수령액이 계산되고 이 기기에 저장됩니다.</p>
       <div class="dv-list" id="dv-list"></div>
-    </div>
-    <div class="card">
-      <div class="card-head"><h3>배당 비교</h3><span class="small faint">연도별 주당 배당금과 성장률</span></div>
-      <div class="cmp-inputs">
-        <div class="field"><label for="dvc-1"><span class="sw" style="--c:var(--nq)"></span>종목 1</label><input id="dvc-1" list="sym-list" value="SCHD"></div>
-        <div class="field"><label for="dvc-2"><span class="sw" style="--c:var(--fx)"></span>종목 2</label><input id="dvc-2" list="sym-list" value="JEPI"></div>
-        <div class="field"><label for="dvc-3"><span class="sw" style="--c:var(--strat)"></span>종목 3</label><input id="dvc-3" list="sym-list" placeholder="(선택)"></div>
-        <div class="field"><label for="dvc-4"><span class="sw" style="--c:var(--c4)"></span>종목 4</label><input id="dvc-4" list="sym-list" placeholder="(선택)"></div>
-      </div>
-      <div class="form-actions"><button class="btn primary" id="dvc-run" type="button">비교</button><span class="small faint" id="dvc-note"></span></div>
-      <div id="dvc-results" hidden>
-        <div class="tablewrap" style="margin-top:12px"><table id="dvc-table"><thead><tr><th>종목</th><th>주기</th><th>시가배당률</th><th>세후</th><th>연 배당(예상)</th><th>최근 1회</th><th>다음 배당락</th><th>5년 배당 성장률</th></tr></thead><tbody></tbody></table></div>
-        <div class="chart" style="margin-top:12px"><canvas id="chart-dvc"></canvas></div>
-      </div>
     </div>
   </section>
 
@@ -1022,12 +1065,46 @@ function verdict(cfg, m, mb, data, note, mBench, second) {
   return lines.map((l) => `<p>${l}</p>`).join("");
 }
 
+// ───────────────────────── 초보 가이드 ─────────────────────────
+let lessonsPromise = null;
+function ensureLessons() {
+  if (!lessonsPromise) lessonsPromise = fetch(`lessons.json?t=${Date.now()}`, { cache: "no-store" }).then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }).then((data) => {
+    $("#lessons").innerHTML = (data.posts || []).map((p) => `<div class="lesson"><h4>${p.title}</h4><div class="date">${p.date || ""}</div>${(p.body || []).map((t) => `<p>${t}</p>`).join("")}</div>`).join("");
+  }).catch(() => { $("#lessons").innerHTML = ""; lessonsPromise = null; });
+  return lessonsPromise;
+}
+const SC_RATE = 0.07; // S&P 500 장기 실질 수익률 (배당 재투자 포함, 인플레이션 차감)
+function runStarterCalc() {
+  const monthly = Number($("#sc-monthly").value) || 0, years = Number($("#sc-years").value) || 10;
+  if (monthly <= 0) return alert("매월 적립액을 입력하세요.");
+  const n = years * 12, r = SC_RATE / 12;
+  const val = [], prin = [];
+  let v = 0;
+  for (let m = 1; m <= n; m++) { v = (v + monthly) * (1 + r); val.push(v); prin.push(monthly * m); }
+  const fv = val.at(-1), pr = monthly * n;
+  $("#sc-kpis").innerHTML = [
+    kpi("납입 원금", fmt.krw(pr), `매월 ${fmt.krw(monthly)} × ${years}년`),
+    kpi("예상 평가액", fmt.krw(fv), "연 7% (실질 수익률) 가정"),
+    kpi("늘어난 금액", `+${fmt.krw(fv - pr)}`, `원금의 ${fmt.n(fv / pr, 2)}배`, "pos"),
+  ].join("");
+  const labels = val.map((_, i) => `${Math.floor((i + 1) / 12)}년 ${(i + 1) % 12 ? `${(i + 1) % 12}개월` : ""}`.trim());
+  const opts = baseOptions(labels, { yFmt: (y) => y >= 1e8 ? `${fmt.n(y / 1e8, 1)}억` : `${fmt.n(y / 1e4, 0)}만`, xTick: (i) => (i + 1) % 12 === 0 ? `${(i + 1) / 12}년` : "", tooltipLabel: (it) => `${it.dataset.label}: ${fmt.krw(it.parsed.y)}` });
+  makeChart("chart-sc", { type: "line", data: { datasets: [
+    { label: "평가액", data: val.map((y, i) => ({ x: i, y })), borderColor: css("--accent"), backgroundColor: css("--accent") + "22", fill: true },
+    { label: "원금", data: prin.map((y, i) => ({ x: i, y })), borderColor: css("--ink-3"), borderDash: [4, 4], borderWidth: 1.5, fill: false },
+  ] }, options: opts });
+  $("#sc-results").hidden = false;
+}
+$("#sc-run").addEventListener("click", runStarterCalc);
+$("#sc-buffett").addEventListener("click", () => alert("워렌 버핏 투자 따라하기는 구독하신 경우에만 이용할 수 있습니다."));
+
 // ───────────────────────── 탭 · 이벤트 ─────────────────────────
 function selectTab(name) {
   $$(".tab").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.tab === name)));
-  ["buffett", "backtest", "stocks", "dividend", "compare"].forEach((p) => { $(`#panel-${p}`).hidden = p !== name; });
+  ["starter", "buffett", "backtest", "stocks", "dividend", "compare"].forEach((p) => { $(`#panel-${p}`).hidden = p !== name; });
   if (name === "dividend") ensureStockIndex().then(renderDividend).catch(() => {});
   if (name === "buffett") ensureFilings().catch(() => {});
+  if (name === "starter") ensureLessons();
   try { localStorage.setItem("md:tab", name); } catch {}
   if (name === "backtest" && !state.history) { /* 일봉이 오면 initBacktestForm 이 채움 */ }
   if (name === "backtest" && state.lastBacktest) renderBacktest();
@@ -1060,6 +1137,7 @@ $("#stock-detail").addEventListener("click", (e) => {
 // 비교 탭 이벤트
 $("#cmp-run").addEventListener("click", () => runCompare(false));
 $("#cmp-log").addEventListener("change", () => state.cmpLast && renderCompare());
+$("#cmp-cur").addEventListener("change", () => { const amt = $("#cmp-amt"), cur = $("#cmp-cur").value; amt.step = cur === "KRW" ? 1000000 : 1000; if (cur === "KRW" && Number(amt.value) < 100000) amt.value = 10000000; if (cur === "USD" && Number(amt.value) >= 100000) amt.value = 10000; });
 $$("[data-cy]").forEach((c) => c.addEventListener("click", () => { setCompareYears(+c.dataset.cy); runCompare(false); }));
 setInterval(() => { if (document.visibilityState === "visible") loadLive(); }, REFRESH_MS);
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && state.latest && Date.now() - new Date(state.latest.updated) > REFRESH_MS) loadLive(); });
@@ -1246,7 +1324,7 @@ async function runCompare(auto) {
   if (i0 < 0 || i1 < 0 || i1 - i0 < 20) { $("#cmp-note").innerHTML = '<span class="warn">기간이 너무 짧거나 데이터가 없습니다</span>'; return; }
   const dates = baseS.dates.slice(i0, i1 + 1);
   const fx = cur === "KRW" && fxSym ? alignFx(dates, fxSym) : null;
-  const startAmt = cur === "KRW" ? 1e7 : 1e4;
+  const startAmt = Number($("#cmp-amt").value) > 0 ? Number($("#cmp-amt").value) : cur === "KRW" ? 1e7 : 1e4;
   const lines = series.map((s) => {
     const aligned = alignFx(dates, { dates: s.dates, close: s.values });
     const p0 = aligned[0];
@@ -1261,7 +1339,7 @@ async function runCompare(auto) {
 function renderCompare() {
   const c = state.cmpLast; if (!c) return;
   const { dates, lines, cur, startAmt } = c;
-  $("#cmp-title").textContent = `${cur === "KRW" ? "1천만 원" : "1만 달러"}의 성장 · ${c.start} ~ ${c.end}`;
+  $("#cmp-title").textContent = `${fmt.money(startAmt, cur)}의 성장 · ${c.start} ~ ${c.end}`;
   const span = (new Date(dates.at(-1)) - new Date(dates[0])) / 864e5;
   const tick = span > 900 ? (i) => dates[i].slice(0, 4) : span > 120 ? (i) => dates[i].slice(0, 7) : (i) => dates[i].slice(5).replace("-", "/");
   const yFmt = (v) => cur === "KRW" ? (v >= 1e8 ? `${fmt.n(v / 1e8, 1)}억` : `${fmt.n(v / 1e4, 0)}만`) : `$${v >= 1e6 ? fmt.n(v / 1e6, 1) + "M" : v >= 1e3 ? fmt.n(v / 1e3, 0) + "k" : fmt.n(v, 0)}`;
@@ -1276,6 +1354,8 @@ function renderCompare() {
   });
   const sgn = (v) => v > 0 ? "pos" : v < 0 ? "neg" : "";
   $("#cmp-table tbody").innerHTML = rows.map(({ l, m, worst, best }) => `<tr><td class="txt"><span class="sw" style="--c:${l.color}"></span><strong>${l.symbol}</strong> <span class="faint small">${l.label}</span></td><td class="txt">${dates[0]}</td><td>${fmt.money(m.finalValue, cur)}</td><td class="${sgn(m.total)}">${fmt.pct(m.total)}</td><td class="${sgn(m.cagr)}">${fmt.pct(m.cagr)}</td><td class="neg">${fmt.pct(m.mdd)}</td><td>${fmt.pct(m.vol, 1, false)}</td><td>${fmt.n(m.sharpe)}</td><td class="neg">${worst ? `${worst.year} ${fmt.pct(worst.ret, 1)}` : "–"}</td><td class="pos">${best ? `${best.year} ${fmt.pct(best.ret, 1)}` : "–"}</td></tr>`).join("");
+  const yrsSpan = (new Date(dates.at(-1)) - new Date(dates[0])) / 31557600000;
+  $("#cmp-report").innerHTML = rows.map(({ l, m }) => `<p><strong>${l.symbol}</strong> · ${dates[0]}에 ${fmt.money(startAmt, cur)}을 투자했다면 ${fmt.n(yrsSpan, 1)}년 뒤인 ${dates.at(-1)}에 <strong>${fmt.money(m.finalValue, cur)}</strong>이 됩니다 (총 ${fmt.pct(m.total)}, 연평균 ${fmt.pct(m.cagr)}${cur === "KRW" ? ", 원화 환산·환율 변동 포함" : ""}).</p>`).join("");
   const ddOpts = baseOptions(dates, { yFmt: (v) => `${fmt.n(v * 100, 0)}%`, xTick: tick, tooltipLabel: (it) => `${it.dataset.label}: ${fmt.pct(it.parsed.y, 1, false)}`, yMax: 0 });
   makeChart("chart-cmp-dd", { type: "line", data: { datasets: rows.map(({ l, m }) => ({ label: l.symbol, data: m.dd.map((v, i) => ({ x: i, y: v })), borderColor: l.color, borderWidth: 1.5, fill: false })) }, options: ddOpts });
   $("#cmp-results").hidden = false;
@@ -1330,8 +1410,8 @@ function analyzeFilings(f) {
     h.hist = last8;
     h.buys8 = last8.filter(isBuy).length;
     h.lastBuy = [...qs].reverse().find((q) => isBuy(q.map.get(h.cusip)?.change))?.period || null;
-    // 가장 최근의 매매(매수·매도, 변동 없음·분할 제외)가 매도인지
-    h.lastTrade = [...qs].reverse().map((q) => q.map.get(h.cusip)?.change).find((c) => isBuy(c) || c === "dec") || null;
+    // 최근 8분기 안에 판 적이 있는지: 주식수 감소, 또는 보유하다가 사라진 경우(전량 매도)
+    h.sold8 = last8.some((c, i) => c === "dec" || (c === "none" && last8.slice(0, i).some((x) => x !== "none")));
     h.since = qs.find((q) => q.map.has(h.cusip))?.period || null;
   }
   return { ...f, quarters: qs, latest };
@@ -1357,7 +1437,7 @@ function renderBuffett() {
   const L = f.latest, qs = f.quarters;
   $("#bf-status").textContent = `${L.period} 분기 · ${L.filed} 공시 · 스냅샷 ${fmt.ago(f.updated)}`;
   const streaks = L.holdings.filter((h) => h.streak >= 2).sort((a, b) => b.streak - a.streak || b.weight - a.weight);
-  const often = L.holdings.filter((h) => h.streak < 2 && h.buys8 >= 2 && h.lastTrade !== "dec").sort((a, b) => b.buys8 - a.buys8 || b.weight - a.weight);
+  const often = L.holdings.filter((h) => h.streak < 2 && h.buys8 >= 2 && !h.sold8).sort((a, b) => b.buys8 - a.buys8 || b.weight - a.weight);
   const newOnes = L.holdings.filter((h) => h.change === "new");
   $("#bf-head").innerHTML = [
     kpi("포트폴리오 평가액", fmtB(L.totalValue), `${L.count}종목 · ${L.period} 기준`),
@@ -1506,7 +1586,7 @@ const cachedLatest = cacheGet("md:latest"), cachedIntraday = cacheGet("md:intrad
 if (cachedLatest) { state.latest = cachedLatest; state.intraday = cachedIntraday; renderQuotes(); }
 try { state.stockRange = localStorage.getItem("md:range") || "1Y"; const ss = localStorage.getItem("md:stock"); if (ss) state.stockSel = ss; } catch {}
 try { if (localStorage.getItem("md:tiles") === "1") { $("#tiles").hidden = false; $("#strip").setAttribute("aria-expanded", "true"); } } catch {}
-const TABS = ["buffett", "backtest", "stocks", "dividend", "compare"];
+const TABS = ["starter", "buffett", "backtest", "stocks", "dividend", "compare"];
 let savedTab = "buffett"; try { savedTab = localStorage.getItem("md:tab") || "buffett"; } catch {}
 if (!TABS.includes(savedTab)) savedTab = "buffett";
 selectTab(savedTab);
