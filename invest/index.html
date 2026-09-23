@@ -500,10 +500,10 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
       <div class="card-head"><h3>배당 캘린더</h3><span class="small faint" id="dv-status">불러오는 중</span></div>
       <p class="desc">배당락일 전날까지 사야 그 회차 배당을 받습니다. 앞으로의 날짜는 지급 간격으로 계산한 <strong>예상일</strong>이고, 세후는 미국 원천징수 15%를 뺀 값입니다.</p>
       <div class="chips dv-cats" id="dv-market" aria-label="시장">
-        <button class="chip" data-mkt="kr" type="button">한국장</button>
+        <button class="chip" aria-pressed="true" data-mkt="kr" type="button">한국장</button>
         <button class="chip" data-mkt="us" type="button">미국장</button>
         <button class="chip" data-mkt="mine" type="button">내 보유</button>
-        <button class="chip" aria-pressed="true" data-mkt="all" type="button">전체</button>
+        <button class="chip" data-mkt="all" type="button">전체</button>
       </div>
       <div class="chips dv-cats dv-sub" id="dv-sub" aria-label="분야"></div>
       <div class="dv-search-row">
@@ -572,7 +572,7 @@ const fmt = {
   time: (iso) => { if (!iso) return "–"; const d = new Date(iso); return d.toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false }); },
   ago: (iso) => { if (!iso) return ""; const m = Math.round((Date.now() - new Date(iso)) / 60000); return m < 1 ? "방금" : m < 60 ? `${m}분 전` : m < 1440 ? `${Math.floor(m / 60)}시간 ${m % 60}분 전` : `${Math.floor(m / 1440)}일 전`; },
 };
-const state = { latest: null, intraday: null, history: null, charts: {}, lastBacktest: null, stockIndex: null, stocks: {}, stockSel: null, stockRange: "1Y", cmpLast: null, filings: null, bfQuarter: null, holdings: {}, dvcLast: null };
+const state = { latest: null, intraday: null, history: null, charts: {}, lastBacktest: null, stockIndex: null, stocks: {}, stockSel: null, stockRange: "1Y", cmpLast: null, filings: null, bfQuarter: null, holdings: {}, dvcLast: null, dvMarket: "kr", dvSub: "all" };
 
 // ───────────────────────── 데이터 로딩 ─────────────────────────
 async function getJson(name) {
