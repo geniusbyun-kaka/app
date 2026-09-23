@@ -205,6 +205,19 @@ async function buildLive() {
     };
     console.log(`[live] ${item.symbol} price=${price} prev=${prevClose} bars=${intra.rows.length}`);
   }
+  // 업비트 원화 시세 (김치 프리미엄용). 공개 API, 인증 불필요. 마켓별로 따로 받아 하나가 실패해도 나머지는 산다.
+  latest.upbit = {};
+  for (const m of ["KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-SOL", "KRW-USDC"]) {
+    try {
+      const [t] = await fetchJson(`https://api.upbit.com/v1/ticker?markets=${m}`);
+      latest.upbit[m.replace("KRW-", "")] = {
+        price: t.trade_price, previousClose: t.prev_closing_price,
+        changePercent: round(t.signed_change_rate * 100, 2),
+        time: t.timestamp ? new Date(t.timestamp).toISOString() : null,
+      };
+      console.log(`[upbit] ${m} price=${t.trade_price}`);
+    } catch (err) { console.warn(`[upbit] ${m} 실패: ${err.message}`); }
+  }
   return { latest, intraday };
 }
 

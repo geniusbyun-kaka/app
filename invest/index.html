@@ -503,6 +503,11 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
       <p class="desc" style="margin-top:10px">10분마다 갱신되는 지연 시세입니다. 코인 시장은 24시간 열려 있어 변동률은 전일 종가(UTC 기준) 대비입니다.</p>
     </div>
     <div class="card">
+      <div class="card-head"><h3>김치 프리미엄</h3><span class="small faint">한국(업비트) 가격이 미국 가격의 원화 환산보다 얼마나 비싼지</span></div>
+      <div id="kimchi-head" class="desc" style="margin-bottom:10px"></div>
+      <div class="tablewrap"><table id="kimchi-table"><thead><tr><th>코인</th><th>미국 가격</th><th>원화 환산</th><th>한국 업비트</th><th>프리미엄</th></tr></thead><tbody></tbody></table></div>
+    </div>
+    <div class="card">
       <div class="card-head"><h3>코인 검색</h3><span class="small faint" id="coin-count"></span></div>
       <div class="dv-search-row">
         <input id="coin-search" type="search" placeholder="코인 검색 (예: BTC, 도지, 솔라나)" autocomplete="off">
@@ -635,7 +640,7 @@ function renderQuotes() {
   const nq = q["NQ=F"], fx = q["KRW=X"];
   const strip = (el, q, unit) => { if (!q) return; const dir = q.change > 0 ? "up" : q.change < 0 ? "down" : ""; el.innerHTML = `<span class="k">${el.id === "strip-nq" ? "NQ 선물" : "USD/KRW"}</span><span class="v num">${fmt.n(q.price)}${unit}</span><span class="d ${dir}">${dir === "up" ? "▲" : dir === "down" ? "▼" : ""}${fmt.n(Math.abs(q.change ?? 0))} (${fmt.signed(q.changePercent)}%)</span>`; };
   strip($("#strip-nq"), nq, ""); strip($("#strip-fx"), fx, "원");
-  if (!$("#panel-crypto").hidden) renderCoinTiles();
+  if (!$("#panel-crypto").hidden) { renderCoinTiles(); renderKimchi(); }
 }
 // ───────────────────────── Chart.js 공통 ─────────────────────────
 const crosshair = {
@@ -1101,7 +1106,7 @@ function selectTab(name) {
   if (name === "buffett") ensureFilings().catch(() => {});
   if (name === "starter") ensureLessons();
   if (name === "news") ensureNews();
-  if (name === "crypto") { renderCoinTiles(); ensureStockIndex().then(renderCoinList).catch(() => {}); }
+  if (name === "crypto") { renderCoinTiles(); renderKimchi(); ensureStockIndex().then(renderCoinList).catch(() => {}); }
   try { localStorage.setItem("md:tab", name); } catch {}
   if (name === "backtest" && !state.history) { /* 일봉이 오면 initBacktestForm 이 채움 */ }
   if (name === "backtest" && state.lastBacktest) renderBacktest();
@@ -1487,6 +1492,25 @@ function renderCoinTiles() {
     const krw = fx && c.price != null ? ` · ${fmt.krw(c.price * fx)}` : "";
     return kpi(c.name, `$${fmt.n(c.price, c.price < 10 ? 4 : 0)}`, `${fmt.signed(c.changePercent)}% · 전일 $${fmt.n(c.previousClose, c.previousClose < 10 ? 4 : 0)}${krw}`, cls);
   }).join("");
+}
+// 원화를 "1억 5,354만원" 식으로
+const krwBig = (v) => v >= 1e8 ? `${Math.floor(v / 1e8)}억 ${fmt.n(Math.round((v % 1e8) / 1e4), 0)}만원` : v >= 1e5 ? `${fmt.n(Math.round(v / 1e4), 0)}만원` : fmt.krw(v);
+function renderKimchi() {
+  const q = state.latest?.quotes || {}, up = state.latest?.upbit || {}, fx = q["KRW=X"]?.price || null;
+  const rows = COIN_TILE_SYMS.map((sym) => {
+    const usd = q[sym], k = up[sym.replace("-USD", "")];
+    if (!usd?.price || !k?.price || !fx) return null;
+    const usdKrw = usd.price * fx, prem = k.price / usdKrw - 1;
+    return { name: usd.name, short: usd.short, usd: usd.price, usdKrw, kr: k.price, prem };
+  }).filter(Boolean);
+  if (!rows.length) {
+    $("#kimchi-head").textContent = "";
+    $("#kimchi-table tbody").innerHTML = `<tr><td class="txt faint" colspan="5">업비트 시세는 다음 시세 갱신(10분 이내)부터 표시됩니다</td></tr>`;
+    return;
+  }
+  const btc = rows.find((r) => r.short === "BTC");
+  $("#kimchi-head").innerHTML = btc ? `미국 비트코인은 <strong>$${fmt.n(btc.usd, 0)}</strong>, 원화로 환산하면 <strong>${krwBig(btc.usdKrw)}</strong>입니다. 한국 업비트에서는 <strong>${krwBig(btc.kr)}</strong>에 거래되고 있어 <strong class="${btc.prem > 0 ? "pos" : "neg"}">${fmt.pct(btc.prem)}</strong> ${btc.prem >= 0 ? "비쌉니다 (김치 프리미엄)" : "쌉니다 (역프리미엄)"}.` : "";
+  $("#kimchi-table tbody").innerHTML = rows.map((r) => `<tr><td class="txt"><strong>${r.name}</strong> <span class="faint small">${r.short}</span></td><td>$${fmt.n(r.usd, r.usd < 10 ? 4 : 0)}</td><td>${fmt.krw(r.usdKrw)}</td><td>${fmt.krw(r.kr)}</td><td class="${r.prem > 0 ? "pos" : r.prem < 0 ? "neg" : ""}"><strong>${fmt.pct(r.prem)}</strong></td></tr>`).join("");
 }
 function renderCoinList() {
   const idx = state.stockIndex; if (!idx) return;
