@@ -83,9 +83,8 @@ header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:spac
 @keyframes pulse{50%{opacity:.5}}
 
 /* tabs */
-.tabs{display:flex;gap:4px;padding:4px;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);margin-bottom:16px;overflow-x:auto;scrollbar-width:none}
-.tabs::-webkit-scrollbar{display:none}
-.tab{flex:1 0 auto;min-width:56px;background:none;border:0;border-radius:8px;padding:9px 11px;font-size:14px;font-weight:600;color:var(--ink-2);white-space:nowrap;transition:background .15s,color .15s}
+.tabs{display:flex;flex-wrap:wrap;gap:4px;padding:4px;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);margin-bottom:16px}
+.tab{flex:1 1 auto;min-width:76px;background:none;border:0;border-radius:8px;padding:9px 11px;font-size:14px;font-weight:600;color:var(--ink-2);white-space:nowrap;transition:background .15s,color .15s}
 .tab:hover{background:var(--surface-2);color:var(--ink)}
 .tab[aria-selected="true"]{background:var(--accent);color:var(--accent-ink);box-shadow:0 1px 3px rgba(20,30,40,.18)}
 .panel{display:grid;gap:14px}
@@ -147,9 +146,12 @@ td.txt{font-family:var(--font)}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chip{border:1px solid var(--line);background:var(--surface-2);border-radius:999px;padding:4px 10px;font-size:12px;color:var(--ink-2)}
 .chip:hover{color:var(--ink);border-color:var(--ink-3)}
-.dv-cats{margin-bottom:10px}
-.dv-cats .chip{font-size:13.5px;font-weight:600;padding:7px 14px}
+.dv-cats{margin-bottom:8px}
+.dv-cats .chip{flex:1 1 auto;font-size:13.5px;font-weight:600;padding:8px 14px;text-align:center}
 .dv-cats .chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.dv-sub{margin-bottom:10px}
+.dv-sub .chip{font-size:12.5px;padding:6px 12px;flex:0 1 auto}
+.dv-sub:empty{display:none}
 .strategy-desc{font-size:13px;color:var(--ink-2);background:var(--surface-2);border-radius:8px;padding:10px 12px;margin-top:12px}
 
 /* KPI */
@@ -497,15 +499,13 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
     <div class="card">
       <div class="card-head"><h3>배당 캘린더</h3><span class="small faint" id="dv-status">불러오는 중</span></div>
       <p class="desc">배당락일 전날까지 사야 그 회차 배당을 받습니다. 앞으로의 날짜는 지급 간격으로 계산한 <strong>예상일</strong>이고, 세후는 미국 원천징수 15%를 뺀 값입니다.</p>
-      <div class="chips dv-cats" aria-label="분야">
-        <button class="chip" data-dvscope="kr-div" type="button">국장 배당주</button>
-        <button class="chip" data-dvscope="kr-cc" type="button">국장 커버드콜</button>
-        <button class="chip" data-dvscope="etf" type="button">미국 배당 ETF</button>
-        <button class="chip" data-dvscope="stock" type="button">미국 개별주</button>
-        <button class="chip" data-dvscope="monthly" type="button">월배당</button>
-        <button class="chip" data-dvscope="mine" type="button">내 보유</button>
-        <button class="chip" aria-pressed="true" data-dvscope="all" type="button">전체</button>
+      <div class="chips dv-cats" id="dv-market" aria-label="시장">
+        <button class="chip" data-mkt="kr" type="button">한국장</button>
+        <button class="chip" data-mkt="us" type="button">미국장</button>
+        <button class="chip" data-mkt="mine" type="button">내 보유</button>
+        <button class="chip" aria-pressed="true" data-mkt="all" type="button">전체</button>
       </div>
+      <div class="chips dv-cats dv-sub" id="dv-sub" aria-label="분야"></div>
       <div class="dv-search-row">
         <input id="dv-search" type="search" placeholder="배당 종목 검색 (티커 또는 회사명, 예: SCHD, Coca-Cola)" autocomplete="off">
         <button class="btn primary" id="dv-search-btn" type="button">검색</button>
@@ -518,7 +518,7 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
       <div class="kpis" id="dv-kpis"></div>
     </div>
     <div class="card">
-      <div class="card-head"><h3>이번 달 배당금 TOP 20</h3><span class="small faint">이번 달 배당락 기준 · 시가배당률 높은 순 · *는 예상일</span></div>
+      <div class="card-head"><h3>이번 달 배당금 TOP 20 <span class="small faint" id="dv-top20-scope"></span></h3><span class="small faint">이번 달 배당락 기준 · 시가배당률 높은 순 · *는 예상일</span></div>
       <div class="tablewrap"><table id="dv-top20"><thead><tr><th>#</th><th>종목</th><th>시가배당률</th><th>배당락</th><th>1주당</th><th>세후</th><th>주기</th></tr></thead><tbody></tbody></table></div>
     </div>
     <div class="card">
@@ -1457,6 +1457,19 @@ const FREQ_LABEL = { monthly: "월배당", quarterly: "분기", semiannual: "반
 function dvTax() { const v = Number($("#dv-tax").value); return isFinite(v) && v >= 0 ? v / 100 : 0.15; }
 function dvFx() { return state.latest?.quotes?.["KRW=X"]?.price || null; }
 const isKRSym = (sym) => /\.(KS|KQ)$/.test(sym);
+const inMarket = (x, mkt) => mkt === "kr" ? isKRSym(x.symbol) : mkt === "us" ? !isKRSym(x.symbol) : mkt === "mine" ? state.holdings[x.symbol] > 0 : true;
+const DV_MKT_LABEL = { kr: "· 한국장", us: "· 미국장", mine: "· 내 보유", all: "" };
+// 시장별 하위 분야 칩
+const DV_SUBS = {
+  kr: [["all", "전체"], ["stock", "배당주"], ["etf", "커버드콜 · ETF"], ["monthly", "월배당"]],
+  us: [["all", "전체"], ["etf", "배당 ETF"], ["stock", "개별주"], ["monthly", "월배당"]],
+  all: [["all", "전체"], ["etf", "ETF"], ["stock", "개별주"], ["monthly", "월배당"]],
+  mine: [],
+};
+function renderDvSubChips() {
+  const subs = DV_SUBS[state.dvMarket || "all"];
+  $("#dv-sub").innerHTML = subs.map(([v, label]) => `<button class="chip" data-sub="${v}" aria-pressed="${String(v === (state.dvSub || "all"))}" type="button">${label}</button>`).join("");
+}
 const itemCur = (x) => x.currency || (isKRSym(x.symbol) ? "KRW" : "USD");
 // 종목 통화 기준 금액을 표시 통화로 환산 (환율 없으면 null)
 function dvConv(a, c) { const disp = $("#dv-cur").value, fx = dvFx(); if (c === disp) return a; if (!fx) return null; return disp === "KRW" ? a * fx : a / fx; }
@@ -1484,12 +1497,15 @@ function renderDividend() {
   const items = dvItems();
   if (!items.length) { $("#dv-status").textContent = "배당 데이터 없음"; $("#dv-list").innerHTML = `<div class="empty">이 스냅샷에는 배당 이력이 없습니다. 다음 종목 스냅샷(Stock history snapshot)부터 포함됩니다.</div>`; return; }
   $("#dv-status").textContent = `${items.length}종목 · ${fmt.time(idx.updated)} 기준`;
+  renderDvSubChips();
   const tax = dvTax(), w = dvWindows(), fx = dvFx();
   const inRange = ([a, b]) => items.flatMap((x) => dvEvents(x).filter((e) => e.d >= a && e.d <= b).map((e) => ({ ...e, x })));
   const weekEv = inRange(w.week), monthEv = inRange(w.month);
-  // 이번 달 배당금 TOP 20: 시가배당률 높은 순 (같은 달 두 번 지급하는 월배당은 합산)
+  // 이번 달 배당금 TOP 20: 선택한 시장에서 시가배당률 높은 순 (같은 달 두 번 지급하는 월배당은 합산)
+  const mkt = state.dvMarket || "all";
+  $("#dv-top20-scope").textContent = DV_MKT_LABEL[mkt];
   const bySym = new Map();
-  for (const e of monthEv) { const t = bySym.get(e.x.symbol) || { x: e.x, amt: 0, dates: [] }; t.amt += e.a || 0; t.dates.push(e.d.slice(5).replace("-", "/") + (e.actual ? "" : "*")); bySym.set(e.x.symbol, t); }
+  for (const e of monthEv.filter((e) => inMarket(e.x, mkt))) { const t = bySym.get(e.x.symbol) || { x: e.x, amt: 0, dates: [] }; t.amt += e.a || 0; t.dates.push(e.d.slice(5).replace("-", "/") + (e.actual ? "" : "*")); bySym.set(e.x.symbol, t); }
   const top20 = [...bySym.values()].filter((t) => t.amt > 0).sort((a, b) => (b.x.div.yieldTtm || 0) - (a.x.div.yieldTtm || 0)).slice(0, 20);
   $("#dv-top20 tbody").innerHTML = top20.length ? top20.map((t, i) => `<tr><td>${i + 1}</td><td class="txt"><span class="tk" data-stock="${t.x.symbol}" style="font-weight:700;font-family:var(--mono);color:var(--accent);cursor:pointer">${t.x.symbol}</span> <span class="faint small">${t.x.name}</span></td><td><strong>${fmt.pct(t.x.div.yieldTtm, 2, false)}</strong></td><td class="txt">${t.dates.join(", ")}</td><td>${dvMoney(t.amt, itemCur(t.x))}</td><td>${dvMoney(t.amt * (1 - tax), itemCur(t.x))}</td><td class="txt">${FREQ_LABEL[t.x.div.freq]}</td></tr>`).join("") : `<tr><td class="txt faint" colspan="7">이번 달 배당락 종목이 없습니다</td></tr>`;
   // 내 보유 기준 이번 달·연간
@@ -1509,14 +1525,9 @@ function renderDividend() {
 }
 function renderDividendList() {
   const items = dvItems(); if (!items.length) return;
-  const tax = dvTax(), scope = state.dvScope || "all", sort = $("#dv-sort").value, q = $("#dv-search").value.trim().toLowerCase(), w = dvWindows();
-  let list = items.filter((x) => scope === "all"
-    || (scope === "kr-div" && isKRSym(x.symbol) && x.kind === "stock")
-    || (scope === "kr-cc" && isKRSym(x.symbol) && x.kind === "etf")
-    || (scope === "etf" && !isKRSym(x.symbol) && x.kind === "etf")
-    || (scope === "stock" && !isKRSym(x.symbol) && x.kind === "stock")
-    || (scope === "monthly" && x.div.freq === "monthly")
-    || (scope === "mine" && state.holdings[x.symbol] > 0));
+  const tax = dvTax(), mkt = state.dvMarket || "all", sub = state.dvSub || "all", sort = $("#dv-sort").value, q = $("#dv-search").value.trim().toLowerCase(), w = dvWindows();
+  let list = items.filter((x) => inMarket(x, mkt)
+    && (sub === "all" || (sub === "stock" && x.kind === "stock") || (sub === "etf" && x.kind === "etf") || (sub === "monthly" && x.div.freq === "monthly")));
   if (q) list = list.filter((x) => x.symbol.toLowerCase().includes(q) || x.name.toLowerCase().includes(q));
   if (sort === "yield") list.sort((a, b) => b.div.yieldTtm - a.div.yieldTtm);
   else if (sort === "next") list.sort((a, b) => (a.div.nextEx || "9999").localeCompare(b.div.nextEx || "9999"));
@@ -1562,7 +1573,8 @@ async function runDividendCompare() {
   state.dvcLast = true;
   $("#dvc-results").hidden = false;
 }
-$$("[data-dvscope]").forEach((c) => c.addEventListener("click", () => { state.dvScope = c.dataset.dvscope; $$("[data-dvscope]").forEach((x) => x.setAttribute("aria-pressed", String(x === c))); renderDividendList(); }));
+$$("[data-mkt]").forEach((c) => c.addEventListener("click", () => { state.dvMarket = c.dataset.mkt; state.dvSub = "all"; $$("[data-mkt]").forEach((x) => x.setAttribute("aria-pressed", String(x === c))); renderDvSubChips(); renderDividend(); }));
+$("#dv-sub").addEventListener("click", (e) => { const c = e.target.closest("[data-sub]"); if (!c) return; state.dvSub = c.dataset.sub; renderDvSubChips(); renderDividendList(); });
 $("#dv-sort").addEventListener("change", renderDividendList);
 $("#dv-search").addEventListener("input", renderDividendList);
 $("#dv-search-btn").addEventListener("click", () => { renderDividendList(); $("#dv-search").blur(); });
