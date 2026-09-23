@@ -44,6 +44,14 @@ const KR_DIV = [
   ["017670.KS", "SK텔레콤"], ["030200.KS", "KT"], ["033780.KS", "KT&G"], ["010950.KS", "S-Oil"], ["088980.KS", "맥쿼리인프라"],
   ["024110.KS", "기업은행"], ["029780.KS", "삼성카드"], ["000810.KS", "삼성화재"], ["032640.KS", "LG유플러스"], ["003550.KS", "LG"], ["034730.KS", "SK"],
 ];
+// 코인 (야후 심볼 -USD). 배당이 없어 배당 탭에는 안 나오고 코인 탭 검색·차트용.
+const COINS = [
+  ["BTC-USD", "비트코인"], ["ETH-USD", "이더리움"], ["USDT-USD", "테더"], ["XRP-USD", "리플"], ["BNB-USD", "바이낸스코인"],
+  ["SOL-USD", "솔라나"], ["USDC-USD", "USD코인"], ["DOGE-USD", "도지코인"], ["ADA-USD", "카르다노 (에이다)"], ["TRX-USD", "트론"],
+  ["AVAX-USD", "아발란체"], ["LINK-USD", "체인링크"], ["DOT-USD", "폴카닷"], ["LTC-USD", "라이트코인"], ["BCH-USD", "비트코인캐시"],
+  ["XLM-USD", "스텔라루멘"], ["SHIB-USD", "시바이누"], ["NEAR-USD", "니어프로토콜"], ["ATOM-USD", "코스모스"], ["HBAR-USD", "헤데라"],
+];
+
 // 국내 상장 리츠
 const KR_REIT = [
   ["395400.KS", "SK리츠"], ["330590.KS", "롯데리츠"], ["348950.KS", "제이알글로벌리츠"], ["293940.KS", "신한알파리츠"],
@@ -215,7 +223,8 @@ async function main() {
     ...KR_REIT.map(([symbol, name]) => ({ symbol, name, sector: "국내 리츠", kind: "stock" })),
     ...KR_CC.map(([symbol, name]) => ({ symbol, name, sector: "국내 커버드콜", kind: "etf" })),
   ];
-  const items = [...(LIMIT ? stocks.slice(0, LIMIT) : stocks), ...extraEtfs, ...krItems];
+  const coinItems = COINS.map(([symbol, name]) => ({ symbol, name, sector: "코인", kind: "coin" }));
+  const items = [...(LIMIT ? stocks.slice(0, LIMIT) : stocks), ...extraEtfs, ...krItems, ...coinItems];
 
   const prevItems = new Map((prevIndex?.items || []).map((x) => [x.symbol, x]));
   const results = [];

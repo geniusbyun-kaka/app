@@ -22,6 +22,14 @@ const LIVE = [
   { symbol: "NQ=F", name: "나스닥 100 선물", short: "NQ", kind: "futures" },
   { symbol: "KRW=X", name: "원달러 환율", short: "USD/KRW", kind: "fx" },
 ];
+// 대표 코인 (코인 탭 상단 타일). light: 일중 차트 없이 현재가·전일 종가만.
+const COINS = [
+  { symbol: "BTC-USD", name: "비트코인", short: "BTC", kind: "crypto", light: true },
+  { symbol: "ETH-USD", name: "이더리움", short: "ETH", kind: "crypto", light: true },
+  { symbol: "XRP-USD", name: "리플", short: "XRP", kind: "crypto", light: true },
+  { symbol: "SOL-USD", name: "솔라나", short: "SOL", kind: "crypto", light: true },
+  { symbol: "USDC-USD", name: "USD코인", short: "USDC", kind: "crypto", light: true },
+];
 
 // 백테스트용 일봉 대상. stooq 는 대체 소스 심볼.
 // adjust:true 인 ETF 는 가격(close)과 배당 재투자 총수익(tr, Yahoo adjclose) 을 둘 다 저장한다.
@@ -117,7 +125,30 @@ async function buildLive() {
   const latest = { updated: new Date().toISOString(), source: "Yahoo Finance (지연 시세)", quotes: {} };
   const intraday = { updated: latest.updated, series: {} };
 
-  for (const item of LIVE) {
+  for (const item of [...LIVE, ...COINS]) {
+    if (item.light) {
+      // 코인: 일봉 한 번으로 현재가·전일 종가·변동률만
+      const daily = await yahooChart(item.symbol, { range: "5d", interval: "1d" });
+      const meta = daily.meta, tz = meta.exchangeTimezoneName || "UTC";
+      const price = meta.regularMarketPrice ?? daily.rows.at(-1)?.c ?? null;
+      const marketTime = meta.regularMarketTime ?? daily.rows.at(-1)?.t ?? null;
+      let prevClose = meta.previousClose ?? null;
+      if (prevClose == null && daily.rows.length >= 2) prevClose = daily.rows.at(-2)?.c ?? null;
+      const change = price != null && prevClose != null ? price - prevClose : null;
+      const digits = price != null && price < 10 ? 4 : 2;
+      latest.quotes[item.symbol] = {
+        symbol: item.symbol, name: item.name, short: item.short, kind: item.kind,
+        currency: meta.currency || "USD",
+        price: round(price, digits), previousClose: round(prevClose, digits),
+        change: round(change, digits), changePercent: change != null && prevClose ? round((change / prevClose) * 100, 2) : null,
+        dayHigh: round(meta.regularMarketDayHigh, digits), dayLow: round(meta.regularMarketDayLow, digits),
+        fiftyTwoWeekHigh: round(meta.fiftyTwoWeekHigh, digits), fiftyTwoWeekLow: round(meta.fiftyTwoWeekLow, digits),
+        marketTime: marketTime ? new Date(marketTime * 1000).toISOString() : null,
+        marketState: meta.marketState || null, exchange: meta.exchangeName || null, timezone: tz,
+      };
+      console.log(`[live] ${item.symbol} price=${price} prev=${prevClose} (light)`);
+      continue;
+    }
     const digits = item.kind === "fx" ? 2 : 2;
     const [intra, daily] = await Promise.all([
       yahooChart(item.symbol, { range: "5d", interval: "5m" }),
