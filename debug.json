@@ -1,0 +1,288 @@
+{
+ "candidates": [
+  {
+   "url": "https://www.cnbc.com/2026/09/23/us-iran-war-trump-hormuz.html",
+   "why": "module:featuredNewsHero"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/22/stock-market-today-live-updates.html",
+   "why": "module:featuredNewsHero"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/23/trump-xi-meeting-ai-safety-chips-us-china-dialogue.html",
+   "why": "module:featuredNewsHero"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/23/ukraine-war-zelenskyy-putin-trump-russia.html",
+   "why": "module:riverPlus"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/23/trump-xi-meeting-why-chinas-self-sufficiency-changes-the-calculus.html",
+   "why": "module:riverPlus"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/23/trump-white-house-ban-media-doj-cnn-msnow-politico.html",
+   "why": "module:riverPlus"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/23/federal-reserve-inflation-interest-rates-ecb.html",
+   "why": "module:riverPlus"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/23/trump-xi-summit-us-china-trade-rare-earth-soybean-plane.html",
+   "why": "module:riverPlus"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/23/treasury-yields-oil-inflation-fed.html",
+   "why": "module:riverPlus"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/23/unga-trump-iran-china-greenland-ukraine-russia-.html",
+   "why": "module:riverPlus"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/23/ai-workplace-graduate-entry-level-junior-hiring.html",
+   "why": "module:riverPlus"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/23/korean-solar-stocks-jump-as-curbs-on-china-expected-to-stay-in-place.html",
+   "why": "module:riverPlus"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/23/iran-us-talks-crude-oil-un-wti.html",
+   "why": "module:riverPlus"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/23/trump-super-intelligence-artificial-intelligence.html",
+   "why": "module:riverPlus"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/22/trump-un-speech-today.html",
+   "why": "module:riverPlus"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/21/trump-xi-china-summit-trade-tariffs.html",
+   "why": "module:riverPlus"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/22/qualcomm-releases-android-chip-built-for-ai-amid-memory-shortage.html",
+   "why": "module:riverPlus"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/22/qantas-flight-new-york-sydney-nonstop.html",
+   "why": "module:riverPlus"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/22/anthropic-openai-cheaper-ai-models.html",
+   "why": "module:riverPlus"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/22/us-iran-war-trump-hormuz.html",
+   "why": "module:riverPlus"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/22/royal-caribbean-sandals.html",
+   "why": "module:riverPlus"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/21/texas-governor-abbott-ai-data-center-permits.html",
+   "why": "module:featuredBreaker"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/21/open-ai-alignment-rsi.html",
+   "why": "module:featuredBreaker"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/17/diesel-gas-prices-oil-us-economy.html",
+   "why": "module:featuredBreaker"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/20/ai-jobs-worker-fears.html",
+   "why": "module:featuredBreaker"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/17/charities-ira-gifts-hurdles.html",
+   "why": "module:featuredBreaker"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/16/open-ai-investors-new-funding-round.html",
+   "why": "module:featuredBreaker"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/16/anthropic-open-ai-model-safety-risks.html",
+   "why": "module:featuredBreaker"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/22/wednesdays-big-stock-stories-whats-likely-to-move-the-market.html",
+   "why": "module:legacyPlayerContainer"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/22/lennar-shares-pop-as-berkshire-builds-almost-a-10percent-stake-in-beleaguered-homebuilder.html",
+   "why": "module:legacyPlayerContainer"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/23/lee-jae-myung-trump-kim-summit-north-korea.html",
+   "why": "module:latestNews"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/23/cnbc-daily-open-trump-unga-speech-iran-greenland-diesel.html",
+   "why": "module:latestNews"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/22/cftc-prediction-markets-mentions-contracts-have-manipulation-risk.html",
+   "why": "module:latestNews"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/22/a-top-chip-stock-analyst-sees-big-things-for-nvidia-broadcom-how-his-case-aligns-with-ours.html",
+   "why": "module:latestNews"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/22/clarity-act-crypto-rules-regulators.html",
+   "why": "module:latestNews"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/22/cisco-stock-piper-sandler-price-target.html",
+   "why": "module:latestNews"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/22/trump-administration-removes-around-760000-obamacare-enrollments.html",
+   "why": "module:latestNews"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/22/ai-disruption-fears-slam-another-pocket-of-the-market-plus-apple-explores-a-new-wearable-.html",
+   "why": "module:latestNews"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/22/gas-tax-holiday-commuter-deduction-fuel-prices.html",
+   "why": "module:latestNews"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/16/uk-august-inflation-energy-gasoline.html",
+   "why": "module:twoColumnImageDense"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/09/uk-israel-jerusalem-consulate-sanctions.html",
+   "why": "module:twoColumnImageDense"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/08/uk-israel-sanctions-miliband-florida-trump.html",
+   "why": "module:twoColumnImageDense"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/07/jaguar-land-rover-jlr-job-cuts-autos.html",
+   "why": "module:twoColumnImageDense"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/05/eu-greenland-von-der-leyen-trump-arctic.html",
+   "why": "module:twoColumnImageDense"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/06/05/china-may-move-toward-us-path-on-ai-as-firms-poach-employees.html",
+   "why": "module:twoColumnImageDense"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/14/budapest-what-to-do-for-two-days-in-the-hungarian-capital.html",
+   "why": "module:twoColumnImageDense"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/05/budget-travel-vacation-costs.html",
+   "why": "module:twoColumnImageDense"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/02/trump-travel-industry-world-cup-tourism-airlines-hotels.html",
+   "why": "module:twoColumnImageDense"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/03/hilton-hotel-market-expansion-india-china-southeast-asia.html",
+   "why": "module:twoColumnImageDense"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/08/05/europe-heatwave-travel-demand-asia.html",
+   "why": "module:twoColumnImageDense"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/08/03/china-price-demand-tourism-hotel.html",
+   "why": "module:twoColumnImageDense"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/05/30/europe-vat-refunds-travelers.html",
+   "why": "module:twoColumnImageDense"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/22/childfree-financial-planning.html",
+   "why": "module:twoColumnImageDense"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/22/jared-diamond-leadership-success.html",
+   "why": "module:twoColumnImageDense"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/03/16/leadership-training-course-how-to-becom-great-boss-manager.html",
+   "why": "module:twoColumnImageDense"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/22/september-surge-october-offload-jobs-experts-on-fall-2026-hiring-trends.html",
+   "why": "module:twoColumnImageDense"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/21/shonda-rhimes-says-she-was-a-micromanager-and-pain-in-the-butt-early-in-her-career.html",
+   "why": "module:twoColumnImageDense"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/21/kind-snacks-founder-daniel-lubetzky-the-advice-i-give-my-kids-about-failure.html",
+   "why": "module:twoColumnImageDense"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/21/gen-z-social-skills-confidence-cnbc-survey.html",
+   "why": "module:twoColumnImageDense"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/21/themed-etfs-gen-z-investors.html",
+   "why": "module:twoColumnImageDense"
+  }
+ ],
+ "modules": [
+  "legacyPlayerContainer(5)",
+  "featuredNewsHero(3)",
+  "latestNews(30)",
+  "latestNews(30)",
+  "riverPlus(21)",
+  "marketsModule(4)",
+  "videoBreakerFeatured(3)",
+  "featuredBreaker(8)",
+  "trendingNowBreaker(5)",
+  "twoColumnImageDense(8)",
+  "twoColumnImageDense(8)",
+  "twoColumnImageDense(8)",
+  "twoColumnImageDense(8)",
+  "twoColumnImageDense(8)",
+  "twoColumnImageDense(8)",
+  "twoColumnImageDense(8)"
+ ],
+ "articles": [
+  {
+   "url": "https://www.cnbc.com/2026/09/23/us-iran-war-trump-hormuz.html",
+   "premium": false,
+   "via": "html",
+   "kp": 3,
+   "paras": 12,
+   "first": "Iran's military on Wednesday described U.S. President Donald Trump's threats to annihilate Tehran as \"a sign of strategic desperation,\" warning the country stan"
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/22/stock-market-today-live-updates.html",
+   "premium": false,
+   "via": null,
+   "kp": 0,
+   "paras": 0,
+   "first": ""
+  },
+  {
+   "url": "https://www.cnbc.com/2026/09/23/trump-xi-meeting-ai-safety-chips-us-china-dialogue.html",
+   "premium": false,
+   "via": "html",
+   "kp": 3,
+   "paras": 12,
+   "first": "Donald Trump wants the U.S. to beat China in the AI race. But as he meets Chinese President Xi Jinping, both countries are also weighing how to address the risk"
+  }
+ ]
+}
