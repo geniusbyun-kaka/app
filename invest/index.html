@@ -149,9 +149,7 @@ td.txt{font-family:var(--font)}
 .dv-cats{margin-bottom:8px}
 .dv-cats .chip{flex:1 1 auto;font-size:13.5px;font-weight:600;padding:8px 14px;text-align:center}
 .dv-cats .chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-.dv-sub{margin-bottom:10px}
-.dv-sub .chip{font-size:12.5px;padding:6px 12px;flex:0 1 auto}
-.dv-sub:empty{display:none}
+.dv-cats#dv-market .chip{font-size:14.5px;padding:9px 14px}
 .strategy-desc{font-size:13px;color:var(--ink-2);background:var(--surface-2);border-radius:8px;padding:10px 12px;margin-top:12px}
 
 /* KPI */
@@ -224,8 +222,8 @@ td .tk.plain{color:var(--ink);cursor:default}
 td .nm{font-family:var(--font);color:var(--ink-3);font-size:12px;margin-left:6px}
 
 /* dividend */
-.dv-search-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;margin-bottom:10px}
-.dv-search-row input{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:9px 12px;font-size:14px;min-width:0}
+.dv-search-row{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(110px,auto) auto;gap:8px;margin-bottom:10px}
+.dv-search-row input,.dv-search-row select{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:9px 12px;font-size:14px;min-width:0}
 .dv-tools{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:12px}
 .dv-tools select,.dv-tools input{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 10px;font-size:14px;min-width:0;width:100%}
 .dv-tools .field label{font-size:12px;font-weight:600;color:var(--ink-2)}
@@ -521,16 +519,15 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
   <!-- 배당 -->
   <section class="panel" id="panel-dividend" role="tabpanel" hidden>
     <div class="card">
-      <div class="card-head"><h3>배당 캘린더</h3><span class="small faint" id="dv-status">불러오는 중</span></div>
+      <div class="card-head"><h3>배당 종목</h3><span class="small faint" id="dv-status">불러오는 중</span></div>
       <p class="desc">배당락일 전날까지 사야 그 회차 배당을 받습니다. 앞으로의 날짜는 지급 간격으로 계산한 <strong>예상일</strong>이고, 세후는 미국 원천징수 15%를 뺀 값입니다.</p>
       <div class="chips dv-cats" id="dv-market" aria-label="시장">
         <button class="chip" aria-pressed="true" data-mkt="kr" type="button">한국장</button>
         <button class="chip" data-mkt="us" type="button">미국장</button>
-        <button class="chip" data-mkt="all" type="button">전체</button>
       </div>
-      <div class="chips dv-cats dv-sub" id="dv-sub" aria-label="분야"></div>
       <div class="dv-search-row">
-        <input id="dv-search" type="search" placeholder="배당 종목 검색 (티커 또는 회사명, 예: SCHD, Coca-Cola)" autocomplete="off">
+        <input id="dv-search" type="search" placeholder="종목 검색 (티커 또는 이름)" autocomplete="off">
+        <select id="dv-cat" aria-label="카테고리"></select>
         <button class="btn primary" id="dv-search-btn" type="button">검색</button>
       </div>
       <div class="dv-tools">
@@ -538,10 +535,13 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
         <div class="field"><label for="dv-tax">세율 %</label><input id="dv-tax" type="number" min="0" max="60" step="0.1" value="15"></div>
         <div class="field"><label for="dv-cur">표시 통화</label><select id="dv-cur"><option value="KRW">원화</option><option value="USD">달러</option></select></div>
       </div>
-      <div class="kpis" id="dv-kpis"></div>
+      <div class="small faint" style="margin-bottom:8px" id="dv-count"></div>
+      <div class="dv-list" id="dv-list"></div>
+      <div class="form-actions" style="margin-top:10px"><button class="btn" id="dv-more" type="button" hidden>더 보기</button></div>
     </div>
     <div class="card">
       <div class="card-head"><h3>배당률 TOP 20 <span class="small faint" id="dv-top20-scope"></span></h3><span class="small faint">시가배당률 높은 순 · 배당락일의 *는 예상일</span></div>
+      <div class="kpis" id="dv-kpis" style="margin-bottom:12px"></div>
       <div class="tablewrap"><table id="dv-top20"><thead><tr><th>#</th><th>종목</th><th>시가배당률</th><th>다음 배당락</th><th>1주당 1회</th><th>세후</th><th>주기</th></tr></thead><tbody></tbody></table></div>
     </div>
     <div class="card">
@@ -557,10 +557,6 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
         <div class="tablewrap" style="margin-top:12px"><table id="dvc-table"><thead><tr><th>종목</th><th>주기</th><th>시가배당률</th><th>세후</th><th>연 배당(예상)</th><th>최근 1회</th><th>다음 배당락</th><th>5년 배당 성장률</th></tr></thead><tbody></tbody></table></div>
         <div class="chart" style="margin-top:12px"><canvas id="chart-dvc"></canvas></div>
       </div>
-    </div>
-    <div class="card">
-      <div class="card-head"><h3>배당 종목</h3><span class="small faint" id="dv-count"></span></div>
-      <div class="dv-list" id="dv-list"></div>
     </div>
   </section>
 
@@ -1533,15 +1529,15 @@ function dvFx() { return state.latest?.quotes?.["KRW=X"]?.price || null; }
 const isKRSym = (sym) => /\.(KS|KQ)$/.test(sym);
 const inMarket = (x, mkt) => mkt === "kr" ? isKRSym(x.symbol) : mkt === "us" ? !isKRSym(x.symbol) : true;
 const DV_MKT_LABEL = { kr: "· 한국장", us: "· 미국장", all: "" };
-// 시장별 하위 분야 칩
+// 시장별 카테고리 (검색창 옆 드롭다운)
 const DV_SUBS = {
-  kr: [["all", "전체"], ["stock", "배당주"], ["reit", "리츠"], ["etf", "커버드콜 · ETF"], ["monthly", "월배당"]],
-  us: [["all", "전체"], ["etf", "배당 ETF"], ["stock", "개별주"], ["monthly", "월배당"]],
-  all: [["all", "전체"], ["etf", "ETF"], ["stock", "개별주"], ["monthly", "월배당"]],
+  kr: [["all", "전체 분야"], ["stock", "배당주"], ["reit", "리츠"], ["etf", "커버드콜 · ETF"], ["monthly", "월배당"]],
+  us: [["all", "전체 분야"], ["etf", "배당 ETF"], ["stock", "개별주"], ["monthly", "월배당"]],
 };
 function renderDvSubChips() {
-  const subs = DV_SUBS[state.dvMarket || "all"];
-  $("#dv-sub").innerHTML = subs.map(([v, label]) => `<button class="chip" data-sub="${v}" aria-pressed="${String(v === (state.dvSub || "all"))}" type="button">${label}</button>`).join("");
+  const subs = DV_SUBS[state.dvMarket] || DV_SUBS.kr;
+  $("#dv-cat").innerHTML = subs.map(([v, label]) => `<option value="${v}">${label}</option>`).join("");
+  $("#dv-cat").value = state.dvSub || "all";
 }
 const itemCur = (x) => x.currency || (isKRSym(x.symbol) ? "KRW" : "USD");
 // 종목 통화 기준 금액을 표시 통화로 환산 (환율 없으면 null)
@@ -1587,15 +1583,21 @@ function renderDividend() {
 function renderDividendList() {
   const items = dvItems(); if (!items.length) return;
   const tax = dvTax(), mkt = state.dvMarket || "all", sub = state.dvSub || "all", sort = $("#dv-sort").value, q = $("#dv-search").value.trim().toLowerCase(), w = dvWindows();
-  let list = items.filter((x) => inMarket(x, mkt)
-    && (sub === "all" || (sub === "stock" && x.kind === "stock" && x.sector !== "국내 리츠") || (sub === "reit" && x.sector === "국내 리츠") || (sub === "etf" && x.kind === "etf") || (sub === "monthly" && x.div.freq === "monthly")));
-  if (q) list = list.filter((x) => x.symbol.toLowerCase().includes(q) || x.name.toLowerCase().includes(q));
+  // 검색어가 있으면 시장·분야에 상관없이 전체 배당 종목에서 찾는다
+  let list = q
+    ? items.filter((x) => x.symbol.toLowerCase().includes(q) || x.name.toLowerCase().includes(q))
+    : items.filter((x) => inMarket(x, mkt)
+      && (sub === "all" || (sub === "stock" && x.kind === "stock" && x.sector !== "국내 리츠") || (sub === "reit" && x.sector === "국내 리츠") || (sub === "etf" && x.kind === "etf") || (sub === "monthly" && x.div.freq === "monthly")));
   if (sort === "yield") list.sort((a, b) => b.div.yieldTtm - a.div.yieldTtm);
   else if (sort === "next") list.sort((a, b) => (a.div.nextEx || "9999").localeCompare(b.div.nextEx || "9999"));
   else if (sort === "annual") list.sort((a, b) => b.div.regular * b.div.perYear - a.div.regular * a.div.perYear);
   else list.sort((a, b) => a.symbol.localeCompare(b.symbol));
-  const shown = list.slice(0, 120);
-  $("#dv-count").textContent = list.length > shown.length ? `${list.length}종목 중 ${shown.length}개 표시 · 검색으로 좁혀 보세요` : `${list.length}종목`;
+  const limit = state.dvLimit || 30;
+  const shown = list.slice(0, limit);
+  $("#dv-count").textContent = list.length > shown.length ? `${list.length}종목 중 ${shown.length}개 표시` : `${list.length}종목`;
+  const more = $("#dv-more");
+  more.hidden = list.length <= shown.length;
+  if (!more.hidden) more.textContent = `더 보기 (${list.length - shown.length}개 남음)`;
   $("#dv-list").innerHTML = shown.length ? shown.map((x) => {
     const d = x.div, annual = d.regular * d.perYear, C = itemCur(x);
     const nextSoon = d.nextEx && d.nextEx <= w.month[1];
@@ -1634,10 +1636,11 @@ async function runDividendCompare() {
   state.dvcLast = true;
   $("#dvc-results").hidden = false;
 }
-$$("[data-mkt]").forEach((c) => c.addEventListener("click", () => { state.dvMarket = c.dataset.mkt; state.dvSub = "all"; $$("[data-mkt]").forEach((x) => x.setAttribute("aria-pressed", String(x === c))); renderDvSubChips(); renderDividend(); }));
-$("#dv-sub").addEventListener("click", (e) => { const c = e.target.closest("[data-sub]"); if (!c) return; state.dvSub = c.dataset.sub; renderDvSubChips(); renderDividendList(); });
+$$("[data-mkt]").forEach((c) => c.addEventListener("click", () => { state.dvMarket = c.dataset.mkt; state.dvSub = "all"; state.dvLimit = 30; $$("[data-mkt]").forEach((x) => x.setAttribute("aria-pressed", String(x === c))); renderDvSubChips(); renderDividend(); }));
+$("#dv-cat").addEventListener("change", () => { state.dvSub = $("#dv-cat").value; state.dvLimit = 30; renderDividendList(); });
+$("#dv-more").addEventListener("click", () => { state.dvLimit = (state.dvLimit || 30) + 50; renderDividendList(); });
 $("#dv-sort").addEventListener("change", renderDividendList);
-$("#dv-search").addEventListener("input", renderDividendList);
+$("#dv-search").addEventListener("input", () => { state.dvLimit = 30; renderDividendList(); });
 $("#dv-search-btn").addEventListener("click", () => { renderDividendList(); $("#dv-search").blur(); });
 $("#dv-tax").addEventListener("change", renderDividend);
 $("#dv-cur").addEventListener("change", renderDividend);
