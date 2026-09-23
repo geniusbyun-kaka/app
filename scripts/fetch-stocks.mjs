@@ -166,11 +166,11 @@ async function fetchOne(item) {
   }
   const change = price != null && prev != null ? price - prev : null;
   const d = price >= 100 ? 2 : 4;
-  // 국내 종목은 야후가 주는 이름을 우선한다 (코드 오기입 시 바로 드러나도록)
+  // 국내 종목은 목록의 한글 이름을 쓰고, 야후 이름은 코드 검증용으로 로그에만 남긴다
   const metaName = meta.shortName || meta.longName || daily.meta.shortName || daily.meta.longName;
-  const name = /\.(KS|KQ)$/.test(item.symbol) && metaName ? metaName : item.name;
+  if (/\.(KS|KQ)$/.test(item.symbol) && metaName) console.log(`[stocks] ${item.symbol} = ${item.name} (야후: ${metaName})`);
   return {
-    symbol: item.symbol, name, sector: item.sector, kind: item.kind,
+    symbol: item.symbol, name: item.name, sector: item.sector, kind: item.kind,
     currency: meta.currency || "USD", timezone: tz, updated: new Date().toISOString(),
     quote: {
       price: round(price, d), previousClose: round(prev, d), change: round(change, d),
