@@ -291,6 +291,7 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
     <button class="tab" role="tab" aria-selected="false" data-tab="backtest" id="tab-backtest">백테스트</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="stocks" id="tab-stocks">종목</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="dividend" id="tab-dividend">배당</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="crypto" id="tab-crypto">코인</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="compare" id="tab-compare">비교</button>
   </div>
 
@@ -494,6 +495,24 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
     </div>
   </section>
 
+  <!-- 코인 -->
+  <section class="panel" id="panel-crypto" role="tabpanel" hidden>
+    <div class="card">
+      <div class="card-head"><h3>대표 코인</h3><span class="small faint" id="coin-status"></span></div>
+      <div class="kpis" id="coin-tiles"></div>
+      <p class="desc" style="margin-top:10px">10분마다 갱신되는 지연 시세입니다. 코인 시장은 24시간 열려 있어 변동률은 전일 종가(UTC 기준) 대비입니다.</p>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>코인 검색</h3><span class="small faint" id="coin-count"></span></div>
+      <div class="dv-search-row">
+        <input id="coin-search" type="search" placeholder="코인 검색 (예: BTC, 도지, 솔라나)" autocomplete="off">
+        <button class="btn primary" id="coin-search-btn" type="button">검색</button>
+      </div>
+      <div class="stock-list"><table id="coin-table"><thead><tr><th>코인</th><th>이름</th><th>가격</th><th>원화 환산</th><th>전일비</th></tr></thead><tbody><tr><td class="txt faint" colspan="5">불러오는 중</td></tr></tbody></table></div>
+      <p class="small faint" style="margin-top:6px">코인을 누르면 종목 탭에서 장기 차트가 열립니다. 시세는 하루 한 번 갱신되는 스냅샷 기준입니다.</p>
+    </div>
+  </section>
+
   <!-- 배당 -->
   <section class="panel" id="panel-dividend" role="tabpanel" hidden>
     <div class="card">
@@ -616,6 +635,7 @@ function renderQuotes() {
   const nq = q["NQ=F"], fx = q["KRW=X"];
   const strip = (el, q, unit) => { if (!q) return; const dir = q.change > 0 ? "up" : q.change < 0 ? "down" : ""; el.innerHTML = `<span class="k">${el.id === "strip-nq" ? "NQ 선물" : "USD/KRW"}</span><span class="v num">${fmt.n(q.price)}${unit}</span><span class="d ${dir}">${dir === "up" ? "▲" : dir === "down" ? "▼" : ""}${fmt.n(Math.abs(q.change ?? 0))} (${fmt.signed(q.changePercent)}%)</span>`; };
   strip($("#strip-nq"), nq, ""); strip($("#strip-fx"), fx, "원");
+  if (!$("#panel-crypto").hidden) renderCoinTiles();
 }
 // ───────────────────────── Chart.js 공통 ─────────────────────────
 const crosshair = {
@@ -1076,11 +1096,12 @@ $("#sc-buffett").addEventListener("click", () => alert("워렌 버핏 투자 따
 // ───────────────────────── 탭 · 이벤트 ─────────────────────────
 function selectTab(name) {
   $$(".tab").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.tab === name)));
-  ["starter", "buffett", "news", "backtest", "stocks", "dividend", "compare"].forEach((p) => { $(`#panel-${p}`).hidden = p !== name; });
+  ["starter", "buffett", "news", "backtest", "stocks", "dividend", "crypto", "compare"].forEach((p) => { $(`#panel-${p}`).hidden = p !== name; });
   if (name === "dividend") ensureStockIndex().then(renderDividend).catch(() => {});
   if (name === "buffett") ensureFilings().catch(() => {});
   if (name === "starter") ensureLessons();
   if (name === "news") ensureNews();
+  if (name === "crypto") { renderCoinTiles(); ensureStockIndex().then(renderCoinList).catch(() => {}); }
   try { localStorage.setItem("md:tab", name); } catch {}
   if (name === "backtest" && !state.history) { /* 일봉이 오면 initBacktestForm 이 채움 */ }
   if (name === "backtest" && state.lastBacktest) renderBacktest();
@@ -1162,7 +1183,7 @@ async function loadStock(sym) {
 function renderStockList() {
   const idx = state.stockIndex; if (!idx) return;
   const q = $("#stock-search").value.trim().toLowerCase();
-  let items = idx.items.filter((x) => !q || x.symbol.toLowerCase().includes(q) || x.name.toLowerCase().includes(q));
+  let items = idx.items.filter((x) => x.kind !== "coin" && (!q || x.symbol.toLowerCase().includes(q) || x.name.toLowerCase().includes(q)));
   if (q) items.sort((a, b) => (a.symbol.toLowerCase().startsWith(q) ? 0 : 1) - (b.symbol.toLowerCase().startsWith(q) ? 0 : 1));
   const shown = items.slice(0, 200);
   const cls = (v) => v > 0 ? "pos" : v < 0 ? "neg" : "";
@@ -1450,6 +1471,37 @@ function renderBuffettQuarter() {
 $("#bf-quarter").addEventListener("change", renderBuffettQuarter);
 $("#panel-buffett").addEventListener("click", (e) => { const t = e.target.closest("[data-stock]"); if (t) { selectTab("stocks"); ensureStockIndex().then(() => selectStock(t.dataset.stock)).catch(() => {}); } });
 
+// ───────────────────────── 코인 ─────────────────────────
+const COIN_TILE_SYMS = ["BTC-USD", "ETH-USD", "XRP-USD", "SOL-USD", "USDC-USD"];
+function renderCoinTiles() {
+  const q = state.latest?.quotes || {}, fx = q["KRW=X"]?.price || null;
+  const coins = COIN_TILE_SYMS.map((sym) => q[sym]).filter(Boolean);
+  if (!coins.length) {
+    $("#coin-status").textContent = "";
+    $("#coin-tiles").innerHTML = `<div class="empty" style="grid-column:1/-1">코인 시세는 다음 시세 갱신(10분 이내)부터 표시됩니다</div>`;
+    return;
+  }
+  $("#coin-status").textContent = `${fmt.time(state.latest.updated)} 기준 (${fmt.ago(state.latest.updated)})`;
+  $("#coin-tiles").innerHTML = coins.map((c) => {
+    const cls = c.changePercent > 0 ? "pos" : c.changePercent < 0 ? "neg" : "";
+    const krw = fx && c.price != null ? ` · ${fmt.krw(c.price * fx)}` : "";
+    return kpi(c.name, `$${fmt.n(c.price, c.price < 10 ? 4 : 0)}`, `${fmt.signed(c.changePercent)}% · 전일 $${fmt.n(c.previousClose, c.previousClose < 10 ? 4 : 0)}${krw}`, cls);
+  }).join("");
+}
+function renderCoinList() {
+  const idx = state.stockIndex; if (!idx) return;
+  const q = $("#coin-search").value.trim().toLowerCase();
+  let items = idx.items.filter((x) => x.kind === "coin" && (!q || x.symbol.toLowerCase().includes(q) || x.name.toLowerCase().includes(q)));
+  items.sort((a, b) => (b.price || 0) - (a.price || 0));
+  const fx = dvFx();
+  const cls = (v) => v > 0 ? "pos" : v < 0 ? "neg" : "";
+  $("#coin-table tbody").innerHTML = items.length ? items.map((x) => `<tr data-coin="${x.symbol}"><td class="sym">${x.symbol.replace("-USD", "")}</td><td class="name">${x.name}</td><td>$${fmt.n(x.price, x.price < 10 ? 4 : 2)}</td><td>${fx && x.price != null ? fmt.krw(x.price * fx) : "–"}</td><td class="${cls(x.changePercent)}">${x.changePercent == null ? "–" : fmt.signed(x.changePercent) + "%"}</td></tr>`).join("") : `<tr><td class="txt faint" colspan="5">검색 결과가 없습니다</td></tr>`;
+  $("#coin-count").textContent = `${items.length}개`;
+}
+$("#coin-search").addEventListener("input", renderCoinList);
+$("#coin-search-btn").addEventListener("click", () => { renderCoinList(); $("#coin-search").blur(); });
+$("#coin-table").addEventListener("click", (e) => { const tr = e.target.closest("[data-coin]"); if (tr) { selectTab("stocks"); ensureStockIndex().then(() => selectStock(tr.dataset.coin)).catch(() => {}); } });
+
 // ───────────────────────── 배당 캘린더 ─────────────────────────
 const FREQ_LABEL = { monthly: "월배당", quarterly: "분기", semiannual: "반기", annual: "연 1회", irregular: "비정기" };
 function dvTax() { const v = Number($("#dv-tax").value); return isFinite(v) && v >= 0 ? v / 100 : 0.15; }
@@ -1573,7 +1625,7 @@ updateParamVisibility();
 const cachedLatest = cacheGet("md:latest"), cachedIntraday = cacheGet("md:intraday");
 if (cachedLatest) { state.latest = cachedLatest; state.intraday = cachedIntraday; renderQuotes(); }
 try { state.stockRange = localStorage.getItem("md:range") || "1Y"; const ss = localStorage.getItem("md:stock"); if (ss) state.stockSel = ss; } catch {}
-const TABS = ["starter", "buffett", "news", "backtest", "stocks", "dividend", "compare"];
+const TABS = ["starter", "buffett", "news", "backtest", "stocks", "dividend", "crypto", "compare"];
 let savedTab = "buffett"; try { savedTab = localStorage.getItem("md:tab") || "buffett"; } catch {}
 if (!TABS.includes(savedTab)) savedTab = "buffett";
 selectTab(savedTab);
