@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>마켓 데스크</title>
-<meta name="description" content="나스닥 100 선물과 원달러 환율 지연 시세, 그리고 일봉 기반 전략 백테스트">
+<meta name="description" content="워렌 버핏 따라하기와 일봉 기반 전략 백테스트">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
@@ -103,9 +103,11 @@ header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:spac
 @keyframes pulse{50%{opacity:.5}}
 
 /* tabs */
-.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:16px;overflow-x:auto}
-.tab{background:none;border:0;border-bottom:2px solid transparent;padding:8px 14px;font-size:14px;font-weight:500;color:var(--ink-2);margin-bottom:-1px;white-space:nowrap}
-.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+.tabs{display:flex;gap:4px;padding:4px;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);margin-bottom:16px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:1 0 auto;min-width:64px;background:none;border:0;border-radius:8px;padding:9px 16px;font-size:14.5px;font-weight:600;color:var(--ink-2);white-space:nowrap;transition:background .15s,color .15s}
+.tab:hover{background:var(--surface-2);color:var(--ink)}
+.tab[aria-selected="true"]{background:var(--accent);color:var(--accent-ink);box-shadow:0 1px 3px rgba(20,30,40,.18)}
 .panel{display:grid;gap:14px}
 .panel>*{min-width:0}
 
@@ -155,7 +157,7 @@ td.txt{font-family:var(--font)}
 .verdict strong{font-weight:600}
 
 /* stocks */
-.stock-tools{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr);gap:10px;margin-bottom:10px}
+.stock-tools{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin-bottom:10px}
 .stock-tools input,.stock-tools select,.cmp-inputs input,.cmp-inputs select,.cmp-dates input{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 10px;font-size:14px;min-width:0;width:100%}
 .stock-list{max-height:330px;overflow:auto;border:1px solid var(--line);border-radius:8px}
 .stock-list table{font-size:13px}
@@ -245,9 +247,6 @@ td .nm{font-family:var(--font);color:var(--ink-3);font-size:12px;margin-left:6px
 @media (max-width:520px){.dv-row{grid-template-columns:minmax(0,1fr) auto}.dv-row .dates{grid-column:1/-1}}
 
 /* guide */
-.guide p+p{margin-top:8px}
-.guide ol,.guide ul{margin:8px 0 0;padding-left:20px}
-.guide li+li{margin-top:4px}
 footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
 @media (max-width:480px){
   .tile .price{font-size:30px}
@@ -262,7 +261,7 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
   <header class="top">
     <div class="brand">
       <h1>마켓 데스크</h1>
-      <p>나스닥 100 선물 · 원달러 환율 · 전략 백테스트</p>
+      <p>워렌 버핏 따라하기 · 백테스트</p>
     </div>
     <div class="status">
       <span id="status"><span class="dot"></span>데이터 불러오는 중</span>
@@ -309,32 +308,12 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
   </section>
 
   <div class="tabs" role="tablist">
-    <button class="tab" role="tab" aria-selected="true" data-tab="stocks" id="tab-stocks">종목</button>
-    <button class="tab" role="tab" aria-selected="false" data-tab="compare" id="tab-compare">비교</button>
+    <button class="tab" role="tab" aria-selected="true" data-tab="buffett" id="tab-buffett">버핏</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="backtest" id="tab-backtest">백테스트</button>
-    <button class="tab" role="tab" aria-selected="false" data-tab="buffett" id="tab-buffett">버핏</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="stocks" id="tab-stocks">종목</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="dividend" id="tab-dividend">배당</button>
-    <button class="tab" role="tab" aria-selected="false" data-tab="quotes" id="tab-quotes">선물·환율</button>
-    <button class="tab" role="tab" aria-selected="false" data-tab="guide" id="tab-guide">안내</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="compare" id="tab-compare">비교</button>
   </div>
-
-  <!-- 시세 -->
-  <section class="panel" id="panel-quotes" role="tabpanel" hidden>
-    <div class="two">
-      <div class="card">
-        <div class="card-head"><h3>나스닥 100 선물 · 5분봉</h3><div class="legend"><span><i style="--c:var(--nq)"></i>NQ</span><span><i class="dash" style="--c:var(--ink-3)"></i>전일 종가</span></div></div>
-        <div class="chart"><canvas id="chart-nq"></canvas></div>
-      </div>
-      <div class="card">
-        <div class="card-head"><h3>원달러 환율 · 5분봉</h3><div class="legend"><span><i style="--c:var(--fx)"></i>USD/KRW</span><span><i class="dash" style="--c:var(--ink-3)"></i>전일 종가</span></div></div>
-        <div class="chart"><canvas id="chart-fx"></canvas></div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-head"><h3>최근 일봉 · 종가 기준</h3><span class="small faint">일봉 히스토리는 백테스트 데이터와 동일한 소스입니다</span></div>
-      <div class="tablewrap"><table id="daily-table"><thead><tr><th>날짜</th><th>NQ 종가</th><th>전일비</th><th>USD/KRW</th><th>전일비</th><th>NQ 원화 환산 (×20)</th></tr></thead><tbody><tr><td class="txt faint" colspan="6">일봉 데이터를 불러오는 중입니다</td></tr></tbody></table></div>
-    </div>
-  </section>
 
   <!-- 백테스트 -->
   <section class="panel" id="panel-backtest" role="tabpanel" hidden>
@@ -417,8 +396,6 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
       <div class="card-head"><h3>S&amp;P 500 전 종목 · 주요 ETF</h3><span class="small faint" id="stocks-status">목록 불러오는 중</span></div>
       <div class="stock-tools">
         <input id="stock-search" type="search" placeholder="티커 또는 회사명 검색 (예: AAPL, Nvidia, TQQQ)" autocomplete="off">
-        <select id="stock-sector"><option value="">전체 섹터</option></select>
-        <select id="stock-sort"><option value="symbol">티커순</option><option value="chg-desc">등락률 높은순</option><option value="chg-asc">등락률 낮은순</option><option value="name">이름순</option></select>
       </div>
       <div class="stock-list"><table id="stock-table"><thead><tr><th>티커</th><th>종목</th><th>섹터</th><th>가격</th><th>전일비</th></tr></thead><tbody><tr><td class="txt faint" colspan="5">불러오는 중</td></tr></tbody></table></div>
       <div class="small faint" style="margin-top:6px" id="stock-count"></div>
@@ -477,16 +454,16 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
     </div>
     <div class="card">
       <div class="card-head"><h3>계속 모으고 있는 종목</h3><span class="small faint">현재 보유 중이면서 최근 분기까지 연속으로 주식수를 늘린 종목. 4분기 이상은 진하게 표시</span></div>
-      <div class="tablewrap"><table id="bf-streak"><thead><tr><th>종목</th><th>연속 매수</th><th>최근 분기</th><th>최근 8분기</th><th>8분기 매수</th><th>보유 주식</th><th>비중</th></tr></thead><tbody></tbody></table></div>
+      <div class="tablewrap"><table id="bf-streak"><thead><tr><th>종목</th><th>연속 매수</th><th>최근 분기</th><th>최근 8분기 (오른쪽 최근)</th><th>8분기 매수</th><th>보유 주식</th><th>비중</th></tr></thead><tbody></tbody></table></div>
     </div>
     <div class="card">
-      <div class="card-head"><h3>꾸준히 사는 종목 (연속은 아님)</h3><span class="small faint">현재 보유 중이고 최근 8분기 중 2번 이상 매수했지만 연속은 끊긴 종목</span></div>
-      <div class="tablewrap"><table id="bf-often"><thead><tr><th>종목</th><th>8분기 매수</th><th>최근 8분기</th><th>마지막 매수</th><th>보유 주식</th><th>비중</th></tr></thead><tbody></tbody></table></div>
+      <div class="card-head"><h3>꾸준히 사는 종목 (연속은 아님)</h3><span class="small faint">현재 보유 중이고 최근 8분기 중 2번 이상 매수했지만 연속은 끊긴 종목. 가장 최근 매매가 매도인 종목은 제외</span></div>
+      <div class="tablewrap"><table id="bf-often"><thead><tr><th>종목</th><th>8분기 매수</th><th>최근 8분기 (오른쪽 최근)</th><th>마지막 매수</th><th>보유 주식</th><th>비중</th></tr></thead><tbody></tbody></table></div>
     </div>
     <div class="card">
       <div class="card-head"><h3>분기별 포트폴리오</h3><div class="bf-tools"><label for="bf-quarter" class="small">분기</label><select id="bf-quarter"></select></div></div>
       <div class="bf-sum" id="bf-sum"></div>
-      <div class="tablewrap"><table id="bf-holdings"><thead><tr><th>종목</th><th>비중</th><th>평가액</th><th>주식수</th><th>전분기 대비</th><th>최근 8분기</th></tr></thead><tbody></tbody></table></div>
+      <div class="tablewrap"><table id="bf-holdings"><thead><tr><th>종목</th><th>비중</th><th>평가액</th><th>주식수</th><th>전분기 대비</th><th>최근 8분기 (오른쪽 최근)</th></tr></thead><tbody></tbody></table></div>
     </div>
     <div class="card">
       <div class="card-head"><h3>포트폴리오 평가액 추이</h3><span class="small faint">13F 보고 기준, 분기 말</span></div>
@@ -539,41 +516,6 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
     </div>
   </section>
 
-  <!-- 안내 -->
-  <section class="panel guide" id="panel-guide" role="tabpanel" hidden>
-    <div class="card">
-      <h3>데이터는 어디서 오나요</h3>
-      <p style="margin-top:8px">GitHub Actions 가 10분마다 Yahoo Finance 에서 나스닥 100 선물(NQ=F)과 원달러 환율(KRW=X) 시세를 받아 이 저장소의 <code>data</code> 브랜치에 저장하고, 이 페이지는 그 파일을 읽어 보여줍니다. Yahoo 자체가 거래소 대비 10~15분 지연이라 화면의 시세는 실제보다 최대 20~25분 정도 늦을 수 있습니다. 페이지는 5분마다 자동으로 새 스냅샷을 확인합니다.</p>
-      <p>백테스트에 쓰는 일봉은 NQ 선물(2000년~), 나스닥 100 지수(1985년~), QQQ(1999년~), S&amp;P 500(1970년~), SPY(1993년~), 원달러 환율(2003년~)입니다. 원화 기준 백테스트는 환율 데이터가 있는 구간으로 자동으로 맞춰집니다.</p>
-      <p><strong>종목 탭</strong>은 별도 작업이 하루 한 번(미국 장 마감 후) S&amp;P 500 구성종목 전체와 주요 ETF 의 일봉 전체·최근 5일 5분봉을 받아 <code>stocks</code> 브랜치에 저장한 것을 읽습니다. 구성종목 목록은 위키백과의 S&amp;P 500 구성종목 표를 씁니다. 종목 시세는 전일 마감 기준이라 시세 탭보다 늦습니다. <strong>비교 탭</strong>은 여기 있는 종목과 시세 탭의 지수·선물을 같은 기간, 같은 시작 금액으로 나란히 놓고 봅니다.</p>
-      <p><strong>버핏 탭</strong>은 매주 한 번 SEC EDGAR 에서 버크셔 해서웨이의 13F-HR 보고서(최근 5년)를 받아 <code>filings</code> 브랜치에 저장한 것을 읽습니다. 같은 종목이 여러 자회사 계정으로 나뉘어 보고되므로 CUSIP 기준으로 합치고, 정정 보고서(13F-HR/A)는 원본에 반영합니다. 주식수가 2배 이상 뛰는데 평가액은 그만큼 늘지 않으면 액면분할로 보고 매수로 세지 않습니다. 티커는 OpenFIGI 로 CUSIP 에서 찾습니다.</p>
-      <p><strong>배당 탭</strong>은 종목 스냅샷에 함께 저장된 배당 이력(야후, 배당락일 기준 주당 금액)으로 만듭니다. 시가배당률은 최근 12개월 실제 지급 합계를 현재가로 나눈 값이고, "연 배당(예상)" 은 최근 정기 지급액의 중앙값에 연 지급 횟수를 곱한 값입니다(특별배당 제외 효과). 다음 배당락일은 최근 2년 지급 간격의 중앙값을 마지막 배당락일에 더해 계산한 예상일입니다. 지급일(입금일)은 무료 데이터에 없어 표시하지 않으며 보통 배당락 후 1~4주입니다.</p>
-      <p><strong>배당 재투자</strong>를 켜면 ETF 는 분배금을 받은 날 같은 ETF 를 다시 산 것으로 계산한 총수익 가격(Yahoo 의 수정 종가)을 쓰고, 지수는 총수익 지수(나스닥 100 은 XNDX, S&amp;P 500 은 SP500TR)로 바꿔 계산합니다. 끄면 배당을 뺀 가격 수익률만 봅니다. 장기 백테스트에서는 이 차이가 연 1~2%p, 20년이면 총수익에서 수십 %p 차이가 납니다. 선물(NQ)은 가격에 배당 기대치가 이미 반영되어 있어 이 옵션이 없습니다.</p>
-    </div>
-    <div class="card">
-      <h3>전략 설명</h3>
-      <ul>
-        <li><strong>바이 앤 홀드</strong> 시작일에 전액 매수 후 종료일까지 보유. 다른 전략의 비교 기준입니다.</li>
-        <li><strong>이동평균 교차</strong> 단기 이평이 장기 이평을 위로 뚫으면(골든크로스) 매수, 아래로 뚫으면(데드크로스) 전량 매도 후 현금 보유.</li>
-        <li><strong>이동평균 필터</strong> 종가가 장기 이평 위에 있을 때만 보유, 아래로 내려가면 현금. 큰 하락장을 피하는 대신 잦은 매매로 비용이 생깁니다.</li>
-        <li><strong>RSI 역추세</strong> RSI 가 매수 기준 이하로 떨어지면 매수, 매도 기준 이상으로 오르면 매도. 상승 추세 자산에서는 보유 기간이 짧아 수익을 놓치기 쉽습니다.</li>
-        <li><strong>적립식 매수</strong> 초기 투자금에 더해 매월 첫 거래일에 정해진 금액을 매수. 수익률은 납입 시점을 반영한 내부수익률(연환산)로 표시합니다.</li>
-      </ul>
-      <p>신호는 당일 종가로 계산하고 매매는 다음 거래일 종가에 체결되는 것으로 가정합니다(미래 정보 사용 방지). 선물의 롤오버 비용·증거금·레버리지는 반영하지 않으며, NQ 는 가격 지수처럼 취급합니다.</p>
-    </div>
-    <div class="card">
-      <h3>처음 설정할 때</h3>
-      <ol>
-        <li>저장소 Actions 탭에서 <strong>Market data snapshot</strong> 워크플로를 한 번 수동 실행(Run workflow)하면 <code>data</code> 브랜치가 생기고 시세가 표시됩니다.</li>
-        <li>예약 실행은 기본 브랜치의 워크플로만 동작하므로 이 폴더가 기본 브랜치에 있어야 합니다.</li>
-        <li>GitHub Pages 로 배포하면 폰에서도 열립니다. 공개 저장소는 Actions 실행이 무료입니다. 60일간 커밋이 없으면 GitHub 이 예약 실행을 자동으로 멈추니 가끔 Actions 탭에서 다시 켜주세요.</li>
-      </ol>
-    </div>
-    <div class="card">
-      <h3>유의</h3>
-      <p>이 페이지는 개인 참고용 도구이며 투자 권유가 아닙니다. 지연 시세와 무료 데이터 소스의 특성상 값이 누락되거나 틀릴 수 있으니 실제 주문 전에는 증권사 화면으로 확인하세요. 과거 성과는 미래 수익을 보장하지 않습니다.</p>
-    </div>
-  </section>
 
   <footer>데이터: Yahoo Finance (지연 시세). NQ 1계약 = 지수 × $20, 마이크로(MNQ) = 지수 × $2. 화면 색상은 한국식(상승 빨강, 하락 파랑)입니다.</footer>
 </div>
@@ -636,10 +578,9 @@ async function loadHistory() {
   try {
     const history = await getJson("history.json");
     state.history = history;
-    renderDailyTable(); initBacktestForm(); buildSymList();
+    initBacktestForm(); buildSymList();
   } catch (err) {
     $("#bt-datarange").textContent = `일봉 데이터를 불러오지 못했습니다 (${err.message})`;
-    $("#daily-table tbody").innerHTML = `<tr><td class="txt faint" colspan="6">일봉 데이터를 불러오지 못했습니다</td></tr>`;
   }
 }
 async function loadAll() { await loadLive(); await loadHistory(); }
@@ -657,8 +598,6 @@ function renderQuotes() {
     $('#tile-NQ [data-f="notional"]').textContent = `$${fmt.n(usd, 0)}`;
     $('#tile-FX [data-f="notional"]').textContent = fx?.price != null ? fmt.krw(usd * fx.price) : "–";
   }
-  drawIntradayChart("chart-nq", state.intraday?.series?.["NQ=F"], css("--nq"), 2);
-  drawIntradayChart("chart-fx", state.intraday?.series?.["KRW=X"], css("--fx"), 2);
 }
 function renderTile(tile, quote, series, cur) {
   const price = $(".price", tile), chg = $(".chg", tile);
@@ -734,31 +673,6 @@ function makeChart(id, config) {
   state.charts[id] = new Chart($(`#${id}`), config);
   return state.charts[id];
 }
-function drawIntradayChart(id, series, color, digits) {
-  if (!series?.c?.length) return;
-  const tz = series.timezone || "America/New_York";
-  const dayFmt = new Intl.DateTimeFormat("en-US", { timeZone: tz, month: "numeric", day: "numeric" });
-  const timeFmt = new Intl.DateTimeFormat("ko-KR", { timeZone: tz, month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
-  const days = series.t.map((t) => dayFmt.format(new Date(t * 1000)));
-  const dayStart = new Set(); const seen = new Set();
-  days.forEach((d, i) => { if (!seen.has(d)) { seen.add(d); dayStart.add(i); } });
-  const points = series.c.map((v, i) => ({ x: i, y: v }));
-  const prev = series.previousClose;
-  const datasets = [{ label: id === "chart-nq" ? "NQ" : "USD/KRW", data: points, borderColor: color, backgroundColor: color + "22", fill: true }];
-  if (prev != null) datasets.push({ label: "전일 종가", data: [{ x: 0, y: prev }, { x: points.length - 1, y: prev }], borderColor: css("--ink-3"), borderDash: [4, 4], borderWidth: 1, fill: false, pointHitRadius: 0 });
-  const opts = baseOptions(days, {
-    yFmt: (v) => fmt.n(v, 0),
-    tooltipTitle: (i) => timeFmt.format(new Date(series.t[i] * 1000)) + " (거래소 시간)",
-    tooltipLabel: (item) => item.datasetIndex === 0 ? `${fmt.n(item.parsed.y, digits)}${prev != null ? `  (${fmt.pct(item.parsed.y / prev - 1)} 전일비)` : ""}` : `전일 종가 ${fmt.n(prev, digits)}`,
-    xTick: (i) => dayStart.has(i) || i === 0 ? days[i] : "",
-  });
-  opts.scales.x.ticks.autoSkip = true; opts.scales.x.ticks.autoSkipPadding = 24; opts.scales.x.ticks.maxTicksLimit = undefined;
-  opts.scales.x.afterBuildTicks = (scale) => { // 날짜 경계마다 눈금, 너무 붙은 것은 생략
-    const minGap = Math.ceil(points.length * 56 / Math.max(scale.chart.width || 320, 1)); let last = -Infinity;
-    scale.ticks = [...dayStart].filter((v) => { if (v - last < minGap) return false; last = v; return true; }).map((v) => ({ value: v }));
-  };
-  makeChart(id, { type: "line", data: { datasets }, options: opts });
-}
 
 // ───────────────────────── 일봉 테이블 ─────────────────────────
 function alignFx(dates, fxSym) {
@@ -771,21 +685,6 @@ function alignFx(dates, fxSym) {
   }
   return out;
 }
-function renderDailyTable() {
-  const h = state.history?.symbols; if (!h) return;
-  const nq = h["NQ=F"], fx = h["KRW=X"];
-  if (!nq) { $("#daily-table tbody").innerHTML = `<tr><td class="txt faint" colspan="6">이번 스냅샷에 NQ 일봉이 없습니다</td></tr>`; return; }
-  const n = 12, start = Math.max(1, nq.dates.length - n);
-  const fxAligned = fx ? alignFx(nq.dates, fx) : [];
-  const rows = [];
-  for (let i = nq.dates.length - 1; i >= start; i--) {
-    const c = nq.close[i], p = nq.close[i - 1], r = fxAligned[i], rp = fxAligned[i - 1];
-    const cls = (v) => v > 0 ? "pos" : v < 0 ? "neg" : "";
-    rows.push(`<tr><td class="txt">${nq.dates[i]}</td><td>${fmt.n(c)}</td><td class="${cls(c - p)}">${fmt.pct(c / p - 1)}</td><td>${fmt.n(r)}</td><td class="${cls(r - rp)}">${r && rp ? fmt.pct(r / rp - 1) : "–"}</td><td>${r ? fmt.krw(c * NQ_MULTIPLIER * r) : "–"}</td></tr>`);
-  }
-  $("#daily-table tbody").innerHTML = rows.join("");
-}
-
 // ───────────────────────── 백테스트 엔진 ─────────────────────────
 function sma(arr, n) {
   const out = new Array(arr.length).fill(null); let sum = 0;
@@ -1126,11 +1025,10 @@ function verdict(cfg, m, mb, data, note, mBench, second) {
 // ───────────────────────── 탭 · 이벤트 ─────────────────────────
 function selectTab(name) {
   $$(".tab").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.tab === name)));
-  ["quotes", "stocks", "compare", "backtest", "buffett", "dividend", "guide"].forEach((p) => { $(`#panel-${p}`).hidden = p !== name; });
+  ["buffett", "backtest", "stocks", "dividend", "compare"].forEach((p) => { $(`#panel-${p}`).hidden = p !== name; });
   if (name === "dividend") ensureStockIndex().then(renderDividend).catch(() => {});
   if (name === "buffett") ensureFilings().catch(() => {});
   try { localStorage.setItem("md:tab", name); } catch {}
-  if (name === "quotes") renderQuotes();
   if (name === "backtest" && !state.history) { /* 일봉이 오면 initBacktestForm 이 채움 */ }
   if (name === "backtest" && state.lastBacktest) renderBacktest();
   if (name === "stocks") ensureStockIndex().catch(() => {});
@@ -1148,15 +1046,12 @@ $("#bt-currency").addEventListener("change", onCurrencyChange);
 $("#bt-asset").addEventListener("change", () => { if (state.history) refreshSeriesInfo(); });
 $("#bt-div").addEventListener("change", () => { if (state.history) refreshSeriesInfo(); });
 $$(".chip[data-years]").forEach((c) => c.addEventListener("click", () => setYears(+c.dataset.years)));
-window.addEventListener("resize", () => { if (!$("#panel-quotes").hidden) renderQuotes(); });
 const rerenderAll = () => { renderQuotes(); if (state.lastBacktest) renderBacktest(); if (state.stockSel) renderStockDetail(); if (state.cmpLast) renderCompare(); if (state.filings) renderBuffett(); if (state.dvcLast) runDividendCompare(); };
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", rerenderAll);
 new MutationObserver(rerenderAll).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 // 종목 탭 이벤트
 ["input", "change"].forEach((ev) => { $("#stock-search").addEventListener(ev, renderStockList); });
 $("#stock-search").addEventListener("keydown", (e) => { if (e.key === "Enter") { const first = $("#stock-table tbody tr[data-sym]"); if (first) selectStock(first.dataset.sym); } });
-$("#stock-sector").addEventListener("change", renderStockList);
-$("#stock-sort").addEventListener("change", renderStockList);
 $("#stock-table").addEventListener("click", (e) => { const tr = e.target.closest("tr[data-sym]"); if (tr) selectStock(tr.dataset.sym); });
 $("#stock-detail").addEventListener("click", (e) => {
   const r = e.target.closest("[data-range]"); if (r) { state.stockRange = r.dataset.range; try { localStorage.setItem("md:range", state.stockRange); } catch {} renderStockDetail(); }
@@ -1189,8 +1084,6 @@ let stockIndexPromise = null;
 function ensureStockIndex() {
   if (!stockIndexPromise) stockIndexPromise = getStocksJson("index.json").then((idx) => {
     state.stockIndex = idx;
-    const sectors = [...new Set(idx.items.map((x) => x.sector))].sort((a, b) => a.localeCompare(b));
-    $("#stock-sector").innerHTML = `<option value="">전체 섹터</option>` + sectors.map((s) => `<option value="${s}">${s}</option>`).join("");
     $("#stocks-status").textContent = `${idx.count}종목 · ${fmt.time(idx.updated)} 기준${idx.failed?.length ? ` · ${idx.failed.length}개 갱신 실패` : ""}`;
     buildSymList();
     renderStockList();
@@ -1215,12 +1108,9 @@ async function loadStock(sym) {
 }
 function renderStockList() {
   const idx = state.stockIndex; if (!idx) return;
-  const q = $("#stock-search").value.trim().toLowerCase(), sector = $("#stock-sector").value, sort = $("#stock-sort").value;
-  let items = idx.items.filter((x) => (!sector || x.sector === sector) && (!q || x.symbol.toLowerCase().includes(q) || x.name.toLowerCase().includes(q)));
+  const q = $("#stock-search").value.trim().toLowerCase();
+  let items = idx.items.filter((x) => !q || x.symbol.toLowerCase().includes(q) || x.name.toLowerCase().includes(q));
   if (q) items.sort((a, b) => (a.symbol.toLowerCase().startsWith(q) ? 0 : 1) - (b.symbol.toLowerCase().startsWith(q) ? 0 : 1));
-  else if (sort === "chg-desc") items.sort((a, b) => (b.changePercent ?? -1e9) - (a.changePercent ?? -1e9));
-  else if (sort === "chg-asc") items.sort((a, b) => (a.changePercent ?? 1e9) - (b.changePercent ?? 1e9));
-  else if (sort === "name") items.sort((a, b) => a.name.localeCompare(b.name));
   const shown = items.slice(0, 200);
   const cls = (v) => v > 0 ? "pos" : v < 0 ? "neg" : "";
   $("#stock-table tbody").innerHTML = shown.length ? shown.map((x) => `<tr data-sym="${x.symbol}" aria-selected="${x.symbol === state.stockSel}"><td class="sym">${x.symbol}</td><td class="name">${x.name}</td><td class="txt small faint">${x.sector}</td><td>${fmt.n(x.price)}</td><td class="${cls(x.changePercent)}">${x.changePercent == null ? "–" : fmt.signed(x.changePercent) + "%"}</td></tr>`).join("") : `<tr><td class="txt faint" colspan="5">검색 결과가 없습니다</td></tr>`;
@@ -1440,6 +1330,8 @@ function analyzeFilings(f) {
     h.hist = last8;
     h.buys8 = last8.filter(isBuy).length;
     h.lastBuy = [...qs].reverse().find((q) => isBuy(q.map.get(h.cusip)?.change))?.period || null;
+    // 가장 최근의 매매(매수·매도, 변동 없음·분할 제외)가 매도인지
+    h.lastTrade = [...qs].reverse().map((q) => q.map.get(h.cusip)?.change).find((c) => isBuy(c) || c === "dec") || null;
     h.since = qs.find((q) => q.map.has(h.cusip))?.period || null;
   }
   return { ...f, quarters: qs, latest };
@@ -1465,7 +1357,7 @@ function renderBuffett() {
   const L = f.latest, qs = f.quarters;
   $("#bf-status").textContent = `${L.period} 분기 · ${L.filed} 공시 · 스냅샷 ${fmt.ago(f.updated)}`;
   const streaks = L.holdings.filter((h) => h.streak >= 2).sort((a, b) => b.streak - a.streak || b.weight - a.weight);
-  const often = L.holdings.filter((h) => h.streak < 2 && h.buys8 >= 2).sort((a, b) => b.buys8 - a.buys8 || b.weight - a.weight);
+  const often = L.holdings.filter((h) => h.streak < 2 && h.buys8 >= 2 && h.lastTrade !== "dec").sort((a, b) => b.buys8 - a.buys8 || b.weight - a.weight);
   const newOnes = L.holdings.filter((h) => h.change === "new");
   $("#bf-head").innerHTML = [
     kpi("포트폴리오 평가액", fmtB(L.totalValue), `${L.count}종목 · ${L.period} 기준`),
@@ -1614,7 +1506,9 @@ const cachedLatest = cacheGet("md:latest"), cachedIntraday = cacheGet("md:intrad
 if (cachedLatest) { state.latest = cachedLatest; state.intraday = cachedIntraday; renderQuotes(); }
 try { state.stockRange = localStorage.getItem("md:range") || "1Y"; const ss = localStorage.getItem("md:stock"); if (ss) state.stockSel = ss; } catch {}
 try { if (localStorage.getItem("md:tiles") === "1") { $("#tiles").hidden = false; $("#strip").setAttribute("aria-expanded", "true"); } } catch {}
-let savedTab = "stocks"; try { savedTab = localStorage.getItem("md:tab") || "stocks"; } catch {}
+const TABS = ["buffett", "backtest", "stocks", "dividend", "compare"];
+let savedTab = "buffett"; try { savedTab = localStorage.getItem("md:tab") || "buffett"; } catch {}
+if (!TABS.includes(savedTab)) savedTab = "buffett";
 selectTab(savedTab);
 loadAll().then(() => { if (!$("#panel-compare").hidden && !state.cmpLast) runCompare(true); });
 })();
