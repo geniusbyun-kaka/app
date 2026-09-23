@@ -150,6 +150,9 @@ td.txt{font-family:var(--font)}
 .dv-cats .chip{flex:1 1 auto;font-size:13.5px;font-weight:600;padding:8px 14px;text-align:center}
 .dv-cats .chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .dv-cats#dv-market .chip{font-size:14.5px;padding:9px 14px}
+.dv-toggle{width:100%;text-align:center;font-weight:600;padding:9px 12px}
+.dv-toggle[aria-expanded="false"]::after{content:" ▾"}
+.dv-toggle[aria-expanded="true"]::after{content:" ▴"}
 .strategy-desc{font-size:13px;color:var(--ink-2);background:var(--surface-2);border-radius:8px;padding:10px 12px;margin-top:12px}
 
 /* KPI */
@@ -531,8 +534,8 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
         <div class="field"><label for="dv-tax">세율 %</label><input id="dv-tax" type="number" min="0" max="60" step="0.1" value="15"></div>
         <div class="field"><label for="dv-cur">표시 통화</label><select id="dv-cur"><option value="KRW">원화</option><option value="USD">달러</option></select></div>
       </div>
-      <div class="small faint" style="margin-bottom:8px" id="dv-count"></div>
-      <div class="dv-list" id="dv-list"></div>
+      <button class="btn dv-toggle" id="dv-toggle" type="button" aria-expanded="false">종목 목록 보기</button>
+      <div class="dv-list" id="dv-list" hidden></div>
       <div class="form-actions" style="margin-top:10px"><button class="btn" id="dv-more" type="button" hidden>더 보기</button></div>
     </div>
     <div class="card">
@@ -1589,9 +1592,13 @@ function renderDividendList() {
   else list.sort((a, b) => a.symbol.localeCompare(b.symbol));
   const limit = state.dvLimit || 30;
   const shown = list.slice(0, limit);
-  $("#dv-count").textContent = list.length > shown.length ? `${list.length}종목 중 ${shown.length}개 표시` : `${list.length}종목`;
+  const open = !!state.dvListOpen;
+  const tg = $("#dv-toggle");
+  tg.setAttribute("aria-expanded", String(open));
+  tg.textContent = open ? `종목 목록 접기 (${list.length}종목)` : `종목 목록 보기 (${list.length}종목)`;
+  $("#dv-list").hidden = !open;
   const more = $("#dv-more");
-  more.hidden = list.length <= shown.length;
+  more.hidden = !open || list.length <= shown.length;
   if (!more.hidden) more.textContent = `더 보기 (${list.length - shown.length}개 남음)`;
   $("#dv-list").innerHTML = shown.length ? shown.map((x) => {
     const d = x.div, annual = d.regular * d.perYear, C = itemCur(x);
@@ -1632,11 +1639,12 @@ async function runDividendCompare() {
   $("#dvc-results").hidden = false;
 }
 $$("[data-mkt]").forEach((c) => c.addEventListener("click", () => { state.dvMarket = c.dataset.mkt; state.dvSub = "all"; state.dvLimit = 30; $$("[data-mkt]").forEach((x) => x.setAttribute("aria-pressed", String(x === c))); renderDvSubChips(); renderDividend(); }));
-$("#dv-cat").addEventListener("change", () => { state.dvSub = $("#dv-cat").value; state.dvLimit = 30; renderDividendList(); });
+$("#dv-toggle").addEventListener("click", () => { state.dvListOpen = !state.dvListOpen; renderDividendList(); });
+$("#dv-cat").addEventListener("change", () => { state.dvSub = $("#dv-cat").value; state.dvLimit = 30; state.dvListOpen = true; renderDividendList(); });
 $("#dv-more").addEventListener("click", () => { state.dvLimit = (state.dvLimit || 30) + 50; renderDividendList(); });
 $("#dv-sort").addEventListener("change", renderDividendList);
-$("#dv-search").addEventListener("input", () => { state.dvLimit = 30; renderDividendList(); });
-$("#dv-search-btn").addEventListener("click", () => { renderDividendList(); $("#dv-search").blur(); });
+$("#dv-search").addEventListener("input", () => { state.dvLimit = 30; state.dvListOpen = true; renderDividendList(); });
+$("#dv-search-btn").addEventListener("click", () => { state.dvListOpen = true; renderDividendList(); $("#dv-search").blur(); });
 $("#dv-tax").addEventListener("change", renderDividend);
 $("#dv-cur").addEventListener("change", renderDividend);
 $("#panel-dividend").addEventListener("click", (e) => { const t = e.target.closest("[data-stock]"); if (t) { selectTab("stocks"); selectStock(t.dataset.stock); } });
