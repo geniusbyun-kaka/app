@@ -225,6 +225,22 @@ td .tk.plain{color:var(--ink);cursor:default}
 td .nm{font-family:var(--font);color:var(--ink-3);font-size:12px;margin-left:6px}
 
 /* 투자 대가 구독 모달 */
+.btn.primary.compact{padding:6px 14px;font-size:13px}
+.plan-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.plan-card{text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:10px;transition:border-color .15s,transform .15s;position:relative}
+.plan-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.plan-card.hot{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.plan-badge{position:absolute;top:-10px;right:14px;background:var(--accent);color:var(--accent-ink);font-size:11px;font-weight:700;padding:2px 10px;border-radius:999px;letter-spacing:.03em}
+.plan-name{font-weight:700;font-size:16px;color:var(--ink)}
+.plan-price{font-family:var(--mono);font-size:24px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+.plan-price small{font-size:12px;font-weight:500;color:var(--ink-3);font-family:var(--font)}
+.plan-feats{margin:0;padding:0;list-style:none;display:grid;gap:6px;font-size:13px;color:var(--ink-2);line-height:1.55}
+.plan-feats li{padding-left:20px;position:relative}
+.plan-feats li::before{content:"✓";position:absolute;left:2px;color:var(--accent);font-weight:700}
+.plan-cta{margin-top:auto;background:var(--accent);color:var(--accent-ink);border:0;border-radius:8px;padding:9px 0;font-size:14px;font-weight:600;text-align:center}
+.plan-card:not(.hot) .plan-cta{background:var(--surface-2);color:var(--ink)}
+.plan-note{font-size:11.5px;color:var(--ink-3)}
+.gu-plan-tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);vertical-align:2px;margin-left:8px}
 .modal-ov{position:fixed;inset:0;z-index:50;background:rgba(8,13,17,.55);overflow-y:auto;padding:24px 16px;display:flex;align-items:flex-start;justify-content:center;backdrop-filter:blur(2px)}
 .modal{background:var(--bg);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);width:100%;max-width:780px;margin:3vh 0 24px;display:flex;flex-direction:column;max-height:calc(100vh - 60px)}
 .modal-head{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line);flex:0 0 auto}
@@ -301,6 +317,7 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
     <div class="status">
       <span id="status"><span class="dot"></span>데이터 불러오는 중</span>
       <button class="btn" id="refresh" type="button">새로고침</button>
+      <button class="btn primary compact" id="sub-open" type="button">구독하기</button>
     </div>
   </header>
 
@@ -1129,17 +1146,37 @@ function runStarterCalc() {
 }
 $("#sc-run").addEventListener("click", runStarterCalc);
 // 투자 대가 따라하기 구독 모달
-const GURUS = [
-  { id: "buffett", name: "워렌 버핏", org: "버크셔 해서웨이", desc: "가치투자의 대가. 분기 공시(13F)를 바탕으로 버크셔가 연속으로 사 모으는 종목과 그 근거를 보여드립니다.", ready: true },
-  { id: "ackman", name: "빌 애크먼", org: "퍼싱 스퀘어", desc: "소수 종목에 집중하는 행동주의 투자자. 퍼싱 스퀘어 13F 기반 추천을 준비 중입니다." },
-  { id: "klarman", name: "세스 클라르만", org: "바우포스트 그룹", desc: "『안전마진』의 저자. 바우포스트 13F 기반 추천을 준비 중입니다." },
-  { id: "marks", name: "하워드 막스", org: "오크트리 캐피털", desc: "『투자에 대한 생각』의 저자. 오크트리 13F 기반 추천을 준비 중입니다." },
+const PLANS = [
+  { id: "pro", name: "Pro 구독형", price: "3만원", feats: ["투자 대가들을 따라하며 추천종목 받기"] },
+  { id: "max", name: "Max 구독형", price: "9.9만원", hot: true, feats: ["투자 대가들의 추천종목 받기", "원하는 매입 가격 실시간 알림", "AI 추천 투자 포트폴리오 구성", "나스닥 레버리지 투자법 등 훨씬 더 다양한 투자방안 추천"] },
 ];
-function openGuruModal() { $("#gu-modal").hidden = false; document.body.style.overflow = "hidden"; renderGuruMenu(); }
+const GURUS = [
+  { id: "buffett", name: "워렌 버핏", org: "버크셔 해서웨이", filer: "버크셔", ready: true, desc: "가치투자의 대가. 분기 공시(13F)를 바탕으로 버크셔가 연속으로 사 모으는 종목과 그 근거를 보여드립니다." },
+  { id: "ackman", name: "빌 애크먼", org: "퍼싱 스퀘어", filer: "퍼싱 스퀘어", ready: true, file: "pershing.json", desc: "소수 종목에 집중하는 행동주의 투자자. 퍼싱 스퀘어 13F를 바탕으로 사 모으는 종목과 그 근거를 보여드립니다." },
+  { id: "klarman", name: "세스 클라르만", org: "바우포스트 그룹", filer: "바우포스트", desc: "『안전마진』의 저자. 바우포스트 13F 기반 추천을 준비 중입니다." },
+  { id: "marks", name: "하워드 막스", org: "오크트리 캐피털", filer: "오크트리", desc: "『투자에 대한 생각』의 저자. 오크트리 13F 기반 추천을 준비 중입니다." },
+];
+let guruPlan = null;
+function openGuruModal() { $("#gu-modal").hidden = false; document.body.style.overflow = "hidden"; renderPlanMenu(); }
 function closeGuruModal() { $("#gu-modal").hidden = true; document.body.style.overflow = ""; }
-function renderGuruMenu() {
-  $("#gu-title").textContent = "투자 대가 따라하기";
+function renderPlanMenu() {
+  $("#gu-title").textContent = "구독 서비스";
   $("#gu-body").innerHTML = `
+    <p class="desc">투자 대가들의 실제 매수를 따라가는 구독 서비스입니다. 원하는 구독 형태를 선택하세요.</p>
+    <div class="plan-grid">${PLANS.map((p) => `<button class="plan-card ${p.hot ? "hot" : ""}" type="button" data-plan="${p.id}">
+      ${p.hot ? '<span class="plan-badge">인기</span>' : ""}
+      <span class="plan-name">${p.name}</span>
+      <span class="plan-price">${p.price}<small> / 월</small></span>
+      <ul class="plan-feats">${p.feats.map((t) => `<li>${t}</li>`).join("")}</ul>
+      <span class="plan-cta">${p.name} 시작하기</span>
+      <span class="plan-note">데모 화면이라 실제 결제는 연결되어 있지 않습니다</span>
+    </button>`).join("")}</div>`;
+}
+function renderGuruMenu() {
+  const plan = PLANS.find((p) => p.id === guruPlan);
+  $("#gu-title").innerHTML = `투자 대가 따라하기${plan ? `<span class="gu-plan-tag">${plan.name}</span>` : ""}`;
+  $("#gu-body").innerHTML = `
+    <button class="btn gu-back" type="button" id="gu-back-plans">← 구독 선택으로</button>
     <p class="desc">대가들이 실제로 사 모으는 종목을 분기 공시(13F) 기준으로 받아보는 구독 기능입니다. 받아보고 싶은 투자자를 선택하세요.</p>
     <div class="gu-grid">${GURUS.map((g) => `<button class="gu-card" type="button" data-guru="${g.id}">
       <span class="gu-name">${g.name} 추천 종목 받아보기</span>
@@ -1147,6 +1184,12 @@ function renderGuruMenu() {
       <span class="gu-desc">${g.desc}</span>
       <span class="gu-cta">${g.ready ? "추천 종목 보기 →" : "자세히 →"}</span>
     </button>`).join("")}</div>`;
+}
+const guruFilings = {};
+function ensureGuruFilings(g) {
+  if (!g.file) return ensureFilings();
+  if (guruFilings[g.id]) return Promise.resolve(guruFilings[g.id]);
+  return fetch(`${FILINGS_BASE}${g.file}?t=${Date.now()}`, { cache: "no-store" }).then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }).then((f) => (guruFilings[g.id] = analyzeFilings(f)));
 }
 const guBackBtn = `<button class="btn gu-back" type="button" id="gu-back">← 목록으로</button>`;
 function renderGuruDetail(id) {
@@ -1156,18 +1199,17 @@ function renderGuruDetail(id) {
     $("#gu-body").innerHTML = `${guBackBtn}
       <div class="card"><div class="card-head"><h3>${g.name} · ${g.org}</h3><span class="small faint">준비 중</span></div>
       <p class="desc">${g.desc}</p>
-      <p class="desc" style="margin-top:8px">이 투자자의 13F 데이터는 아직 수집 전입니다. 준비되는 대로 이곳에서 추천 종목과 매수 근거를 보여드립니다. 지금은 워렌 버핏 추천 종목을 먼저 이용해 보세요.</p></div>`;
+      <p class="desc" style="margin-top:8px">이 투자자의 13F 데이터는 아직 수집 전입니다. 준비되는 대로 이곳에서 추천 종목과 매수 근거를 보여드립니다. 지금은 워렌 버핏이나 빌 애크먼 추천 종목을 먼저 이용해 보세요.</p></div>`;
     return;
   }
-  $("#gu-body").innerHTML = `${guBackBtn}<div class="empty">버크셔 13F 데이터를 불러오는 중…</div>`;
-  ensureFilings().then(renderBuffettPicks).catch(() => {
+  $("#gu-body").innerHTML = `${guBackBtn}<div class="empty">${g.org} 13F 데이터를 불러오는 중…</div>`;
+  ensureGuruFilings(g).then((f) => renderGuruPicks(g, f)).catch(() => {
     if ($("#gu-modal").hidden) return;
-    $("#gu-body").innerHTML = `${guBackBtn}<div class="empty">13F 데이터를 불러오지 못했습니다. 잠시 뒤 다시 시도해 주세요.</div>`;
+    $("#gu-body").innerHTML = `${guBackBtn}<div class="empty">${g.org} 13F 데이터를 불러오지 못했습니다. 잠시 뒤 다시 시도해 주세요.<br><span class="small faint">스냅샷이 아직 없다면 저장소 Actions 탭에서 13F snapshot 워크플로를 한 번 실행해야 합니다.</span></div>`;
   });
 }
-function renderBuffettPicks() {
-  if ($("#gu-modal").hidden) return;
-  const f = state.filings; if (!f) return;
+function renderGuruPicks(g, f) {
+  if ($("#gu-modal").hidden || !f) return;
   const L = f.latest;
   const streaks = L.holdings.filter((h) => h.streak >= 2).sort((a, b) => b.streak - a.streak || b.weight - a.weight);
   const often = L.holdings.filter((h) => h.streak < 2 && h.buys8 >= 2 && !h.sold8).sort((a, b) => b.buys8 - a.buys8 || b.weight - a.weight);
@@ -1176,11 +1218,11 @@ function renderBuffettPicks() {
     return `<span class="tk2 ${inIdx ? "" : "plain"}" ${inIdx ? `data-stock="${h.ticker}"` : ""}>${h.ticker || "–"}</span><span class="nm2">${h.name}</span>`;
   };
   const why = (h) => {
-    const parts = [`버크셔가 최근 분기까지 <strong>${h.streak}분기 연속</strong>으로 이 종목을 사 모으고 있습니다.`];
+    const parts = [`${g.filer}가 최근 분기까지 <strong>${h.streak}분기 연속</strong>으로 이 종목을 사 모으고 있습니다.`];
     if (h.change === "inc") parts.push(`이번 분기(${L.period})에도 주식수를 <strong>+${fmt.n(h.pct * 100, 1)}%</strong> 늘렸고, 최근 8분기 중 <strong>${h.buys8}번</strong> 매수했습니다.`);
     else if (h.change === "new") parts.push(`이번 분기(${L.period})에 새로 편입한 종목이고, 최근 8분기 중 <strong>${h.buys8}번</strong> 매수했습니다.`);
     else parts.push(`최근 8분기 중 <strong>${h.buys8}번</strong> 매수했습니다.`);
-    parts.push(`현재 버크셔 포트폴리오의 <strong>${fmt.n(h.weight * 100, 1)}%</strong>를 차지합니다.`);
+    parts.push(`현재 ${g.filer} 포트폴리오의 <strong>${fmt.n(h.weight * 100, 1)}%</strong>를 차지합니다.`);
     return parts.join(" ");
   };
   const pick = (h) => `<div class="gu-pick">
@@ -1190,18 +1232,23 @@ function renderBuffettPicks() {
   </div>`;
   $("#gu-body").innerHTML = [
     guBackBtn,
-    `<p class="desc"><strong>${L.period}</strong> 분기 13F 공시(${L.filed}) 기준입니다. 버크셔가 최근 분기까지 <strong>2분기 이상 연속으로</strong> 주식수를 늘린 종목을 추천으로 보여드립니다. 티커를 누르면 종목 차트로 이동합니다.</p>`,
-    streaks.length ? streaks.map(pick).join("") : `<div class="empty">최근 분기까지 2분기 이상 연속 매수한 종목이 없습니다. 아래 꾸준히 사는 종목을 참고하세요.</div>`,
+    `<p class="desc"><strong>${L.period}</strong> 분기 13F 공시(${L.filed}) 기준입니다. ${g.filer}가 최근 분기까지 <strong>2분기 이상 연속으로</strong> 주식수를 늘린 종목을 추천으로 보여드립니다. 티커를 누르면 종목 차트로 이동합니다.</p>`,
+    streaks.length ? streaks.map(pick).join("") : `<div class="empty">최근 분기까지 2분기 이상 연속 매수한 종목이 없습니다. 아래 꾸준히 사는 종목과 포트폴리오를 참고하세요.</div>`,
     often.length ? `<div class="card"><div class="card-head"><h3>참고 · 꾸준히 사는 종목</h3><span class="small faint">연속은 아니지만 최근 8분기 중 2번 이상 매수, 그 사이 매도 없음</span></div>
       <div class="tablewrap"><table><thead><tr><th>종목</th><th>8분기 매수</th><th>최근 8분기</th><th>마지막 매수</th><th>비중</th></tr></thead><tbody>${often.map((h) => `<tr><td class="txt">${tickerHtml(h)}</td><td>${h.buys8}회</td><td>${histHtml(h.hist)}</td><td class="txt">${h.lastBuy || "–"}</td><td>${fmt.n(h.weight * 100, 1)}%</td></tr>`).join("")}</tbody></table></div></div>` : "",
+    `<div class="card"><div class="card-head"><h3>${g.filer} 포트폴리오 TOP 10</h3><span class="small faint">${L.period} 기준 · 총 ${L.count}종목 · ${fmtB(L.totalValue)}</span></div>
+      <div class="tablewrap"><table><thead><tr><th>종목</th><th>비중</th><th>평가액</th><th>전분기 대비</th></tr></thead><tbody>${L.holdings.slice(0, 10).map((h) => `<tr><td class="txt">${tickerHtml(h)}</td><td>${fmt.n(h.weight * 100, 1)}%</td><td>${fmtB(h.value)}</td><td class="txt">${changeHtml(h)}</td></tr>`).join("")}</tbody></table></div></div>`,
     `<p class="small faint">13F는 분기 말 보유분이 45일 뒤에 공개되는 자료라 실제 매매보다 늦습니다. 투자 판단과 책임은 본인에게 있습니다.</p>`,
   ].join("");
 }
 $("#sc-buffett").addEventListener("click", openGuruModal);
+$("#sub-open").addEventListener("click", openGuruModal);
 $("#gu-close").addEventListener("click", closeGuruModal);
 $("#gu-modal").addEventListener("click", (e) => {
   if (e.target === e.currentTarget) return closeGuruModal();
   if (e.target.closest("#gu-back")) return renderGuruMenu();
+  if (e.target.closest("#gu-back-plans")) return renderPlanMenu();
+  const plan = e.target.closest("[data-plan]"); if (plan) { guruPlan = plan.dataset.plan; return renderGuruMenu(); }
   const card = e.target.closest("[data-guru]"); if (card) return renderGuruDetail(card.dataset.guru);
   const t = e.target.closest("[data-stock]"); if (t) { closeGuruModal(); selectTab("stocks"); ensureStockIndex().then(() => selectStock(t.dataset.stock)).catch(() => {}); }
 });
