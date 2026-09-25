@@ -379,20 +379,6 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
       <p class="small faint" style="margin-top:12px"><a href="https://github.com/geniusbyun-kaka/app/edit/claude/baby-sleep-tracking-app-23p7s7/invest/lessons.json" target="_blank" rel="noopener">글 관리 (관리자 전용)</a> · 저장소 관리자만 편집할 수 있고, 저장하면 잠시 뒤 이 페이지에 반영됩니다</p>
     </div>
     <div class="card">
-      <div class="card-head"><h3>S&amp;P 500 투자 따라하기</h3><span class="small faint">매월 일정 금액 적립 시뮬레이션</span></div>
-      <p class="desc">미국 대표 500개 기업에 나눠 투자하는 가장 기본적인 방법입니다. 수익률 <strong>연 7%</strong>는 S&amp;P 500의 지난 100년 평균에서 물가상승률을 뺀 실질 수익률입니다.</p>
-      <div class="cmp-row" style="margin-top:12px">
-        <div class="field"><label for="sc-monthly">매월 적립액 (원)</label><input id="sc-monthly" type="number" min="10000" step="10000" value="100000"></div>
-        <div class="field"><label for="sc-years">기간 (년)</label><select id="sc-years"><option>1</option><option>2</option><option>3</option><option>5</option><option selected>10</option><option>15</option><option>20</option><option>30</option></select></div>
-        <button class="btn primary" id="sc-run" type="button">계산</button>
-      </div>
-      <div id="sc-results" hidden>
-        <div class="kpis" id="sc-kpis" style="margin-top:12px"></div>
-        <div class="chart" style="margin-top:12px"><canvas id="chart-sc"></canvas></div>
-        <p class="desc" style="margin-top:8px">매월 초 적립, 월 복리 가정. 실제 수익률은 해마다 크게 다르며 7%는 장기 평균입니다.</p>
-      </div>
-    </div>
-    <div class="card">
       <div class="card-head"><h3>투자 대가 따라하기</h3><span class="small faint">구독 서비스</span></div>
       <p class="desc">워렌 버핏, 빌 애크먼, 세스 클라르만 등 투자 대가들이 실제로 사 모으는 종목을 분기 공시(13F) 기준으로 받아보는 프리미엄 기능입니다.</p>
       <div class="form-actions" style="margin-top:10px"><button class="btn primary" id="sc-buffett" type="button">시작하기</button><button class="btn" id="sc-gurus" type="button">대가 목록 보기</button></div>
@@ -426,11 +412,11 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
         <div class="field" data-p="rsi"><label for="bt-rsi-n">RSI 기간 (일)</label><input id="bt-rsi-n" type="number" min="2" max="100" value="14"></div>
         <div class="field" data-p="rsi"><label for="bt-rsi-buy">매수 RSI 이하</label><input id="bt-rsi-buy" type="number" min="1" max="99" value="30"></div>
         <div class="field" data-p="rsi"><label for="bt-rsi-sell">매도 RSI 이상</label><input id="bt-rsi-sell" type="number" min="1" max="99" value="70"></div>
-        <div class="field" data-p="dca"><label for="bt-monthly">월 적립금</label><input id="bt-monthly" type="number" min="0" step="100" value="1000"><span class="hint">매월 첫 거래일 종가에 매수</span></div>
+        <div class="field" data-p="dca"><label for="bt-monthly">월 적립금</label><input id="bt-monthly" class="num-comma" type="number" min="0" step="100" value="1000"><span class="hint">매월 첫 거래일 종가에 매수</span></div>
         <div class="field"><label for="bt-start">시작일</label><input id="bt-start" type="date"></div>
         <div class="field"><label for="bt-end">종료일</label><input id="bt-end" type="date"></div>
         <div class="field"><label for="bt-currency">기준 통화</label><select id="bt-currency"><option value="USD">달러 (USD)</option><option value="KRW">원화 환산 (KRW)</option></select><span class="hint">원화 기준이면 환율 변동이 수익률에 반영됩니다</span></div>
-        <div class="field"><label for="bt-capital">초기 투자금</label><input id="bt-capital" type="number" min="0" step="1000" value="10000"></div>
+        <div class="field"><label for="bt-capital">초기 투자금</label><input id="bt-capital" class="num-comma" type="number" min="0" step="1000" value="10000"></div>
         <div class="field" data-p="smax smaf rsi"><label for="bt-cash">현금 보유 통화</label><select id="bt-cash"><option value="USD">달러로 보유</option><option value="KRW">원화로 보유 (환전)</option></select><span class="hint">매도 후 현금을 어떤 통화로 두는지</span></div>
       </div>
       <div class="strategy-desc" id="bt-desc"></div>
@@ -502,7 +488,7 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
         </div>
         <div class="field cmp-dates"><label for="cmp-start">시작일</label><input id="cmp-start" type="date"></div>
         <div class="field cmp-dates"><label for="cmp-end">종료일</label><input id="cmp-end" type="date"></div>
-        <div class="field"><label for="cmp-amt">시작 금액</label><input id="cmp-amt" type="number" min="0" step="1000" value="10000"></div>
+        <div class="field"><label for="cmp-amt">시작 금액</label><input id="cmp-amt" class="num-comma" type="number" min="0" step="1000" value="10000"></div>
         <div class="field"><label for="cmp-div">배당</label><select id="cmp-div"><option value="tr">재투자</option><option value="pr">미포함</option></select></div>
         <div class="field"><label for="cmp-cur">기준 통화</label><select id="cmp-cur"><option value="USD">달러</option><option value="KRW">원화 환산</option></select></div>
         <button class="btn primary" id="cmp-run" type="button">비교</button>
@@ -719,6 +705,19 @@ function showNotice(html, error) { const n = $("#notice"); n.innerHTML = html; n
 function hideNotice() { $("#notice").hidden = true; }
 function cacheSet(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} }
 function cacheGet(key) { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } }
+
+// ───────────────────────── 금액 입력칸 천 단위 콤마 ─────────────────────────
+// class="num-comma" 를 붙인 입력칸은 입력할 때마다 1,000,000 처럼 콤마가 붙는다.
+// 값을 읽을 때는 numVal(), 코드에서 값을 넣을 때는 setNumVal() 을 쓴다.
+function numVal(sel) { const el = typeof sel === "string" ? $(sel) : sel; return Number(String(el?.value ?? "").replace(/[^\d.-]/g, "")) || 0; }
+function setNumVal(sel, v) { const el = typeof sel === "string" ? $(sel) : sel; if (el) el.value = v == null || v === "" ? "" : Math.round(Number(v)).toLocaleString("en-US"); }
+function commaInput(el) {
+  if (!el || el.dataset.comma) return;
+  el.dataset.comma = "1"; el.type = "text"; el.inputMode = "numeric"; el.autocomplete = "off";
+  el.addEventListener("input", () => { const raw = el.value.replace(/[^\d]/g, ""); el.value = raw ? Number(raw).toLocaleString("en-US") : ""; });
+  if (el.value !== "") setNumVal(el, numVal(el));
+}
+function initCommaInputs(root) { $$("input.num-comma", root || document).forEach(commaInput); }
 
 async function loadLive() {
   setStatus("", "시세 확인 중");
@@ -985,14 +984,14 @@ function updateParamVisibility() {
 }
 function onCurrencyChange() {
   const cur = $("#bt-currency").value, cap = $("#bt-capital"), mo = $("#bt-monthly");
-  if (cur === "KRW" && Number(cap.value) < 100000) { cap.value = 10000000; mo.value = 1000000; }
-  if (cur === "USD" && Number(cap.value) >= 100000) { cap.value = 10000; mo.value = 1000; }
+  if (cur === "KRW" && numVal(cap) < 100000) { setNumVal(cap, 10000000); setNumVal(mo, 1000000); }
+  if (cur === "USD" && numVal(cap) >= 100000) { setNumVal(cap, 10000); setNumVal(mo, 1000); }
   updateParamVisibility();
 }
 function readConfig() {
   const v = (id) => $(`#${id}`).value;
   return { asset: v("bt-asset"), strategy: v("bt-strategy"), fast: +v("bt-fast"), slow: +v("bt-slow"), rsiN: +v("bt-rsi-n"), rsiBuy: +v("bt-rsi-buy"), rsiSell: +v("bt-rsi-sell"),
-    monthly: +v("bt-monthly"), start: v("bt-start"), end: v("bt-end"), currency: v("bt-currency"), capital: +v("bt-capital"), cash: v("bt-cash"), feeBp: 0 };
+    monthly: numVal("#bt-monthly"), start: v("bt-start"), end: v("bt-end"), currency: v("bt-currency"), capital: numVal("#bt-capital"), cash: v("bt-cash"), feeBp: 0 };
 }
 async function runFromForm() {
   const h = state.history?.symbols; if (!h) return;
@@ -1187,7 +1186,7 @@ function ensureLessons() {
 }
 const SC_RATE = 0.07; // S&P 500 장기 실질 수익률 (배당 재투자 포함, 인플레이션 차감)
 function runStarterCalc() {
-  const monthly = Number($("#sc-monthly").value) || 0, years = Number($("#sc-years").value) || 10;
+  const monthly = numVal("#sc-monthly"), years = Number($("#sc-years").value) || 10;
   if (monthly <= 0) return alert("매월 적립액을 입력하세요.");
   const n = years * 12, r = SC_RATE / 12;
   const val = [], prin = [];
@@ -1207,7 +1206,6 @@ function runStarterCalc() {
   ] }, options: opts });
   $("#sc-results").hidden = false;
 }
-$("#sc-run").addEventListener("click", runStarterCalc);
 // 투자 대가 따라하기 구독 모달
 const PLANS = [
   { id: "pro", name: "Pro 구독형", price: "3만원", feats: ["투자 대가들을 따라하며 추천종목 받기"] },
@@ -1322,8 +1320,9 @@ function renderMaxHome() {
       <button class="max-feat" type="button" data-maxfeat="prices"><span class="t">투자 대가 매수 가격 따라가기</span><span class="d">대가들이 연속으로 사 모으는 종목의 분기말 단가와 현재가를 비교해, 대가보다 싸게 살 수 있는 종목을 찾아드립니다.</span><span class="go">열기 →</span></button>
       <button class="max-feat" type="button" data-maxfeat="lev"><span class="t">AI 나스닥 레버리지 투자법 따라하기</span><span class="d">나스닥 100이 200일 이동평균 위에 있을 때만 레버리지(TQQQ)를 보유하는 추세 전략. 오늘의 신호와 백테스트를 제공합니다.</span><span class="go">열기 →</span></button>
       <button class="max-feat" type="button" data-maxfeat="common"><span class="t">대가들의 공통 매수 종목</span><span class="d">여러 대가가 함께 들고 있거나 이번 분기에 같이 사들인 종목을 한눈에 봅니다.</span><span class="go">열기 →</span></button>
+      <button class="max-feat" type="button" data-maxfeat="portfolio"><span class="t">포트폴리오 구성 및 적립식 추천 방식</span><span class="d">여유 자금에서 현금을 얼마나 남길지(버크셔의 현금 비중 참고), 매달 VOO 적립은 얼마가 되는지 계산합니다.</span><span class="go">열기 →</span></button>
       <button class="max-feat" type="button" data-maxfeat="alerts"><span class="t">원하는 매입 가격 실시간 알림</span><span class="d">종목과 목표 매입가를 등록해 두고 도달 여부를 확인합니다.</span><span class="go">열기 →</span></button>
-      <button class="max-feat" type="button" data-maxfeat="gurus"><span class="t">투자 대가 추천 종목</span><span class="d">대가 6인이 연속으로 사 모으는 종목과 그 근거를 투자 대가 탭에서 봅니다.</span><span class="go">이동 →</span></button>
+      <button class="max-feat" type="button" data-maxfeat="gurus"><span class="t">투자 대가 추천 종목</span><span class="d">대가 8인이 연속으로 사 모으는 종목과 그 근거를 투자 대가 탭에서 봅니다.</span><span class="go">이동 →</span></button>
     </div></div>`;
 }
 // 분기 시작일: 13F 분기말 날짜(3·6·9·12월 말)에서 그 분기의 첫날을 구한다
@@ -1530,6 +1529,68 @@ function runLevBacktest() {
     if (state.history) { refreshSeriesInfo(); setYears(10); runFromForm(); }
   });
 }
+// ── 포트폴리오 구성 및 적립식 추천 ──
+// 버크셔의 분기별 현금성 자산(현금 + 단기 국채, 보험·기타 부문 10-Q/10-K 기준).
+// 새 분기 보고서가 나오면 여기에 한 줄 추가하면 비중이 자동 계산된다.
+const BRK_CASH = { "2025-06-30": 344.1e9, "2025-09-30": 381.7e9, "2025-12-31": 369.0e9, "2026-03-31": 397.4e9, "2026-06-30": 359.2e9 };
+function renderMaxPortfolio() {
+  const body = $("#max-body");
+  body.dataset.screen = "portfolio";
+  body.innerHTML = [
+    maxBackBtn,
+    `<div class="card">
+      <div class="card-head"><h3>포트폴리오 구성 추천</h3><span class="small faint">현금 30~40% 원칙</span></div>
+      <p class="desc">버핏과 멍거는 닷컴 버블과 2008년 금융위기의 한복판에서 남들이 팔 때 살 수 있었던 비결을 <strong>"항상 장전된 실탄"</strong>이라고 말해 왔습니다. 현금은 수익률이 낮아 보여도, 위기가 왔을 때 가장 좋은 자산을 가장 싸게 사게 해 주는 옵션입니다. 그래서 버크셔는 지금도 투자자산의 절반 가까이를 현금성 자산으로 쌓아 두고 기다립니다. 개인도 <strong>여유 자금의 30~40%를 현금으로</strong> 남겨 두면, 시장이 흔들리는 날 공포가 아니라 기회가 보입니다.</p>
+      <div class="cmp-row" style="margin-top:12px">
+        <div class="field"><label for="pf-total">총 투자 가능 여유 자금 (원)</label><input id="pf-total" class="num-comma" placeholder="예: 50,000,000" style="min-width:200px"></div>
+        <button class="btn primary" id="pf-run" type="button">구성 계산</button>
+      </div>
+      <div id="pf-result" hidden style="margin-top:12px"></div>
+      <div class="notice" style="margin:14px 0 0" id="pf-brk">버크셔의 분기별 현금 비중을 계산하는 중…</div>
+    </div>`,
+    `<div class="card">
+      <div class="card-head"><h3>VOO (S&amp;P 500) 매달 적립하면</h3><span class="small faint">매월 일정 금액 적립 시뮬레이션</span></div>
+      <p class="desc">투자 자산의 기본은 미국 대표 500개 기업에 나눠 담는 <strong>VOO(S&amp;P 500 ETF)</strong> 적립입니다. 수익률 <strong>연 7%</strong>는 S&amp;P 500의 지난 100년 평균에서 물가상승률을 뺀 실질 수익률입니다.</p>
+      <div class="cmp-row" style="margin-top:12px">
+        <div class="field"><label for="sc-monthly">매월 적립액 (원)</label><input id="sc-monthly" class="num-comma" value="1,000,000"></div>
+        <div class="field"><label for="sc-years">기간 (년)</label><select id="sc-years"><option>1</option><option>2</option><option>3</option><option>5</option><option selected>10</option><option>15</option><option>20</option><option>30</option></select></div>
+        <button class="btn primary" id="sc-run" type="button">계산</button>
+      </div>
+      <div id="sc-results" hidden>
+        <div class="kpis" id="sc-kpis" style="margin-top:12px"></div>
+        <div class="chart" style="margin-top:12px"><canvas id="chart-sc"></canvas></div>
+        <p class="desc" style="margin-top:8px">매월 초 적립, 월 복리 가정. 실제 수익률은 해마다 크게 다르며 7%는 장기 평균입니다.</p>
+      </div>
+    </div>`,
+  ].join("");
+  initCommaInputs(body);
+  // 버크셔 현금 비중: 현금성 자산 ÷ (현금성 자산 + 13F 상장주식 평가액)
+  ensureFilings().then((f) => {
+    if (body.dataset.screen !== "portfolio") return;
+    const byPeriod = new Map(f.quarters.map((q) => [q.period, q.totalValue]));
+    const rows = Object.entries(BRK_CASH).filter(([p]) => byPeriod.has(p))
+      .map(([p, cash]) => ({ p, pct: cash / (cash + byPeriod.get(p)) }));
+    if (!rows.length) { $("#pf-brk").textContent = "버크셔 13F 데이터가 아직 없어 현금 비중을 계산할 수 없습니다."; return; }
+    const last = rows.at(-1);
+    $("#pf-brk").innerHTML = `<strong>참고 · 버크셔의 현금 비중</strong> (현금성 자산 ÷ 투자자산(상장주식+현금성), 분기별): ${rows.map((r) => `<span class="num" ${r === last ? 'style="font-weight:700"' : ""}>${r.p.slice(0, 7)} ${fmt.n(r.pct * 100, 0)}%</span>`).join(" · ")} — 최근 분기 기준 투자자산의 <strong>${fmt.n(last.pct * 100, 0)}%</strong>가 현금·단기 국채입니다 (10-Q 기준 $${fmt.n(BRK_CASH[last.p] / 1e9, 0)}B).`;
+  }).catch(() => { const el = $("#pf-brk"); if (el) el.textContent = "버크셔 13F 데이터를 불러오지 못해 현금 비중을 표시할 수 없습니다."; });
+}
+function runPortfolioCalc() {
+  const total = numVal("#pf-total");
+  if (!(total > 0)) return alert("총 투자 가능 여유 자금을 입력하세요.");
+  const cashLo = total * 0.3, cashHi = total * 0.4, invLo = total * 0.6, invHi = total * 0.7;
+  const monthly = Math.max(10000, Math.round((total * 0.65) / 24 / 10000) * 10000); // 투자분(65%)을 24개월에 나눠 적립
+  const r = $("#pf-result");
+  r.innerHTML = `
+    <div class="kpis">
+      ${kpi("현금으로 보유 (30~40%)", fmt.krw(Math.round(cashLo / 10000) * 10000), `~ ${fmt.krw(Math.round(cashHi / 10000) * 10000)} · 위기 때의 실탄`)}
+      ${kpi("투자 자산 (60~70%)", fmt.krw(Math.round(invLo / 10000) * 10000), `~ ${fmt.krw(Math.round(invHi / 10000) * 10000)} · VOO 적립 + 대가 추천 종목`)}
+      ${kpi("월 적립 제안", fmt.krw(monthly), "투자분을 24개월에 나눠 분할 매수")}
+    </div>
+    <p class="desc" style="margin-top:10px">투자분을 한 번에 넣지 않고 24개월에 나누는 것은 매수 시점을 분산해 고점 몰빵을 피하기 위해서입니다. 아래 계산기에 이 금액을 넣어 장기 결과를 확인해 보세요.</p>
+    <div class="form-actions" style="margin-top:8px"><button class="btn primary" type="button" id="pf-to-voo">이 금액으로 VOO 적립 계산 →</button></div>`;
+  r.hidden = false;
+}
 function maxAlerts() { return cacheGet("md:alerts") || []; }
 function renderMaxAlerts() {
   $("#max-body").dataset.screen = "alerts";
@@ -1559,11 +1620,20 @@ $("#max-page").addEventListener("click", (e) => {
     const k = feat.dataset.maxfeat;
     if (k === "prices") return renderMaxPrices();
     if (k === "common") return renderMaxCommon();
+    if (k === "portfolio") return renderMaxPortfolio();
     if (k === "lev") return renderMaxLev();
     if (k === "alerts") return ensureStockIndex().catch(() => {}).then(renderMaxAlerts);
     if (k === "gurus") { closeMaxPage(); state.guruSel = null; return selectTab("gurus"); }
   }
   if (e.target.closest("#max-lev-bt")) return runLevBacktest();
+  if (e.target.closest("#pf-run")) return runPortfolioCalc();
+  if (e.target.closest("#sc-run")) return runStarterCalc();
+  if (e.target.closest("#pf-to-voo")) {
+    const total = numVal("#pf-total"), monthly = Math.max(10000, Math.round((total * 0.65) / 24 / 10000) * 10000);
+    setNumVal("#sc-monthly", monthly); runStarterCalc();
+    $("#sc-results")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    return;
+  }
   if (e.target.closest("#max-al-add")) {
     const sym = normSym($("#max-al-sym").value), p = Number($("#max-al-price").value);
     if (!sym || !(p > 0)) return alert("티커와 목표 매입가를 입력하세요.");
@@ -1646,7 +1716,7 @@ $("#stock-detail").addEventListener("click", (e) => {
 // 비교 탭 이벤트
 $("#cmp-run").addEventListener("click", () => runCompare(false));
 $("#cmp-log").addEventListener("change", () => state.cmpLast && renderCompare());
-$("#cmp-cur").addEventListener("change", () => { const amt = $("#cmp-amt"), cur = $("#cmp-cur").value; amt.step = cur === "KRW" ? 1000000 : 1000; if (cur === "KRW" && Number(amt.value) < 100000) amt.value = 10000000; if (cur === "USD" && Number(amt.value) >= 100000) amt.value = 10000; });
+$("#cmp-cur").addEventListener("change", () => { const amt = $("#cmp-amt"), cur = $("#cmp-cur").value; amt.step = cur === "KRW" ? 1000000 : 1000; if (cur === "KRW" && numVal(amt) < 100000) setNumVal(amt, 10000000); if (cur === "USD" && numVal(amt) >= 100000) setNumVal(amt, 10000); });
 $$("[data-cy]").forEach((c) => c.addEventListener("click", () => { setCompareYears(+c.dataset.cy); runCompare(false); }));
 setInterval(() => { if (document.visibilityState === "visible") loadLive(); }, REFRESH_MS);
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && state.latest && Date.now() - new Date(state.latest.updated) > REFRESH_MS) loadLive(); });
@@ -1833,7 +1903,7 @@ async function runCompare(auto) {
   if (i0 < 0 || i1 < 0 || i1 - i0 < 20) { $("#cmp-note").innerHTML = '<span class="warn">기간이 너무 짧거나 데이터가 없습니다</span>'; return; }
   const dates = baseS.dates.slice(i0, i1 + 1);
   const fxA = fxSym ? alignFx(dates, fxSym) : null;
-  const startAmt = Number($("#cmp-amt").value) > 0 ? Number($("#cmp-amt").value) : cur === "KRW" ? 1e7 : 1e4;
+  const startAmt = numVal("#cmp-amt") > 0 ? numVal("#cmp-amt") : cur === "KRW" ? 1e7 : 1e4;
   const lines = series.map((s) => {
     const aligned = alignFx(dates, { dates: s.dates, close: s.values });
     const p0 = aligned[0], isK = s.currency === "KRW";
@@ -2169,6 +2239,7 @@ $("#dvc-run").addEventListener("click", runDividendCompare);
 // ───────────────────────── 시작 ─────────────────────────
 initAdmin();
 updateParamVisibility();
+initCommaInputs();
 const cachedLatest = cacheGet("md:latest"), cachedIntraday = cacheGet("md:intraday");
 if (cachedLatest) { state.latest = cachedLatest; state.intraday = cachedIntraday; renderQuotes(); }
 try { state.stockRange = localStorage.getItem("md:range") || "1Y"; const ss = localStorage.getItem("md:stock"); if (ss) state.stockSel = ss; } catch {}
