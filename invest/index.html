@@ -1220,6 +1220,8 @@ const GURUS = [
   { id: "loeb", name: "대니얼 러브", org: "서드 포인트", filer: "서드 포인트", ready: true, file: "thirdpoint.json", desc: "행동주의와 이벤트 드리븐 전략을 함께 쓰는 서드 포인트 창업자입니다." },
   { id: "einhorn", name: "데이비드 아인혼", org: "그린라이트 캐피털", filer: "그린라이트", ready: true, file: "greenlight.json", desc: "저평가 매수와 공매도를 함께 쓰는 가치투자자. 밸류에이션에 엄격합니다." },
   { id: "lilu", name: "리 루", org: "히말라야 캐피털", filer: "히말라야", ready: true, file: "himalaya.json", desc: "찰리 멍거가 자금을 맡겼던 투자자. 극소수 종목을 아주 오래 보유합니다." },
+  { id: "mclemore", name: "서맨사 매클레모어", org: "페이션트 캐피털", filer: "페이션트 캐피털", ready: true, file: "patient.json", desc: "빌 밀러와 레그 메이슨 펀드를 함께 운용했던 후계자. 역발상 성장주에 집중합니다." },
+  { id: "firsteagle", name: "퍼스트 이글", org: "퍼스트 이글 인베스트먼트", filer: "퍼스트 이글", ready: true, file: "firsteagle.json", desc: "금과 우량주를 함께 담는 글로벌 가치투자 명가. 하방을 지키는 운용으로 유명합니다." },
 ];
 let guruPlan = null; try { guruPlan = localStorage.getItem("md:plan"); } catch {}
 function openGuruModal() { $("#gu-modal").hidden = false; document.body.style.overflow = "hidden"; renderPlanMenu(); }
@@ -1414,13 +1416,44 @@ async function renderMaxPrices() {
 }
 // ── 공통 매수·보유 종목: 대가 6인의 최신 13F 를 티커로 묶어 2명 이상 겹치는 종목만 ──
 const SHARE_CLASS_ALIAS = { GOOG: "GOOGL", "LEN-B": "LEN", "HEI-A": "HEI", "BRK-A": "BRK-B", LILAK: "LILA", LLYVK: "LLYVA" }; // 같은 회사의 클래스 주식은 한 종목으로
-const GURU_SHORT = { buffett: "버핏", ackman: "애크먼", klarman: "클라르만", loeb: "러브", einhorn: "아인혼", lilu: "리 루" };
+const GURU_SHORT = { buffett: "버핏", ackman: "애크먼", klarman: "클라르만", loeb: "러브", einhorn: "아인혼", lilu: "리 루", mclemore: "매클레모어", firsteagle: "퍼스트 이글" };
+// 13F 밖 매매 소식: filings 브랜치의 events.json (SEC Form 4 · 13D/G 자동 수집) + guru-news.json (수기 등록)
+let guruEventsPromise = null;
+function ensureGuruEvents() {
+  if (!guruEventsPromise) guruEventsPromise = Promise.allSettled([
+    fetch(`${FILINGS_BASE}events.json?t=${Date.now()}`, { cache: "no-store" }).then((r) => (r.ok ? r.json() : { events: [] })),
+    fetch(`guru-news.json?t=${Date.now()}`, { cache: "no-store" }).then((r) => (r.ok ? r.json() : { items: [] })),
+  ]).then(([a, m]) => ({
+    auto: (a.status === "fulfilled" && a.value.events) || [],
+    manual: (m.status === "fulfilled" && m.value.items) || [],
+  }));
+  return guruEventsPromise;
+}
+function guruEventsCardHtml(evs) {
+  const gname = (file) => file === "berkshire.json" ? "버핏" : GURU_SHORT[GURUS.find((g) => g.file === file)?.id] || "";
+  const rows = [
+    ...evs.auto.map((e) => ({
+      date: e.to || e.from || e.filed, guru: gname(e.guru), ticker: e.ticker, name: e.issuer || "", url: e.url,
+      html: e.side === "stake"
+        ? `지분 ${e.percent != null ? `<strong>${fmt.n(e.percent, 1)}%</strong> ` : ""}공시 <span class="faint">(${escHtml(e.form)}, ${String(e.filed).slice(5)} 공시)</span>`
+        : `<strong class="${e.side === "buy" ? "pos" : "neg"}">${e.side === "buy" ? "매수" : "매도"}</strong> ${fmtSh(e.shares)}주${e.priceLow != null ? ` · 단가 $${fmt.n(e.priceLow)}${e.priceHigh > e.priceLow ? "~$" + fmt.n(e.priceHigh) : ""}` : ""}${e.from ? ` · 거래일 ${String(e.from).slice(5)}${e.to && e.to !== e.from ? "~" + String(e.to).slice(5) : ""}` : ""} <span class="faint">(${escHtml(e.form)}, ${String(e.filed).slice(5)} 공시)</span>`,
+    })),
+    ...evs.manual.map((e) => ({ date: e.date, guru: escHtml(e.guru || ""), ticker: e.ticker ? escHtml(String(e.ticker)) : null, name: "", url: e.url, html: `${escHtml(e.title || "")} <span class="faint">(수기 등록)</span>` })),
+  ].filter((r) => r.date).sort((a, b) => String(b.date).localeCompare(String(a.date))).slice(0, 15);
+  const inIdx = (t) => !!state.stockIndex?.items.some((x) => x.symbol === t);
+  return `<div class="card"><div class="card-head"><h3>13F 밖 최근 매수·매도 소식</h3><span class="small faint">SEC Form 4 · 13D/G 자동 수집 (매주 월요일 갱신) + 수기 등록</span></div>
+    ${rows.length ? `<div class="tablewrap"><table><thead><tr><th>날짜</th><th>대가</th><th>종목</th><th>내용</th><th>출처</th></tr></thead><tbody>${rows.map((r) => `<tr><td class="txt">${String(r.date).slice(0, 10)}</td><td class="txt">${r.guru}</td><td class="txt">${r.ticker ? `<span class="tk ${inIdx(r.ticker) ? "" : "plain"}" ${inIdx(r.ticker) ? `data-stock="${r.ticker}"` : ""}>${r.ticker}</span> ` : ""}<span class="nm">${escHtml(r.name)}</span></td><td class="txt" style="white-space:normal">${r.html}</td><td class="txt">${r.url ? `<a href="${escHtml(r.url)}" target="_blank" rel="noopener">보기</a>` : "–"}</td></tr>`).join("")}</tbody></table></div>` : `<div class="empty">최근 수집된 공시가 없습니다. 13F 스냅샷 워크플로가 실행되면(매주 월요일) 자동으로 채워집니다.</div>`}
+    <p class="small faint" style="margin-top:8px">Form 4 는 지분 10% 이상 보유자가 매매 후 이틀 안에 날짜·주식수·단가까지 신고하는 공시라 13F 보다 훨씬 빠릅니다 (버크셔의 레너 매수가 이렇게 공개됐습니다). 13D/G 는 5% 지분 공시입니다. <a href="https://github.com/geniusbyun-kaka/app/edit/claude/baby-sleep-tracking-app-23p7s7/invest/guru-news.json" target="_blank" rel="noopener">뉴스 수기 등록 (관리자 전용)</a></p></div>`;
+}
 async function renderMaxCommon() {
   const body = $("#max-body");
   body.dataset.screen = "common";
   body.innerHTML = `${maxBackBtn}<div class="card"><div class="empty">대가 6인의 13F 를 모아 겹치는 종목을 찾는 중…</div></div>`;
   try { await ensureStockIndex(); } catch {}
-  const loaded = await Promise.all(GURUS.filter((g) => g.ready).map((g) => ensureGuruFilings(g).then((f) => ({ g, f })).catch(() => null)));
+  const [loaded, evs] = await Promise.all([
+    Promise.all(GURUS.filter((g) => g.ready).map((g) => ensureGuruFilings(g).then((f) => ({ g, f })).catch(() => null))),
+    ensureGuruEvents().catch(() => ({ auto: [], manual: [] })),
+  ]);
   if ($("#max-page").hidden || body.dataset.screen !== "common") return;
   const isBuy = (c) => c === "inc" || c === "new";
   const byKey = new Map();
@@ -1456,7 +1489,8 @@ async function renderMaxCommon() {
   const commonHolds = rows.filter((e) => e.buyers < 2);
   body.innerHTML = [
     maxBackBtn,
-    `<p class="desc">대가 6인의 최신 13F 를 겹쳐 본 화면입니다. <strong>2명 이상이 같은 종목</strong>을 들고 있으면 여기에 나오고, 이번 분기에 <strong>2명 이상이 함께 매수</strong>한 종목은 맨 위에 따로 모았습니다. 같은 회사의 클래스 주식(GOOG·GOOGL 등)은 한 종목으로 합쳤습니다. 티커를 누르면 종목 차트로 이동합니다.</p>`,
+    `<p class="desc">대가들의 최신 13F 를 겹쳐 본 화면입니다. <strong>2명 이상이 같은 종목</strong>을 들고 있으면 여기에 나오고, 이번 분기에 <strong>2명 이상이 함께 매수</strong>한 종목은 따로 모았습니다. 같은 회사의 클래스 주식(GOOG·GOOGL 등)은 한 종목으로 합쳤습니다. 맨 위에는 13F 를 기다리지 않고 나오는 <strong>분기 사이의 매매 공시·뉴스</strong>를 보여드립니다. 티커를 누르면 종목 차트로 이동합니다.</p>`,
+    guruEventsCardHtml(evs),
     `<div class="card"><div class="card-head"><h3>이번 분기 공통 매수</h3><span class="small faint">최근 분기에 2명 이상이 주식수를 늘리거나 신규 편입</span></div>${commonBuys.length ? table(commonBuys) : '<div class="empty">이번 분기에 2명 이상이 함께 매수한 종목이 없습니다</div>'}</div>`,
     `<div class="card"><div class="card-head"><h3>공통 보유</h3><span class="small faint">2명 이상이 보유 중 (공통 매수는 위 표에)</span></div>${commonHolds.length ? table(commonHolds) : '<div class="empty">겹치는 보유 종목이 없습니다</div>'}</div>`,
     `<p class="small faint">13F 는 분기 말 보유분이 45일 뒤에 공개되는 자료라 실제 매매보다 늦습니다. 투자 판단과 책임은 본인에게 있습니다.</p>`,
