@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// S&P 500 전 종목 + 주요 ETF 의 일봉 전체와 최근 5일 5분봉을 받아 종목별 JSON 으로 저장한다.
-// GitHub Actions 에서 하루 한 번(미국 장 마감 후) 실행되어 `stocks` 브랜치에 올라간다.
+// S&P 500 전 종목 + 주요 ETF + 투자 대가(13F) 보유 종목의 일봉 전체와 최근 5일 5분봉을 받아
+// 종목별 JSON 으로 저장한다. GitHub Actions 에서 하루 한 번(미국 장 마감 후) 실행되어 `stocks` 브랜치에 올라간다.
 //
 // 결과물 (출력 폴더 기준):
 //   index.json          종목 목록 + 현재가 요약 (앱의 검색·목록용, 작음)
@@ -8,7 +8,7 @@
 //
 // 사용법: node scripts/fetch-stocks.mjs [출력폴더]
 //   출력 폴더에 직전 실행 결과가 있으면 실패한 종목은 그 파일을 그대로 둔다.
-//   환경변수 WIKI_BASE(구성종목 표 소스), YAHOO_BASE 는 테스트용.
+//   환경변수 WIKI_BASE(구성종목 표 소스), YAHOO_BASE, FILINGS_BASE(13F 스냅샷 소스)는 테스트용.
 //   LIMIT=20 처럼 주면 앞의 N 종목만 받는다 (테스트용).
 
 import { mkdir, writeFile, readFile } from "node:fs/promises";
@@ -19,6 +19,9 @@ const OUT_DIR = process.argv[2] || "stocks-out";
 const WIKI_URL = `${process.env.WIKI_BASE || "https://en.wikipedia.org"}/wiki/List_of_S%26P_500_companies`;
 const LIMIT = Number(process.env.LIMIT || 0);
 const CONCURRENCY = Number(process.env.CONCURRENCY || 4);
+// 투자 대가 13F 스냅샷 (filings 브랜치). 대가 보유 종목도 차트·현재가를 쓸 수 있게 스냅샷에 포함시킨다.
+const FILINGS_BASE = process.env.FILINGS_BASE || `https://raw.githubusercontent.com/${process.env.GITHUB_REPOSITORY || "geniusbyun-kaka/app"}/filings`;
+const GURU_FILES = ["berkshire.json", "pershing.json", "baupost.json", "thirdpoint.json", "greenlight.json", "himalaya.json"];
 
 // 비교 도구에서 자주 쓰는 ETF. S&P 500 구성종목 목록에 없는 것들.
 const ETFS = [
@@ -83,6 +86,27 @@ async function fetchConstituents() {
   }
   if (rows.length < 480 || rows.length > 520) throw new Error(`unexpected constituent count ${rows.length}`);
   return rows;
+}
+
+// 투자 대가 13F 에서 최근 8개 분기에 등장한 티커를 모은다 (채권·해외 코드 등 야후에 없는 표기는 제외)
+async function fetchGuruTickers() {
+  const tickers = new Map(); // symbol → 13F 상 이름 (야후 이름을 받으면 그걸로 교체)
+  for (const file of GURU_FILES) {
+    try {
+      const f = await fetchJson(`${FILINGS_BASE}/${file}`);
+      for (const q of (f.quarters || []).slice(-8))
+        for (const h of q.holdings || []) {
+          const t = (h.ticker || "").trim();
+          if (!/^[A-Z][A-Z0-9.-]{0,6}$/.test(t)) continue;
+          // 워런트(-WS, ~WW)·유럽 거래소 코드(~EUR)·끝이 숫자인 코드 등 야후 미국 시세가 없는 표기 제외
+          if (/\d$/.test(t) || /-WS$/.test(t) || /WW$/.test(t) || /[A-Z](EUR|GBP|CHF)$/.test(t)) continue;
+          if (!tickers.has(t)) tickers.set(t, h.name || t);
+        }
+    } catch (err) {
+      console.warn(`[stocks] 13F ${file} 불러오기 실패 (${err.message}) → 이 filer 는 건너뜀`);
+    }
+  }
+  return tickers;
 }
 
 async function previousIndex() {
@@ -183,7 +207,7 @@ async function fetchOne(item) {
   const metaName = meta.shortName || meta.longName || daily.meta.shortName || daily.meta.longName;
   if (/\.(KS|KQ)$/.test(item.symbol) && metaName) console.log(`[stocks] ${item.symbol} = ${item.name} (야후: ${metaName})`);
   return {
-    symbol: item.symbol, name: item.name, sector: item.sector, kind: item.kind,
+    symbol: item.symbol, name: item.preferYahooName && metaName ? metaName : item.name, sector: item.sector, kind: item.kind,
     currency: meta.currency || "USD", timezone: tz, updated: new Date().toISOString(),
     quote: {
       price: round(price, d), previousClose: round(prev, d), change: round(change, d),
@@ -224,7 +248,15 @@ async function main() {
     ...KR_CC.map(([symbol, name]) => ({ symbol, name, sector: "국내 커버드콜", kind: "etf" })),
   ];
   const coinItems = COINS.map(([symbol, name]) => ({ symbol, name, sector: "코인", kind: "coin" }));
-  const items = [...(LIMIT ? stocks.slice(0, LIMIT) : stocks), ...extraEtfs, ...krItems, ...coinItems];
+  const baseItems = [...(LIMIT ? stocks.slice(0, LIMIT) : stocks), ...extraEtfs, ...krItems, ...coinItems];
+  // 투자 대가 보유 종목 중 아직 목록에 없는 티커 추가 (이름은 야후 메타로 교체)
+  const known = new Set([...stocks.map((s) => s.symbol), ...baseItems.map((x) => x.symbol)]);
+  const guruTickers = await fetchGuruTickers();
+  const guruItems = [...guruTickers]
+    .filter(([symbol]) => !known.has(symbol))
+    .map(([symbol, name]) => ({ symbol, name, sector: "대가 보유", kind: "stock", preferYahooName: true }));
+  console.log(`[stocks] 투자 대가 보유 종목 추가: ${guruItems.length}개${guruItems.length ? ` (${guruItems.slice(0, 12).map((x) => x.symbol).join(", ")}${guruItems.length > 12 ? " …" : ""})` : ""}`);
+  const items = [...baseItems, ...guruItems];
 
   const prevItems = new Map((prevIndex?.items || []).map((x) => [x.symbol, x]));
   const results = [];
