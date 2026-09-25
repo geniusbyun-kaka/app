@@ -1344,19 +1344,20 @@ function guruBuys(f, h) {
   }
   return buys.filter((b) => b.shares > 0);
 }
-// 버핏(버크셔) 정밀 계산: 매수 분기마다 중앙값 단가 × 늘린 주식수 → 추정 평균단가와 최근 매수가
-async function buffettFollowRows(f) {
+// 대가별 정밀 계산: 매수 분기마다 중앙값 단가 × 늘린 주식수 → 추정 평균단가와 최근 매수가
+// 주가 이력이 없는 종목(우리 종목 스냅샷 밖의 해외 상장 등)은 missing 으로 돌려준다
+async function guruFollowRows(f) {
   const idx = state.stockIndex?.items || [];
   const idxPrice = (t) => idx.find((x) => x.symbol === t)?.price ?? null;
-  const rows = [];
+  const rows = [], missing = [];
   for (const h of f.latest.holdings) {
-    if (!h.ticker) continue;
-    const buys = guruBuys(f, h);
-    if (!buys.length) continue;
-    let stock; try { stock = await loadStock(h.ticker); } catch { continue; }
+    const buys = h.cusip ? guruBuys(f, h) : [];
+    if (!buys.length) continue; // 데이터 범위 안에서 매수한 적이 없으면 따라갈 단가도 없다
+    if (!h.ticker) { missing.push(h.name); continue; }
+    let stock; try { stock = await loadStock(h.ticker); } catch { missing.push(h.ticker); continue; }
     let cost = 0, sh = 0, recent = null;
     for (const b of buys) { const mid = quarterMid(stock, b.period); if (mid == null) continue; cost += mid * b.shares; sh += b.shares; recent = { period: b.period, mid }; }
-    if (!sh || !recent) continue;
+    if (!sh || !recent) { missing.push(h.ticker); continue; }
     const cur = idxPrice(h.ticker) ?? stock.quote?.price ?? null;
     const rel = cur != null ? cur / recent.mid - 1 : null;
     // 판단: 최근 매수가 아래면 강력 추천, +10% 이내면 추천, 그 위는 관망
@@ -1364,50 +1365,45 @@ async function buffettFollowRows(f) {
     rows.push({ h, nBuys: buys.length, avg: cost / sh, recent, cur, rel, grade });
   }
   rows.sort((a, b) => b.grade - a.grade || (a.rel ?? 9) - (b.rel ?? 9) || b.h.weight - a.h.weight);
-  return rows;
+  return { rows, missing };
 }
-function followGradeHtml(r) {
+function followGradeHtml(r, g) {
   if (r.rel == null) return '<span class="faint">현재가 없음</span>';
-  if (r.grade === 2) return `<span class="tag inc">강력 추천</span> <span class="small faint">버핏 최근 매수가보다 쌉니다</span>`;
+  if (r.grade === 2) return `<span class="tag inc">강력 추천</span> <span class="small faint">${g.filer} 최근 매수가보다 쌉니다</span>`;
   if (r.grade === 1) return `<span class="tag new">추천</span> <span class="small faint">최근 매수가 +10% 이내</span>`;
   return `<span class="faint">관망 · 최근 매수가보다 ${fmt.n(r.rel * 100, 1)}% 높음</span>`;
 }
+function followSectionHtml(g, f, rows, missing) {
+  const table = rows.length ? `<div class="tablewrap"><table><thead><tr><th>종목</th><th>마지막 매수</th><th>매수 분기</th><th>추정 평균단가</th><th>최근 매수가 (추정)</th><th>현재가</th><th>최근 매수가 대비</th><th>판단</th></tr></thead><tbody>${rows.map((r) => `<tr>
+      <td class="txt">${tickerHtml(r.h)}</td><td class="txt">${r.recent.period}</td><td>${r.nBuys}회</td><td>$${fmt.n(r.avg)}</td><td>$${fmt.n(r.recent.mid)}</td><td>${r.cur != null ? "$" + fmt.n(r.cur) : "–"}</td><td class="${r.rel == null ? "" : r.rel <= 0 ? "pos" : "neg"}">${r.rel == null ? "–" : fmt.pct(r.rel)}</td><td class="txt">${followGradeHtml(r, g)}</td>
+    </tr>`).join("")}</tbody></table></div>` : `<div class="empty">데이터 범위 안에서 매수 이력을 계산할 수 있는 종목이 없습니다</div>`;
+  const note = missing.length ? `<p class="small faint" style="margin-top:8px">주가 이력이 없어 계산에서 제외: ${missing.join(", ")}</p>` : "";
+  return `<div class="card-head"><h3>${g.name} · ${g.org}</h3><span class="small faint">${f.latest.period} 분기 공시까지 반영</span></div>${table}${note}`;
+}
 async function renderMaxPrices() {
   const body = $("#max-body");
-  body.innerHTML = `${maxBackBtn}<div class="card"><div class="empty">버크셔의 분기별 매수와 주가 이력으로 추정 단가를 계산하는 중… (처음에는 10~20초 걸릴 수 있습니다)</div></div>`;
-  try { await ensureStockIndex(); } catch {}
-  let bf = null; try { bf = await ensureFilings(); } catch {}
-  let bfRows = [];
-  if (bf) { try { bfRows = await buffettFollowRows(bf); } catch {} }
-  if ($("#max-page").hidden) return;
-  const bfSection = bfRows.length ? `<div class="card"><div class="card-head"><h3>워렌 버핏 · 버크셔 해서웨이</h3><span class="small faint">${bf.latest.period} 분기 공시까지 반영</span></div>
-    <div class="tablewrap"><table><thead><tr><th>종목</th><th>마지막 매수</th><th>매수 분기</th><th>추정 평균단가</th><th>최근 매수가 (추정)</th><th>현재가</th><th>최근 매수가 대비</th><th>판단</th></tr></thead><tbody>${bfRows.map((r) => `<tr>
-      <td class="txt">${tickerHtml(r.h)}</td><td class="txt">${r.recent.period}</td><td>${r.nBuys}회</td><td>$${fmt.n(r.avg)}</td><td>$${fmt.n(r.recent.mid)}</td><td>${r.cur != null ? "$" + fmt.n(r.cur) : "–"}</td><td class="${r.rel == null ? "" : r.rel <= 0 ? "pos" : "neg"}">${r.rel == null ? "–" : fmt.pct(r.rel)}</td><td class="txt">${followGradeHtml(r)}</td>
-    </tr>`).join("")}</tbody></table></div></div>` : `<div class="card"><div class="empty">버크셔 13F 또는 주가 데이터를 불러오지 못해 계산할 수 없습니다.</div></div>`;
-  // 나머지 대가는 분기말 단가 비교(간이 방식). 버핏식 정밀 계산은 순차 적용 예정.
-  const others = await Promise.all(GURUS.filter((g) => g.ready && g.file).map((g) => ensureGuruFilings(g).then((f) => ({ g, f })).catch(() => null)));
-  if ($("#max-page").hidden) return;
-  const idx2 = state.stockIndex?.items || [];
-  const price2 = (t) => idx2.find((x) => x.symbol === t)?.price ?? null;
-  const otherSections = others.filter(Boolean).map(({ g, f }) => {
-    const L = f.latest;
-    const picks = L.holdings.filter((h) => h.streak >= 2 && h.shares > 0).sort((a, b) => b.streak - a.streak || b.weight - a.weight);
-    if (!picks.length) return "";
-    const rows = picks.map((h) => {
-      const paid = h.value / h.shares, cur = h.ticker ? price2(h.ticker) : null;
-      const diff = cur != null && paid > 0 ? cur / paid - 1 : null, cheap = diff != null && diff <= 0;
-      return `<tr><td class="txt">${tickerHtml(h)}</td><td><span class="streak s${Math.min(h.streak, 4)}">${h.streak}분기</span></td><td>$${fmt.n(paid)}</td><td>${cur != null ? "$" + fmt.n(cur) : "–"}</td><td class="${diff == null ? "" : cheap ? "pos" : "neg"}">${diff == null ? "–" : fmt.pct(diff)}</td></tr>`;
-    }).join("");
-    return `<div class="card"><div class="card-head"><h3>${g.name} · ${g.org}</h3><span class="small faint">${L.period} 분기 · 연속 매수 종목 · 분기말 단가 기준 (간이)</span></div>
-      <div class="tablewrap"><table><thead><tr><th>종목</th><th>연속 매수</th><th>분기말 단가</th><th>현재가</th><th>차이</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
-  }).join("");
+  const gurus = GURUS.filter((g) => g.ready);
   body.innerHTML = [
     maxBackBtn,
-    `<p class="desc"><strong>추정 평균단가</strong>는 버핏이 매수한 분기마다 그 분기 종가의 최저·최고 <strong>중앙값</strong>을 매수 단가로 보고, 그 분기에 늘린 주식수로 가중평균한 값입니다. <strong>최근 매수가</strong>는 가장 최근에 매수한 분기의 중앙값이고, 따라 사기 판단은 이 값을 기준으로 합니다. 현재가가 <strong>최근 매수가보다 낮으면 강력 추천</strong>, <strong>+10% 이내면 추천</strong>, 그보다 높으면 관망입니다. 티커를 누르면 종목 차트로 이동합니다.</p>`,
-    bfSection,
-    otherSections,
+    `<p class="desc"><strong>추정 평균단가</strong>는 대가가 매수한 분기마다 그 분기 종가의 최저·최고 <strong>중앙값</strong>을 매수 단가로 보고, 그 분기에 늘린 주식수로 가중평균한 값입니다. <strong>최근 매수가</strong>는 가장 최근에 매수한 분기의 중앙값이고, 따라 사기 판단은 이 값을 기준으로 합니다. 현재가가 <strong>최근 매수가보다 낮으면 강력 추천</strong>, <strong>+10% 이내면 추천</strong>, 그보다 높으면 관망입니다. 티커를 누르면 종목 차트로 이동합니다.</p>`,
+    gurus.map((g) => `<div class="card" id="mx-follow-${g.id}"><div class="card-head"><h3>${g.name} · ${g.org}</h3></div><div class="empty">분기별 매수와 주가 이력으로 추정 단가를 계산하는 중…</div></div>`).join(""),
     `<p class="small faint">13F는 분기 말 보유분이 45일 뒤에 공개되는 자료이고, 단가는 분기 주가 범위로 계산한 추정치라 실제 체결가와 다를 수 있습니다 (예: 블록딜). 투자 판단과 책임은 본인에게 있습니다.</p>`,
   ].join("");
+  try { await ensureStockIndex(); } catch {}
+  // 대가별로 순서대로 계산해 완료되는 대로 카드를 채운다 (화면을 떠났으면 중단)
+  for (const g of gurus) {
+    const card = () => $(`#mx-follow-${g.id}`);
+    if (!card()) return;
+    try {
+      const f = await ensureGuruFilings(g);
+      const { rows, missing } = await guruFollowRows(f);
+      if (!card()) return;
+      card().innerHTML = followSectionHtml(g, f, rows, missing);
+    } catch {
+      if (!card()) return;
+      card().innerHTML = `<div class="card-head"><h3>${g.name} · ${g.org}</h3></div><div class="empty">13F 데이터를 불러오지 못했습니다</div>`;
+    }
+  }
 }
 function sma200Signal() {
   const h = state.history?.symbols, s = h?.["^NDX"] || h?.["QQQ"];
