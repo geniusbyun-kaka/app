@@ -2,10 +2,14 @@
 // 투자 대가들의 13F-HR 보고서를 SEC EDGAR 에서 받아 분기별 보유 종목으로 정리한다.
 // GitHub Actions 에서 매주 실행되어 `filings` 브랜치에 올라간다 (13F 는 분기 종료 45일 뒤에 나온다).
 //
-// 결과물 (출력 폴더 기준):
-//   berkshire.json   버크셔 해서웨이 (워렌 버핏) 분기별 보유 종목
-//   pershing.json    퍼싱 스퀘어 (빌 애크먼) 분기별 보유 종목
+// 결과물 (출력 폴더 기준): FILERS 에 등록된 투자자마다 JSON 하나
+//   berkshire.json 버핏 · pershing.json 애크먼 · baupost.json 클라르만 · oaktree.json 막스
+//   appaloosa.json 테퍼 · duquesne.json 드러켄밀러 · thirdpoint.json 러브 · greenlight.json 아인혼
+//   himalaya.json 리 루 · scion.json 버리 (2025년 3분기로 공시 종료)
 //   cusips.json      CUSIP → 티커 매핑 캐시 (OpenFIGI). 다음 실행에서 재사용
+//
+// 보고 주체가 바뀐 경우(13F-NT 통지만 남는 경우) 통지를 따라가 실제 보고 CIK 를 자동 발견하고
+// extraCiks 로 저장해 다음 실행에서 재사용한다. (예: 퍼싱 스퀘어 → 2026년 상장 모회사 Pershing Square, Inc.)
 //
 // 각 JSON 은 분기 오름차순(오래된 → 최근), 종목별 CUSIP·이름·티커·주식수·평가액.
 //
@@ -18,9 +22,18 @@ import path from "node:path";
 
 const OUT_DIR = process.argv[2] || "filings-out";
 // dollarFloor: 분기 평가액 합이 이보다 작으면 천 달러 단위 보고서로 보고 1000을 곱한다 (2023년 이전 양식)
+// expect: EDGAR 가 돌려주는 법인 이름에 반드시 포함되어야 하는 문자열 (CIK 오타로 엉뚱한 회사를 수집하는 사고 방지)
 const FILERS = [
-  { file: "berkshire.json", cik: "0001067983", name: "Berkshire Hathaway Inc", dollarFloor: 5e9 },
-  { file: "pershing.json", cik: "0001336528", name: "Pershing Square Capital Management, L.P.", dollarFloor: 5e8 },
+  { file: "berkshire.json", cik: "0001067983", name: "Berkshire Hathaway Inc", expect: ["berkshire"], dollarFloor: 5e9 },
+  { file: "pershing.json", cik: "0001336528", name: "Pershing Square Capital Management, L.P.", expect: ["pershing"], dollarFloor: 5e8 },
+  { file: "baupost.json", cik: "0001061768", name: "The Baupost Group, L.L.C.", expect: ["baupost"], dollarFloor: 5e8 },
+  { file: "oaktree.json", cik: "0000949509", name: "Oaktree Capital Management LP", expect: ["oaktree"], dollarFloor: 5e8 },
+  { file: "appaloosa.json", cik: "0001656456", name: "Appaloosa LP", expect: ["appaloosa"], dollarFloor: 5e8 },
+  { file: "duquesne.json", cik: "0001536411", name: "Duquesne Family Office LLC", expect: ["duquesne"], dollarFloor: 5e8 },
+  { file: "thirdpoint.json", cik: "0001040273", name: "Third Point LLC", expect: ["third point"], dollarFloor: 5e8 },
+  { file: "greenlight.json", cik: "0001489933", name: "DME Capital Management, LP (Greenlight Capital)", expect: ["greenlight", "dme"], dollarFloor: 5e8 },
+  { file: "himalaya.json", cik: "0001709323", name: "Himalaya Capital Management LLC", expect: ["himalaya"], dollarFloor: 5e8 },
+  { file: "scion.json", cik: "0001649339", name: "Scion Asset Management, LLC", expect: ["scion"], dollarFloor: 5e6 },
 ];
 const EDGAR_DATA = process.env.EDGAR_BASE || "https://data.sec.gov";
 const EDGAR_WWW = process.env.EDGAR_BASE || "https://www.sec.gov";
@@ -62,9 +75,12 @@ async function edgar(url, asText = false) {
   throw new Error(`EDGAR 응답 없음: ${url}`);
 }
 
-// 제출 목록에서 13F-HR / 13F-HR/A 만 추린다 (recent 에 부족하면 추가 페이지도 읽음)
+// 제출 목록에서 13F-HR / 13F-HR/A / 13F-NT 를 추린다 (recent 에 부족하면 추가 페이지도 읽음)
+// 13F-NT 는 "내 보유분은 다른 매니저가 대신 보고한다"는 통지로, 보고 주체가 바뀌면(예: 퍼싱 스퀘어가
+// 2026년 상장 모회사 Pershing Square, Inc. 로 이관) 기존 CIK 에는 NT 만 남는다. 이를 따라가야 한다.
 async function list13F(cik) {
-  const sub = await edgar(`${EDGAR_DATA}/submissions/CIK${cik}.json`);
+  const padded = String(Number(cik)).padStart(10, "0");
+  const sub = await edgar(`${EDGAR_DATA}/submissions/CIK${padded}.json`);
   const pages = [sub.filings.recent];
   for (const f of sub.filings.files || []) {
     if (pages.length > 6) break;
@@ -74,18 +90,18 @@ async function list13F(cik) {
   for (const p of pages) {
     for (let i = 0; i < p.accessionNumber.length; i++) {
       const form = p.form[i];
-      if (form !== "13F-HR" && form !== "13F-HR/A") continue;
-      out.push({ accession: p.accessionNumber[i], form, filed: p.filingDate[i], period: p.reportDate[i], primary: p.primaryDocument[i] });
+      if (form !== "13F-HR" && form !== "13F-HR/A" && form !== "13F-NT" && form !== "13F-NT/A") continue;
+      out.push({ accession: p.accessionNumber[i], form, filed: p.filingDate[i], period: p.reportDate[i], primary: p.primaryDocument[i], cik: String(Number(cik)) });
     }
   }
   out.sort((a, b) => a.period.localeCompare(b.period) || a.filed.localeCompare(b.filed));
-  return out;
+  return { entityName: sub.name || "", filings: out };
 }
 
 const text = (xml, tag) => { const m = xml.match(new RegExp(`<(?:[a-zA-Z0-9]+:)?${tag}[^>]*>([\\s\\S]*?)</(?:[a-zA-Z0-9]+:)?${tag}>`)); return m ? m[1].replace(/<!\[CDATA\[|\]\]>/g, "").trim() : null; };
 
-async function readFiling(f, cikNum) {
-  const folder = `${EDGAR_WWW}/Archives/edgar/data/${cikNum}/${f.accession.replace(/-/g, "")}`;
+async function readFiling(f) {
+  const folder = `${EDGAR_WWW}/Archives/edgar/data/${f.cik}/${f.accession.replace(/-/g, "")}`;
   const idx = await edgar(`${folder}/index.json`);
   const files = (idx.directory?.item || []).map((x) => x.name);
   const xmls = files.filter((n) => /\.xml$/i.test(n));
@@ -111,6 +127,22 @@ function normalizeDate(d) {
   if (!d) return d;
   const m = d.match(/(\d{2})-(\d{2})-(\d{4})/); if (m) return `${m[3]}-${m[1]}-${m[2]}`;
   return d.slice(0, 10);
+}
+
+// 13F-NT(통지)의 표지에서 "실제 보고하는 다른 매니저" 목록(CIK·이름)을 읽는다
+async function readNoticeManagers(f) {
+  const folder = `${EDGAR_WWW}/Archives/edgar/data/${f.cik}/${f.accession.replace(/-/g, "")}`;
+  const idx = await edgar(`${folder}/index.json`);
+  const files = (idx.directory?.item || []).map((x) => x.name);
+  const primaryName = files.filter((n) => /\.xml$/i.test(n)).find((n) => /primary_doc/i.test(n)) || f.primary;
+  if (!primaryName) throw new Error(`primary_doc 없음 (${f.accession})`);
+  const xml = await edgar(`${folder}/${primaryName}`, true);
+  const managers = [];
+  for (const m of xml.matchAll(/<(?:[a-zA-Z0-9]+:)?otherManager2?>([\s\S]*?)<\/(?:[a-zA-Z0-9]+:)?otherManager2?>/g)) {
+    const cik = text(m[1], "cik"), name = text(m[1], "name");
+    if (cik && /^\d+$/.test(cik)) managers.push({ cik: String(Number(cik)), name: name || cik });
+  }
+  return managers;
 }
 
 // 같은 CUSIP(여러 계정)을 합치고, 값 단위(2023년 이전 천 달러)를 달러로 통일
@@ -157,20 +189,55 @@ async function mapTickers(cusips, cache) {
 
 // 한 filer 의 13F 를 모아 분기별로 정리 (티커는 아직 없음)
 async function buildFiler(filer) {
-  const cikNum = String(Number(filer.cik));
   const prev = await loadCache(filer.file);
   const prevByAcc = new Map((prev?.filings || []).map((f) => [f.accession, f]));
-  const all = await list13F(filer.cik);
-  console.log(`[13f] ${filer.name}: 13F 제출 ${all.length}건`);
-  const periods = [...new Set(all.map((f) => f.period))].sort().slice(-QUARTERS);
-  const wanted = all.filter((f) => periods.includes(f.period));
+  const seen = new Set(); // 이미 목록을 받은 CIK
+  const extraCiks = new Set(prev?.extraCiks || []); // 이전 실행에서 NT 를 따라가 발견한 CIK
+  let all = [];
+  const addCik = async (cik, expect, label) => {
+    const key = String(Number(cik));
+    if (seen.has(key)) return;
+    seen.add(key);
+    const { entityName, filings } = await list13F(cik);
+    if (expect && !expect.some((e) => entityName.toLowerCase().includes(e))) {
+      throw new Error(`CIK ${cik} 이름 불일치: EDGAR="${entityName}", 기대="${expect.join(" / ")}" — 수집을 건너뜁니다`);
+    }
+    console.log(`[13f] ${label || filer.name}: ${entityName} (CIK ${key}) 13F 제출 ${filings.length}건`);
+    all.push(...filings);
+  };
+  await addCik(filer.cik, filer.expect);
+  for (const c of [...extraCiks]) {
+    try { await addCik(c, null, `${filer.name} (승계 CIK)`); } catch (err) { console.warn(`[13f] ${filer.name} 승계 CIK ${c} 실패: ${err.message}`); }
+  }
+  // 13F-HR 이 없고 13F-NT 만 있는 분기 = 다른 매니저가 대신 보고 → 그 매니저의 CIK 를 따라가 수집
+  for (let pass = 0; pass < 3; pass++) {
+    const hrPeriods = new Set(all.filter((f) => f.form.startsWith("13F-HR")).map((f) => f.period));
+    const orphanNts = all.filter((f) => f.form.startsWith("13F-NT") && !hrPeriods.has(f.period));
+    let followed = false;
+    for (const nt of orphanNts.slice(-3)) { // 최근 통지만 확인하면 충분
+      let managers = [];
+      try { managers = await readNoticeManagers(nt); } catch (err) { console.warn(`[13f] ${filer.name} 13F-NT ${nt.period} 읽기 실패: ${err.message}`); continue; }
+      for (const m of managers) {
+        if (seen.has(m.cik)) continue;
+        console.log(`[13f] ${filer.name}: ${nt.period} 분기는 13F-NT → "${m.name}" (CIK ${m.cik}) 가 대신 보고. 따라갑니다`);
+        try { await addCik(m.cik, null, `${filer.name} → ${m.name}`); extraCiks.add(m.cik); followed = true; }
+        catch (err) { console.warn(`[13f] ${filer.name} → CIK ${m.cik} 수집 실패: ${err.message}`); }
+      }
+    }
+    if (!followed) break;
+  }
+  // 같은 보고서가 recent + 추가 페이지 양쪽에 있을 수 있으니 accession 으로 중복 제거
+  all = [...new Map(all.map((f) => [f.accession + f.form, f])).values()]
+    .sort((a, b) => a.period.localeCompare(b.period) || a.filed.localeCompare(b.filed));
+  const periods = [...new Set(all.filter((f) => f.form.startsWith("13F-HR")).map((f) => f.period))].sort().slice(-QUARTERS);
+  const wanted = all.filter((f) => f.form.startsWith("13F-HR") && periods.includes(f.period));
   const filings = [];
   for (const f of wanted) {
     const cached = prevByAcc.get(f.accession);
-    if (cached) { filings.push(cached); continue; } // 이미 읽은 보고서는 다시 받지 않음
+    if (cached) { filings.push({ ...cached, cik: cached.cik || f.cik }); continue; } // 이미 읽은 보고서는 다시 받지 않음
     try {
-      const r = await readFiling(f, cikNum);
-      filings.push({ accession: r.accession, form: r.form, filed: r.filed, period: r.period, amendmentType: r.amendmentType, entries: r.entries });
+      const r = await readFiling(f);
+      filings.push({ accession: r.accession, form: r.form, filed: r.filed, period: r.period, amendmentType: r.amendmentType, cik: f.cik, entries: r.entries });
       console.log(`[13f] ${filer.name} ${r.form} ${r.period} (${r.filed}) 항목 ${r.entries.length}개${r.amendmentType ? " · " + r.amendmentType : ""}`);
     } catch (err) {
       console.warn(`[13f] ${filer.name} ${f.form} ${f.period} 실패: ${err.message}`);
@@ -192,7 +259,7 @@ async function buildFiler(filer) {
     quarters.push({ period, filed, accession: original.accession, amended, totalValue: agg.totalValue, count: agg.holdings.length, holdings: agg.holdings });
   }
   if (!quarters.length) throw new Error(`${filer.name}: 정리된 분기가 없음`);
-  return { filer, quarters, filings };
+  return { filer, quarters, filings, extraCiks: [...extraCiks] };
 }
 
 async function main() {
@@ -210,7 +277,7 @@ async function main() {
   const tickerMap = await mapTickers(cusips, await loadCache("cusips.json"));
   for (const r of results) {
     for (const q of r.quarters) for (const h of q.holdings) { h.ticker = tickerMap[h.cusip]?.ticker?.replace(/\//g, "-") || null; }
-    const out = { updated: new Date().toISOString(), cik: r.filer.cik, filer: r.filer.name, source: "SEC EDGAR 13F-HR · 티커: OpenFIGI", quarters: r.quarters, filings: r.filings };
+    const out = { updated: new Date().toISOString(), cik: r.filer.cik, extraCiks: r.extraCiks, filer: r.filer.name, source: "SEC EDGAR 13F-HR · 티커: OpenFIGI", quarters: r.quarters, filings: r.filings };
     await writeFile(path.join(OUT_DIR, r.filer.file), JSON.stringify(out));
     const last = r.quarters.at(-1);
     console.log(`[13f] ${r.filer.name} 완료: ${r.quarters.length}분기 (${r.quarters[0]?.period} ~ ${last?.period}), 최근 분기 ${last?.count}종목, 평가액 $${(last?.totalValue / 1e9).toFixed(1)}B → ${r.filer.file}`);

@@ -242,10 +242,7 @@ td .nm{font-family:var(--font);color:var(--ink-3);font-size:12px;margin-left:6px
 .plan-note{font-size:11.5px;color:var(--ink-3)}
 .gu-plan-tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);vertical-align:2px;margin-left:8px}
 .modal-ov{position:fixed;inset:0;z-index:50;background:rgba(8,13,17,.55);overflow-y:auto;padding:24px 16px;display:flex;align-items:flex-start;justify-content:center;backdrop-filter:blur(2px)}
-.modal{background:var(--bg);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);width:100%;max-width:780px;margin:3vh 0 24px;display:flex;flex-direction:column;max-height:calc(100vh - 60px);transition:max-width .2s ease}
-/* 대가 상세는 본문 페이지처럼 큰 화면으로 */
-.modal.full{max-width:1080px;margin:0;max-height:calc(100vh - 32px);min-height:calc(100vh - 48px)}
-.modal.full .modal-body{padding:18px 20px}
+.modal{background:var(--bg);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);width:100%;max-width:780px;margin:3vh 0 24px;display:flex;flex-direction:column;max-height:calc(100vh - 60px)}
 .modal-head{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line);flex:0 0 auto}
 .modal-head h3{flex:1;font-size:17px}
 .modal-close{border:0;background:none;font-size:24px;line-height:1;color:var(--ink-3);padding:2px 10px;border-radius:8px}
@@ -259,6 +256,12 @@ td .nm{font-family:var(--font);color:var(--ink-3);font-size:12px;margin-left:6px
 .gu-card .gu-desc{font-size:12.5px;color:var(--ink-2);line-height:1.55}
 .gu-card .gu-cta{margin-top:4px;font-size:13px;font-weight:600;color:var(--accent)}
 .gu-back{align-self:flex-start}
+/* 투자 대가 탭: 작은 카드 그리드 → 클릭하면 탭 전체 화면 상세 */
+.gu-grid.sm{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
+.gu-grid.sm .gu-card{padding:12px 14px}
+.gu-grid.sm .gu-desc{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.gu-page-head{display:flex;align-items:center;gap:8px 14px;flex-wrap:wrap}
+.gu-page-head h2{font-size:21px;letter-spacing:-.01em}
 .gu-pick{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
 .gu-pick .top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .gu-pick .tk2{font-family:var(--mono);font-weight:700;font-size:16px;color:var(--accent);cursor:pointer}
@@ -335,6 +338,7 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
   <div class="tabs" role="tablist">
     <button class="tab" role="tab" aria-selected="false" data-tab="starter" id="tab-starter">초보</button>
     <button class="tab" role="tab" aria-selected="true" data-tab="buffett" id="tab-buffett">버핏</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="gurus" id="tab-gurus">투자 대가</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="news" id="tab-news">뉴스</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="backtest" id="tab-backtest">백테스트</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="stocks" id="tab-stocks">종목</button>
@@ -376,8 +380,8 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
     </div>
     <div class="card">
       <div class="card-head"><h3>투자 대가 따라하기</h3><span class="small faint">구독 서비스</span></div>
-      <p class="desc">워렌 버핏, 빌 애크먼, 세스 클라르만, 하워드 막스가 실제로 사 모으는 종목을 분기 공시(13F) 기준으로 받아보는 프리미엄 기능입니다.</p>
-      <div class="form-actions" style="margin-top:10px"><button class="btn primary" id="sc-buffett" type="button">시작하기</button></div>
+      <p class="desc">워렌 버핏, 빌 애크먼, 스탠리 드러켄밀러 등 투자 대가 10인이 실제로 사 모으는 종목을 분기 공시(13F) 기준으로 받아보는 프리미엄 기능입니다.</p>
+      <div class="form-actions" style="margin-top:10px"><button class="btn primary" id="sc-buffett" type="button">대가 목록 보기</button></div>
     </div>
   </section>
 
@@ -539,6 +543,9 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
     </div>
   </section>
 
+  <!-- 투자 대가 (13F 카드 목록 → 전체 화면 상세) -->
+  <section class="panel" id="panel-gurus" role="tabpanel" hidden></section>
+
   <!-- 코인 -->
   <section class="panel" id="panel-crypto" role="tabpanel" hidden>
     <div class="card">
@@ -647,7 +654,7 @@ const fmt = {
   time: (iso) => { if (!iso) return "–"; const d = new Date(iso); return d.toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false }); },
   ago: (iso) => { if (!iso) return ""; const m = Math.round((Date.now() - new Date(iso)) / 60000); return m < 1 ? "방금" : m < 60 ? `${m}분 전` : m < 1440 ? `${Math.floor(m / 60)}시간 ${m % 60}분 전` : `${Math.floor(m / 1440)}일 전`; },
 };
-const state = { latest: null, intraday: null, history: null, charts: {}, lastBacktest: null, stockIndex: null, stocks: {}, stockSel: null, stockRange: "1Y", cmpLast: null, filings: null, bfQuarter: null, dvcLast: null, dvMarket: "kr", dvSub: "all" };
+const state = { latest: null, intraday: null, history: null, charts: {}, lastBacktest: null, stockIndex: null, stocks: {}, stockSel: null, stockRange: "1Y", cmpLast: null, filings: null, bfQuarter: null, dvcLast: null, dvMarket: "kr", dvSub: "all", guruSel: null };
 
 // ───────────────────────── 데이터 로딩 ─────────────────────────
 async function getJson(name) {
@@ -1155,21 +1162,24 @@ const PLANS = [
   { id: "max", name: "Max 구독형", price: "9.9만원", hot: true, feats: ["투자 대가들의 추천종목 받기", "원하는 매입 가격 실시간 알림", "AI 추천 투자 포트폴리오 구성", "나스닥 레버리지 투자법 등 훨씬 더 다양한 투자방안 추천"] },
 ];
 const GURUS = [
-  { id: "buffett", name: "워렌 버핏", org: "버크셔 해서웨이", filer: "버크셔", ready: true, desc: "가치투자의 대가. 분기 공시(13F)를 바탕으로 버크셔가 연속으로 사 모으는 종목과 그 근거를 보여드립니다." },
-  { id: "ackman", name: "빌 애크먼", org: "퍼싱 스퀘어", filer: "퍼싱 스퀘어", ready: true, file: "pershing.json", desc: "소수 종목에 집중하는 행동주의 투자자. 퍼싱 스퀘어 13F를 바탕으로 사 모으는 종목과 그 근거를 보여드립니다." },
-  { id: "klarman", name: "세스 클라르만", org: "바우포스트 그룹", filer: "바우포스트", desc: "『안전마진』의 저자. 바우포스트 13F 기반 추천을 준비 중입니다." },
-  { id: "marks", name: "하워드 막스", org: "오크트리 캐피털", filer: "오크트리", desc: "『투자에 대한 생각』의 저자. 오크트리 13F 기반 추천을 준비 중입니다." },
+  { id: "buffett", name: "워렌 버핏", org: "버크셔 해서웨이", filer: "버크셔", ready: true, desc: "가치투자의 대가. 버크셔 해서웨이 13F를 바탕으로 연속으로 사 모으는 종목과 그 근거를 보여드립니다." },
+  { id: "ackman", name: "빌 애크먼", org: "퍼싱 스퀘어", filer: "퍼싱 스퀘어", ready: true, file: "pershing.json", desc: "소수 종목에 집중하는 행동주의 투자자. 2026년부터는 상장 모회사 Pershing Square, Inc.(NYSE: PS)가 13F를 공시합니다." },
+  { id: "klarman", name: "세스 클라르만", org: "바우포스트 그룹", filer: "바우포스트", ready: true, file: "baupost.json", desc: "『안전마진』의 저자. 철저한 저평가 매수를 고집하는 절대수익형 가치투자자입니다." },
+  { id: "marks", name: "하워드 막스", org: "오크트리 캐피털", filer: "오크트리", ready: true, file: "oaktree.json", desc: "『투자에 대한 생각』의 저자. 시장 사이클과 위험 관리 중심의 투자로 유명합니다." },
+  { id: "tepper", name: "데이비드 테퍼", org: "아팔루사", filer: "아팔루사", ready: true, file: "appaloosa.json", desc: "위기 국면에서 과감하게 매수하는 것으로 유명한 헤지펀드 매니저. 기술주 비중도 높습니다." },
+  { id: "druckenmiller", name: "스탠리 드러켄밀러", org: "듀케인 패밀리 오피스", filer: "듀케인", ready: true, file: "duquesne.json", desc: "30년간 연평균 30% 수익을 낸 전설적 매크로 투자자. 확신이 서면 크게 베팅합니다." },
+  { id: "loeb", name: "대니얼 러브", org: "서드 포인트", filer: "서드 포인트", ready: true, file: "thirdpoint.json", desc: "행동주의와 이벤트 드리븐 전략을 함께 쓰는 서드 포인트 창업자입니다." },
+  { id: "einhorn", name: "데이비드 아인혼", org: "그린라이트 캐피털", filer: "그린라이트", ready: true, file: "greenlight.json", desc: "저평가 매수와 공매도를 함께 쓰는 가치투자자. 밸류에이션에 엄격합니다." },
+  { id: "lilu", name: "리 루", org: "히말라야 캐피털", filer: "히말라야", ready: true, file: "himalaya.json", desc: "찰리 멍거가 자금을 맡겼던 투자자. 극소수 종목을 아주 오래 보유합니다." },
+  { id: "burry", name: "마이클 버리", org: "스키온 자산운용", filer: "스키온", ready: true, file: "scion.json", note: "스키온은 2025년 11월 운용을 종료해 2025년 3분기 공시가 마지막입니다. 과거 기록 참고용으로만 보세요.", desc: "영화 『빅쇼트』의 주인공. 2025년 11월 펀드를 청산해 과거 공시만 남아 있습니다." },
 ];
 let guruPlan = null;
 function openGuruModal() { $("#gu-modal").hidden = false; document.body.style.overflow = "hidden"; renderPlanMenu(); }
 function closeGuruModal() { $("#gu-modal").hidden = true; document.body.style.overflow = ""; }
-// 대가 상세는 큰 화면(full), 플랜·목록은 작은 창
-function setModalFull(on) { $("#gu-modal .modal").classList.toggle("full", on); $("#gu-modal").scrollTop = 0; const b = $("#gu-body"); if (b) b.scrollTop = 0; }
 function renderPlanMenu() {
-  setModalFull(false);
   $("#gu-title").textContent = "구독 서비스";
   $("#gu-body").innerHTML = `
-    <p class="desc">투자 대가들의 실제 매수를 따라가는 구독 서비스입니다. 원하는 구독 형태를 선택하세요.</p>
+    <p class="desc">투자 대가들의 실제 매수를 따라가는 구독 서비스입니다. 원하는 구독 형태를 선택하면 투자 대가 탭이 열립니다.</p>
     <div class="plan-grid">${PLANS.map((p) => `<button class="plan-card ${p.hot ? "hot" : ""}" type="button" data-plan="${p.id}">
       ${p.hot ? '<span class="plan-badge">인기</span>' : ""}
       <span class="plan-name">${p.name}</span>
@@ -1179,46 +1189,46 @@ function renderPlanMenu() {
       <span class="plan-note">데모 화면이라 실제 결제는 연결되어 있지 않습니다</span>
     </button>`).join("")}</div>`;
 }
-function renderGuruMenu() {
-  setModalFull(false);
-  const plan = PLANS.find((p) => p.id === guruPlan);
-  $("#gu-title").innerHTML = `투자 대가 따라하기${plan ? `<span class="gu-plan-tag">${plan.name}</span>` : ""}`;
-  $("#gu-body").innerHTML = `
-    <button class="btn gu-back" type="button" id="gu-back-plans">← 구독 선택으로</button>
-    <p class="desc">대가들이 실제로 사 모으는 종목을 분기 공시(13F) 기준으로 받아보는 구독 기능입니다. 받아보고 싶은 투자자를 선택하세요.</p>
-    <div class="gu-grid">${GURUS.map((g) => `<button class="gu-card" type="button" data-guru="${g.id}">
-      <span class="gu-name">${g.name} 추천 종목 받아보기</span>
-      <span class="gu-org">${g.org}${g.ready ? "" : " · 준비 중"}</span>
-      <span class="gu-desc">${g.desc}</span>
-      <span class="gu-cta">${g.ready ? "추천 종목 보기 →" : "자세히 →"}</span>
-    </button>`).join("")}</div>`;
-}
 const guruFilings = {};
 function ensureGuruFilings(g) {
   if (!g.file) return ensureFilings();
   if (guruFilings[g.id]) return Promise.resolve(guruFilings[g.id]);
   return fetch(`${FILINGS_BASE}${g.file}?t=${Date.now()}`, { cache: "no-store" }).then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }).then((f) => (guruFilings[g.id] = analyzeFilings(f)));
 }
-const guBackBtn = `<button class="btn gu-back" type="button" id="gu-back">← 목록으로</button>`;
-function renderGuruDetail(id) {
-  const g = GURUS.find((x) => x.id === id); if (!g) return;
-  setModalFull(true);
-  $("#gu-title").textContent = `${g.name} 추천 종목`;
+// ── 투자 대가 탭: 작은 카드 목록 ↔ 전체 화면 상세 ──
+const planTagHtml = () => { const plan = PLANS.find((p) => p.id === guruPlan); return plan ? `<span class="gu-plan-tag">${plan.name}</span>` : ""; };
+function renderGuruTab() {
+  if (state.guruSel) return renderGuruPage(state.guruSel);
+  $("#panel-gurus").innerHTML = `<div class="card">
+    <div class="card-head"><h3>투자 대가 따라가기${planTagHtml()}</h3><span class="small faint">분기 공시(13F) 기준</span></div>
+    <p class="desc">대가들이 실제로 사 모으는 종목을 분기 공시(13F)로 따라갑니다. 워렌 버핏 상세 분석은 버핏 탭에 그대로 있고, 여기서는 투자자를 누르면 이 화면 전체에 추천 종목과 근거가 열립니다.</p>
+    <div class="gu-grid sm" style="margin-top:12px">${GURUS.map((g) => `<button class="gu-card" type="button" data-guru="${g.id}">
+      <span class="gu-name">${g.name}</span>
+      <span class="gu-org">${g.org}${g.ready ? "" : " · 준비 중"}</span>
+      <span class="gu-desc">${g.desc}</span>
+      <span class="gu-cta">추천 종목 보기 →</span>
+    </button>`).join("")}</div></div>`;
+}
+const guruHeadHtml = (g) => `<div class="gu-page-head"><button class="btn" type="button" id="gu-page-back">← 대가 목록</button><h2>${g.name} 추천 종목${planTagHtml()}</h2><span class="small faint">${g.org}</span></div>`;
+function renderGuruPage(id) {
+  const g = GURUS.find((x) => x.id === id); if (!g) { state.guruSel = null; return renderGuruTab(); }
+  state.guruSel = id;
+  const p = $("#panel-gurus");
+  window.scrollTo(0, 0);
   if (!g.ready) {
-    $("#gu-body").innerHTML = `${guBackBtn}
-      <div class="card"><div class="card-head"><h3>${g.name} · ${g.org}</h3><span class="small faint">준비 중</span></div>
+    p.innerHTML = guruHeadHtml(g) + `<div class="card"><div class="card-head"><h3>${g.name} · ${g.org}</h3><span class="small faint">준비 중</span></div>
       <p class="desc">${g.desc}</p>
-      <p class="desc" style="margin-top:8px">이 투자자의 13F 데이터는 아직 수집 전입니다. 준비되는 대로 이곳에서 추천 종목과 매수 근거를 보여드립니다. 지금은 워렌 버핏이나 빌 애크먼 추천 종목을 먼저 이용해 보세요.</p></div>`;
+      <p class="desc" style="margin-top:8px">이 투자자의 13F 데이터는 아직 수집 전입니다. 준비되는 대로 이곳에서 추천 종목과 매수 근거를 보여드립니다.</p></div>`;
     return;
   }
-  $("#gu-body").innerHTML = `${guBackBtn}<div class="empty">${g.org} 13F 데이터를 불러오는 중…</div>`;
-  ensureGuruFilings(g).then((f) => renderGuruPicks(g, f)).catch(() => {
-    if ($("#gu-modal").hidden) return;
-    $("#gu-body").innerHTML = `${guBackBtn}<div class="empty">${g.org} 13F 데이터를 불러오지 못했습니다. 잠시 뒤 다시 시도해 주세요.<br><span class="small faint">스냅샷이 아직 없다면 저장소 Actions 탭에서 13F snapshot 워크플로를 한 번 실행해야 합니다.</span></div>`;
-  });
+  p.innerHTML = guruHeadHtml(g) + `<div class="card"><div class="empty">${g.org} 13F 데이터를 불러오는 중…</div></div>`;
+  ensureGuruFilings(g).then((f) => { if (state.guruSel === id && !$("#panel-gurus").hidden) p.innerHTML = guruHeadHtml(g) + guruPicksHtml(g, f); })
+    .catch(() => {
+      if (state.guruSel !== id || $("#panel-gurus").hidden) return;
+      p.innerHTML = guruHeadHtml(g) + `<div class="card"><div class="empty">${g.org} 13F 데이터를 불러오지 못했습니다. 잠시 뒤 다시 시도해 주세요.<br><span class="small faint">스냅샷이 아직 없다면 저장소 Actions 탭에서 <code>Berkshire 13F snapshot</code> 워크플로를 한 번 실행해야 합니다.</span></div></div>`;
+    });
 }
-function renderGuruPicks(g, f) {
-  if ($("#gu-modal").hidden || !f) return;
+function guruPicksHtml(g, f) {
   const L = f.latest;
   const streaks = L.holdings.filter((h) => h.streak >= 2).sort((a, b) => b.streak - a.streak || b.weight - a.weight);
   const often = L.holdings.filter((h) => h.streak < 2 && h.buys8 >= 2 && !h.sold8).sort((a, b) => b.buys8 - a.buys8 || b.weight - a.weight);
@@ -1239,8 +1249,8 @@ function renderGuruPicks(g, f) {
     <p class="why">${why(h)}</p>
     <div class="meta"><span>최근 8분기 ${histHtml(h.hist)}</span><span>보유 <b>${fmtSh(h.shares)}</b>주</span><span>평가액 <b>${fmtB(h.value)}</b></span><span>보유 시작 <b>${h.since || "–"}</b></span></div>
   </div>`;
-  $("#gu-body").innerHTML = [
-    guBackBtn,
+  return [
+    g.note ? `<div class="notice" style="margin-bottom:0">${g.note}</div>` : "",
     `<p class="desc"><strong>${L.period}</strong> 분기 13F 공시(${L.filed}) 기준입니다. ${g.filer}가 최근 분기까지 <strong>2분기 이상 연속으로</strong> 주식수를 늘린 종목을 추천으로 보여드립니다. 티커를 누르면 종목 차트로 이동합니다.</p>`,
     streaks.length ? streaks.map(pick).join("") : `<div class="empty">최근 분기까지 2분기 이상 연속 매수한 종목이 없습니다. 아래 꾸준히 사는 종목과 포트폴리오를 참고하세요.</div>`,
     often.length ? `<div class="card"><div class="card-head"><h3>참고 · 꾸준히 사는 종목</h3><span class="small faint">연속은 아니지만 최근 8분기 중 2번 이상 매수, 그 사이 매도 없음</span></div>
@@ -1250,26 +1260,30 @@ function renderGuruPicks(g, f) {
     `<p class="small faint">13F는 분기 말 보유분이 45일 뒤에 공개되는 자료라 실제 매매보다 늦습니다. 투자 판단과 책임은 본인에게 있습니다.</p>`,
   ].join("");
 }
-$("#sc-buffett").addEventListener("click", openGuruModal);
+$("#sc-buffett").addEventListener("click", () => { state.guruSel = null; selectTab("gurus"); });
 $("#sub-open").addEventListener("click", openGuruModal);
 $("#login").addEventListener("click", () => alert("로그인 기능은 준비 중입니다."));
 $("#gu-close").addEventListener("click", closeGuruModal);
 $("#gu-modal").addEventListener("click", (e) => {
   if (e.target === e.currentTarget) return closeGuruModal();
-  if (e.target.closest("#gu-back")) return renderGuruMenu();
-  if (e.target.closest("#gu-back-plans")) return renderPlanMenu();
-  const plan = e.target.closest("[data-plan]"); if (plan) { guruPlan = plan.dataset.plan; return renderGuruMenu(); }
-  const card = e.target.closest("[data-guru]"); if (card) return renderGuruDetail(card.dataset.guru);
-  const t = e.target.closest("[data-stock]"); if (t) { closeGuruModal(); selectTab("stocks"); ensureStockIndex().then(() => selectStock(t.dataset.stock)).catch(() => {}); }
+  // 요금제를 고르면 모달을 닫고 투자 대가 탭(전체 화면)으로 이동
+  const plan = e.target.closest("[data-plan]"); if (plan) { guruPlan = plan.dataset.plan; closeGuruModal(); state.guruSel = null; selectTab("gurus"); }
 });
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("#gu-modal").hidden) closeGuruModal(); });
+// 투자 대가 탭: 카드 → 전체 화면 상세, 뒤로 가기, 티커 → 종목 차트
+$("#panel-gurus").addEventListener("click", (e) => {
+  if (e.target.closest("#gu-page-back")) { state.guruSel = null; return renderGuruTab(); }
+  const card = e.target.closest("[data-guru]"); if (card) return renderGuruPage(card.dataset.guru);
+  const t = e.target.closest("[data-stock]"); if (t) { selectTab("stocks"); ensureStockIndex().then(() => selectStock(t.dataset.stock)).catch(() => {}); }
+});
 
 // ───────────────────────── 탭 · 이벤트 ─────────────────────────
 function selectTab(name) {
   $$(".tab").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.tab === name)));
-  ["starter", "buffett", "news", "backtest", "stocks", "dividend", "crypto"].forEach((p) => { $(`#panel-${p}`).hidden = p !== name; });
+  ["starter", "buffett", "gurus", "news", "backtest", "stocks", "dividend", "crypto"].forEach((p) => { $(`#panel-${p}`).hidden = p !== name; });
   if (name === "dividend") ensureStockIndex().then(renderDividend).catch(() => {});
   if (name === "buffett") ensureFilings().catch(() => {});
+  if (name === "gurus") renderGuruTab();
   if (name === "starter") ensureLessons();
   if (name === "news") ensureNews();
   if (name === "crypto") { renderCoinTiles(); renderKimchi(); ensureStockIndex().then(renderCoinList).catch(() => {}); }
@@ -1826,7 +1840,7 @@ updateParamVisibility();
 const cachedLatest = cacheGet("md:latest"), cachedIntraday = cacheGet("md:intraday");
 if (cachedLatest) { state.latest = cachedLatest; state.intraday = cachedIntraday; renderQuotes(); }
 try { state.stockRange = localStorage.getItem("md:range") || "1Y"; const ss = localStorage.getItem("md:stock"); if (ss) state.stockSel = ss; } catch {}
-const TABS = ["starter", "buffett", "news", "backtest", "stocks", "dividend", "crypto"];
+const TABS = ["starter", "buffett", "gurus", "news", "backtest", "stocks", "dividend", "crypto"];
 let savedTab = "buffett"; try { savedTab = localStorage.getItem("md:tab") || "buffett"; } catch {}
 if (!TABS.includes(savedTab)) savedTab = "buffett";
 selectTab(savedTab);

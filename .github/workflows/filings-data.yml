@@ -1,6 +1,7 @@
 name: Berkshire 13F snapshot
 
-# 매주 월요일 투자 대가들(버크셔 해서웨이·퍼싱 스퀘어)의 13F-HR 보고서를 SEC EDGAR 에서 받아 `filings` 브랜치에 저장합니다.
+# 매주 월요일 투자 대가 10인(버핏·애크먼·클라르만·막스·테퍼·드러켄밀러·러브·아인혼·리 루·버리)의
+# 13F-HR 보고서를 SEC EDGAR 에서 받아 `filings` 브랜치에 저장합니다.
 # 13F 는 분기 종료 45일 뒤(2월·5월·8월·11월 중순)에 나오므로 그 무렵 자동으로 새 분기가 추가됩니다.
 on:
   schedule:
@@ -17,7 +18,7 @@ concurrency:
 jobs:
   snapshot:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 45 # 첫 실행은 새 투자자들의 CUSIP → 티커 조회(OpenFIGI 속도 제한)가 오래 걸린다
     steps:
       - uses: actions/checkout@v4
 
