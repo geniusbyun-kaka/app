@@ -3,10 +3,10 @@
 // GitHub Actions 에서 매주 실행되어 `filings` 브랜치에 올라간다 (13F 는 분기 종료 45일 뒤에 나온다).
 //
 // 결과물 (출력 폴더 기준): FILERS 에 등록된 투자자마다 JSON 하나
-//   berkshire.json 버핏 · pershing.json 애크먼 · baupost.json 클라르만 · oaktree.json 막스
-//   appaloosa.json 테퍼 · duquesne.json 드러켄밀러 · thirdpoint.json 러브 · greenlight.json 아인혼
-//   himalaya.json 리 루 · scion.json 버리 (2025년 3분기로 공시 종료)
+//   berkshire.json 버핏 · pershing.json 애크먼 · baupost.json 클라르만
+//   thirdpoint.json 러브 · greenlight.json 아인혼 · himalaya.json 리 루
 //   cusips.json      CUSIP → 티커 매핑 캐시 (OpenFIGI). 다음 실행에서 재사용
+// FILERS 에서 빠진 투자자의 이전 JSON 은 실행이 끝날 때 출력 폴더에서 지운다.
 //
 // 보고 주체가 바뀐 경우(13F-NT 통지만 남는 경우) 통지를 따라가 실제 보고 CIK 를 자동 발견하고
 // extraCiks 로 저장해 다음 실행에서 재사용한다. (예: 퍼싱 스퀘어 → 2026년 상장 모회사 Pershing Square, Inc.)
@@ -17,7 +17,7 @@
 //   환경변수 EDGAR_BASE, FIGI_BASE 는 테스트용. EDGAR_USER_AGENT 로 SEC 에 보내는 UA 를 바꿀 수 있다.
 //   QUARTERS=24 처럼 주면 최근 N개 분기만 (기본 21 = 5년 + 비교용 1분기).
 
-import { mkdir, writeFile, readFile } from "node:fs/promises";
+import { mkdir, writeFile, readFile, readdir, rm } from "node:fs/promises";
 import path from "node:path";
 
 const OUT_DIR = process.argv[2] || "filings-out";
@@ -27,13 +27,9 @@ const FILERS = [
   { file: "berkshire.json", cik: "0001067983", name: "Berkshire Hathaway Inc", expect: ["berkshire"], dollarFloor: 5e9 },
   { file: "pershing.json", cik: "0001336528", name: "Pershing Square Capital Management, L.P.", expect: ["pershing"], dollarFloor: 5e8 },
   { file: "baupost.json", cik: "0001061768", name: "The Baupost Group, L.L.C.", expect: ["baupost"], dollarFloor: 5e8 },
-  { file: "oaktree.json", cik: "0000949509", name: "Oaktree Capital Management LP", expect: ["oaktree"], dollarFloor: 5e8 },
-  { file: "appaloosa.json", cik: "0001656456", name: "Appaloosa LP", expect: ["appaloosa"], dollarFloor: 5e8 },
-  { file: "duquesne.json", cik: "0001536411", name: "Duquesne Family Office LLC", expect: ["duquesne"], dollarFloor: 5e8 },
   { file: "thirdpoint.json", cik: "0001040273", name: "Third Point LLC", expect: ["third point"], dollarFloor: 5e8 },
   { file: "greenlight.json", cik: "0001489933", name: "DME Capital Management, LP (Greenlight Capital)", expect: ["greenlight", "dme"], dollarFloor: 5e8 },
   { file: "himalaya.json", cik: "0001709323", name: "Himalaya Capital Management LLC", expect: ["himalaya"], dollarFloor: 5e8 },
-  { file: "scion.json", cik: "0001649339", name: "Scion Asset Management, LLC", expect: ["scion"], dollarFloor: 5e6 },
 ];
 const EDGAR_DATA = process.env.EDGAR_BASE || "https://data.sec.gov";
 const EDGAR_WWW = process.env.EDGAR_BASE || "https://www.sec.gov";
@@ -283,6 +279,11 @@ async function main() {
     console.log(`[13f] ${r.filer.name} 완료: ${r.quarters.length}분기 (${r.quarters[0]?.period} ~ ${last?.period}), 최근 분기 ${last?.count}종목, 평가액 $${(last?.totalValue / 1e9).toFixed(1)}B → ${r.filer.file}`);
   }
   await writeFile(path.join(OUT_DIR, "cusips.json"), JSON.stringify(tickerMap));
+  // FILERS 에서 빠진 투자자의 이전 스냅샷은 지운다 (filings 브랜치에 남아 있지 않도록)
+  const keep = new Set([...FILERS.map((f) => f.file), "cusips.json"]);
+  for (const name of await readdir(OUT_DIR)) {
+    if (name.endsWith(".json") && !keep.has(name)) { await rm(path.join(OUT_DIR, name)); console.log(`[13f] 목록에서 빠진 파일 삭제: ${name}`); }
+  }
 }
 
 main().catch((err) => { console.error(err); process.exit(1); });
