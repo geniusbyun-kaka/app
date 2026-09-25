@@ -283,6 +283,9 @@ async function readForm4(ev) {
   if (!xmlName) return [];
   const xml = await edgar(`${folder}/${xmlName}`, true);
   const ticker = text(xml, "issuerTradingSymbol"), issuer = text(xml, "issuerName");
+  // 발행사가 filer 자신이면(예: 버크셔 임원의 BRK 매매, 퍼싱 스퀘어 내부자의 PS 매매) 대가의 매매가 아니므로 제외
+  const issuerCik = text(xml, "issuerCik");
+  if (issuerCik && /\d/.test(issuerCik) && String(Number(issuerCik)) === ev.cik) return [];
   const sides = {};
   for (const m of xml.matchAll(/<nonDerivativeTransaction>([\s\S]*?)<\/nonDerivativeTransaction>/g)) {
     const b = m[1];
@@ -309,7 +312,10 @@ async function readSched13(ev) {
   const xml = await edgar(`${folder}/${primaryName}`, true);
   const issuer = text(xml, "issuerName");
   if (!issuer) return null;
-  const pm = xml.match(/<(?:[a-zA-Z0-9]+:)?percent[A-Za-z]*>\s*([\d.]+)/);
+  // 자기 회사에 대한 지분 공시(내부자가 낸 PS·BRK 13G 등)는 대가의 매매가 아니므로 제외
+  const issuerCik = text(xml, "issuerCik");
+  if (issuerCik && /\d/.test(issuerCik) && String(Number(issuerCik)) === ev.cik) return null;
+  const pm = xml.match(/<(?:[a-zA-Z0-9]+:)?[a-zA-Z]*[pP]ercent[a-zA-Z]*>[^<0-9]*([\d.]+)/);
   return { form: ev.form, filed: ev.filed, url: folder, ticker: null, issuer, side: "stake", percent: pm ? Number(pm[1]) : null };
 }
 async function collectEvents(results) {
