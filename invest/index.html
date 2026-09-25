@@ -262,6 +262,20 @@ td .nm{font-family:var(--font);color:var(--ink-3);font-size:12px;margin-left:6px
 .gu-grid.sm .gu-desc{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .gu-page-head{display:flex;align-items:center;gap:8px 14px;flex-wrap:wrap}
 .gu-page-head h2{font-size:21px;letter-spacing:-.01em}
+/* Max 구독자 전용 라운지 (앱 위를 완전히 덮는 별도 창) */
+.max-page{position:fixed;inset:0;z-index:60;background:var(--bg);overflow-y:auto;overscroll-behavior:contain}
+.max-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px 20px;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid var(--line);margin-bottom:16px}
+.max-badge{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.08em;padding:2px 10px;border-radius:999px;background:var(--accent);color:var(--accent-ink);vertical-align:3px;margin-left:8px}
+.max-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.max-feat{text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:8px;transition:border-color .15s,transform .15s}
+.max-feat:hover{border-color:var(--accent);transform:translateY(-1px)}
+.max-feat .t{font-weight:700;font-size:15.5px;color:var(--ink)}
+.max-feat .d{font-size:13px;color:var(--ink-2);line-height:1.6}
+.max-feat .go{margin-top:auto;font-size:13px;font-weight:600;color:var(--accent)}
+.max-sig{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;border-radius:10px;background:var(--surface-2);font-size:14px}
+.max-sig .light{width:12px;height:12px;border-radius:50%;background:var(--flat)}
+.max-sig.on .light{background:#2E9E5B}
+.max-sig.off .light{background:var(--up)}
 .gu-pick{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
 .gu-pick .top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .gu-pick .tk2{font-family:var(--mono);font-weight:700;font-size:16px;color:var(--accent);cursor:pointer}
@@ -616,6 +630,21 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
 
 
   <footer>데이터: Yahoo Finance (지연 시세). NQ 1계약 = 지수 × $20, 마이크로(MNQ) = 지수 × $2. 화면 색상은 한국식(상승 빨강, 하락 파랑)입니다.</footer>
+</div>
+
+<!-- Max 구독자 전용 라운지: 앱과 분리된 전체 화면 창 -->
+<div class="max-page" id="max-page" hidden role="dialog" aria-modal="true" aria-labelledby="max-title">
+  <div class="wrap">
+    <div class="max-head">
+      <div>
+        <span class="eyebrow">MAX 전용</span>
+        <h1 id="max-title">Max 라운지<span class="max-badge">MAX</span></h1>
+        <p class="muted small" style="margin-top:2px">Max 구독자에게만 보이는 화면입니다</p>
+      </div>
+      <button class="btn" id="max-close" type="button">← 앱으로 돌아가기</button>
+    </div>
+    <div class="panel" id="max-body"></div>
+  </div>
 </div>
 
 <!-- 초보 탭 · 투자 대가 따라하기 구독 모달 -->
@@ -1192,7 +1221,7 @@ const GURUS = [
   { id: "einhorn", name: "데이비드 아인혼", org: "그린라이트 캐피털", filer: "그린라이트", ready: true, file: "greenlight.json", desc: "저평가 매수와 공매도를 함께 쓰는 가치투자자. 밸류에이션에 엄격합니다." },
   { id: "lilu", name: "리 루", org: "히말라야 캐피털", filer: "히말라야", ready: true, file: "himalaya.json", desc: "찰리 멍거가 자금을 맡겼던 투자자. 극소수 종목을 아주 오래 보유합니다." },
 ];
-let guruPlan = null;
+let guruPlan = null; try { guruPlan = localStorage.getItem("md:plan"); } catch {}
 function openGuruModal() { $("#gu-modal").hidden = false; document.body.style.overflow = "hidden"; renderPlanMenu(); }
 function closeGuruModal() { $("#gu-modal").hidden = true; document.body.style.overflow = ""; }
 function renderPlanMenu() {
@@ -1279,17 +1308,146 @@ function guruPicksHtml(g, f) {
     `<p class="small faint">13F는 분기 말 보유분이 45일 뒤에 공개되는 자료라 실제 매매보다 늦습니다. 투자 판단과 책임은 본인에게 있습니다.</p>`,
   ].join("");
 }
+// ───────────────────────── Max 라운지 (Max 구독자 전용 별도 창) ─────────────────────────
+function openMaxPage() { $("#max-page").hidden = false; document.body.style.overflow = "hidden"; renderMaxHome(); $("#max-page").scrollTop = 0; }
+function closeMaxPage() { $("#max-page").hidden = true; document.body.style.overflow = ""; }
+const maxBackBtn = `<button class="btn gu-back" type="button" id="max-back">← Max 라운지</button>`;
+function renderMaxHome() {
+  $("#max-body").innerHTML = `<div class="card">
+    <div class="card-head"><h3>Max 전용 기능</h3><span class="small faint">데모 화면 · 실제 결제 없음</span></div>
+    <div class="max-grid">
+      <button class="max-feat" type="button" data-maxfeat="prices"><span class="t">투자 대가 매수 가격 따라가기</span><span class="d">대가들이 연속으로 사 모으는 종목의 분기말 단가와 현재가를 비교해, 대가보다 싸게 살 수 있는 종목을 찾아드립니다.</span><span class="go">열기 →</span></button>
+      <button class="max-feat" type="button" data-maxfeat="lev"><span class="t">AI 나스닥 레버리지 투자법 따라하기</span><span class="d">나스닥 100이 200일 이동평균 위에 있을 때만 레버리지(TQQQ)를 보유하는 추세 전략. 오늘의 신호와 백테스트를 제공합니다.</span><span class="go">열기 →</span></button>
+      <button class="max-feat" type="button" data-maxfeat="alerts"><span class="t">원하는 매입 가격 실시간 알림</span><span class="d">종목과 목표 매입가를 등록해 두고 도달 여부를 확인합니다.</span><span class="go">열기 →</span></button>
+      <button class="max-feat" type="button" data-maxfeat="gurus"><span class="t">투자 대가 추천 종목</span><span class="d">대가 6인이 연속으로 사 모으는 종목과 그 근거를 투자 대가 탭에서 봅니다.</span><span class="go">이동 →</span></button>
+    </div></div>`;
+}
+async function renderMaxPrices() {
+  const body = $("#max-body");
+  body.innerHTML = `${maxBackBtn}<div class="card"><div class="empty">대가들의 13F와 현재가를 불러오는 중…</div></div>`;
+  try { await ensureStockIndex(); } catch {}
+  const loaded = await Promise.all(GURUS.filter((g) => g.ready).map((g) => ensureGuruFilings(g).then((f) => ({ g, f })).catch(() => null)));
+  if ($("#max-page").hidden) return;
+  const idx = state.stockIndex?.items || [];
+  const price = (t) => idx.find((x) => x.symbol === t)?.price ?? null;
+  const sections = loaded.filter(Boolean).map(({ g, f }) => {
+    const L = f.latest;
+    const picks = L.holdings.filter((h) => h.streak >= 2 && h.shares > 0).sort((a, b) => b.streak - a.streak || b.weight - a.weight);
+    if (!picks.length) return "";
+    const rows = picks.map((h) => {
+      const paid = h.value / h.shares, cur = h.ticker ? price(h.ticker) : null;
+      const diff = cur != null && paid > 0 ? cur / paid - 1 : null, cheap = diff != null && diff <= 0;
+      return `<tr><td class="txt">${tickerHtml(h)}</td><td><span class="streak s${Math.min(h.streak, 4)}">${h.streak}분기</span></td><td>$${fmt.n(paid)}</td><td>${cur != null ? "$" + fmt.n(cur) : "–"}</td><td class="${diff == null ? "" : cheap ? "pos" : "neg"}">${diff == null ? "–" : fmt.pct(diff)}</td><td class="txt">${diff == null ? "–" : cheap ? "<strong>대가 단가보다 쌉니다</strong>" : "대가 단가보다 비쌉니다"}</td></tr>`;
+    }).join("");
+    return `<div class="card"><div class="card-head"><h3>${g.name} · ${g.org}</h3><span class="small faint">${L.period} 분기 · 연속 매수 종목</span></div>
+      <div class="tablewrap"><table><thead><tr><th>종목</th><th>연속 매수</th><th>대가 단가 (분기말)</th><th>현재가</th><th>차이</th><th>판단</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+  }).join("");
+  body.innerHTML = [
+    maxBackBtn,
+    `<p class="desc"><strong>대가 단가</strong>는 13F의 분기말 평가액 ÷ 주식수로 계산한 추정치입니다 (실제 체결가가 아니라 분기말 종가 수준). 현재가가 이보다 낮으면 대가가 산 가격보다 싸게 담을 수 있다는 뜻입니다. 티커를 누르면 종목 차트로 이동합니다.</p>`,
+    sections || `<div class="card"><div class="empty">불러올 수 있는 13F 데이터가 없습니다. 저장소 Actions 탭에서 13F 스냅샷을 먼저 실행해 주세요.</div></div>`,
+    `<p class="small faint">13F는 분기 말 보유분이 45일 뒤에 공개되는 자료라 실제 매매보다 늦습니다. 투자 판단과 책임은 본인에게 있습니다.</p>`,
+  ].join("");
+}
+function sma200Signal() {
+  const h = state.history?.symbols, s = h?.["^NDX"] || h?.["QQQ"];
+  if (!s || s.close.length < 200) return null;
+  let sum = 0; for (let i = s.close.length - 200; i < s.close.length; i++) sum += s.close[i];
+  const avg = sum / 200, last = s.close[s.close.length - 1];
+  return { name: s.name, date: s.to || s.dates[s.dates.length - 1], last, avg, on: last > avg };
+}
+function renderMaxLev() {
+  const sig = sma200Signal();
+  $("#max-body").innerHTML = [
+    maxBackBtn,
+    `<div class="card"><div class="card-head"><h3>AI 나스닥 레버리지 투자법</h3><span class="small faint">추세 필터 전략 · 데모</span></div>
+      <p class="desc">규칙은 하나입니다. <strong>나스닥 100 지수가 200일 이동평균 위에 있는 날만 레버리지 ETF(TQQQ)를 보유</strong>하고, 아래로 내려오면 전량 매도 후 현금으로 대기합니다. 레버리지의 치명적인 최대 낙폭(-80% 이상)을 추세 필터로 줄이는 것이 핵심입니다.</p>
+      ${sig
+        ? `<div class="max-sig ${sig.on ? "on" : "off"}" style="margin-top:12px"><span class="light"></span><span><strong>오늘의 신호 (${sig.date} 종가):</strong> ${sig.name} <b class="num">${fmt.n(sig.last, 0)}</b> ${sig.on ? "&gt;" : "&lt;"} 200일 이평 <b class="num">${fmt.n(sig.avg, 0)}</b> → <strong>${sig.on ? "보유 구간입니다" : "현금 대기 구간입니다"}</strong></span></div>`
+        : `<div class="max-sig" style="margin-top:12px"><span class="light"></span><span>일봉 데이터를 아직 불러오지 못해 오늘의 신호를 계산할 수 없습니다. 잠시 뒤 다시 열어 주세요.</span></div>`}
+      <div class="form-actions" style="margin-top:14px"><button class="btn primary" type="button" id="max-lev-bt">이 전략 백테스트 돌려보기 (QQQ, TQQQ 비교)</button></div>
+      <p class="small faint" style="margin-top:10px">레버리지 ETF는 변동성 잠식 때문에 장기 보유 시 지수 3배 수익이 보장되지 않습니다. 신호는 종가 기준이라 실제 체결은 다음 거래일이 될 수 있습니다.</p></div>`,
+  ].join("");
+}
+function runLevBacktest() {
+  closeMaxPage();
+  if (state.history?.symbols?.QQQ) $("#bt-asset").value = "QQQ";
+  $("#bt-strategy").value = "smaf"; updateParamVisibility();
+  $("#bt-slow").value = 200;
+  selectTab("backtest");
+  // TQQQ 는 종목 스냅샷에 있을 때만 비교로 붙인다 (없으면 QQQ 단독으로라도 실행)
+  ensureStockIndex().catch(() => {}).then(() => {
+    const hasT = !!state.stockIndex?.items.some((x) => x.symbol === "TQQQ");
+    $("#bt-asset2-wrap").hidden = !hasT; $("#bt-asset2-add-wrap").hidden = hasT; $("#bt-asset2").value = hasT ? "TQQQ" : "";
+    if (state.history) { refreshSeriesInfo(); setYears(10); runFromForm(); }
+  });
+}
+function maxAlerts() { return cacheGet("md:alerts") || []; }
+function renderMaxAlerts() {
+  const list = maxAlerts();
+  $("#max-body").innerHTML = [
+    maxBackBtn,
+    `<div class="card"><div class="card-head"><h3>원하는 매입 가격 알림</h3><span class="small faint">데모 · 발송 기능 준비 중</span></div>
+      <p class="desc">종목과 목표 매입가를 등록해 두세요. 푸시·메일 발송은 준비 중이라 지금은 이 브라우저에 저장되고, 이 화면에서 도달 여부를 보여드립니다.</p>
+      <div class="cmp-row" style="margin-top:10px">
+        <div class="field"><label for="max-al-sym">티커</label><input id="max-al-sym" list="sym-list" placeholder="예: AAPL" style="font-family:var(--mono);text-transform:uppercase"></div>
+        <div class="field"><label for="max-al-price">목표 매입가 ($)</label><input id="max-al-price" type="number" min="0" step="0.01"></div>
+        <button class="btn primary" type="button" id="max-al-add">등록</button>
+      </div>
+      ${list.length ? `<div class="tablewrap" style="margin-top:12px"><table><thead><tr><th>종목</th><th>목표가</th><th>현재가</th><th>상태</th><th></th></tr></thead><tbody>${list.map((a, i) => {
+        const cur = state.stockIndex?.items.find((x) => x.symbol === a.sym)?.price ?? null;
+        const hit = cur != null && cur <= a.price;
+        return `<tr><td class="txt"><strong>${a.sym}</strong></td><td>$${fmt.n(a.price)}</td><td>${cur != null ? "$" + fmt.n(cur) : "–"}</td><td class="${hit ? "pos" : ""}">${cur == null ? "–" : hit ? "도달! 매수 검토" : "대기 중"}</td><td><button class="chip" type="button" data-al-del="${i}">삭제</button></td></tr>`;
+      }).join("")}</tbody></table></div>` : `<div class="empty">등록된 알림이 없습니다</div>`}
+    </div>`,
+  ].join("");
+}
+$("#max-close").addEventListener("click", closeMaxPage);
+$("#max-page").addEventListener("click", (e) => {
+  if (e.target.closest("#max-back")) return renderMaxHome();
+  const feat = e.target.closest("[data-maxfeat]");
+  if (feat) {
+    const k = feat.dataset.maxfeat;
+    if (k === "prices") return renderMaxPrices();
+    if (k === "lev") return renderMaxLev();
+    if (k === "alerts") return ensureStockIndex().catch(() => {}).then(renderMaxAlerts);
+    if (k === "gurus") { closeMaxPage(); state.guruSel = null; return selectTab("gurus"); }
+  }
+  if (e.target.closest("#max-lev-bt")) return runLevBacktest();
+  if (e.target.closest("#max-al-add")) {
+    const sym = normSym($("#max-al-sym").value), p = Number($("#max-al-price").value);
+    if (!sym || !(p > 0)) return alert("티커와 목표 매입가를 입력하세요.");
+    cacheSet("md:alerts", [...maxAlerts(), { sym, price: p }]);
+    return renderMaxAlerts();
+  }
+  const del = e.target.closest("[data-al-del]");
+  if (del) { const l = maxAlerts(); l.splice(+del.dataset.alDel, 1); cacheSet("md:alerts", l); return renderMaxAlerts(); }
+  const t = e.target.closest("[data-stock]");
+  if (t) { closeMaxPage(); selectTab("stocks"); ensureStockIndex().then(() => selectStock(t.dataset.stock)).catch(() => {}); }
+});
+
 $("#sc-buffett").addEventListener("click", openGuruModal);
 $("#sc-gurus").addEventListener("click", () => { state.guruSel = null; selectTab("gurus"); });
-$("#sub-open").addEventListener("click", openGuruModal);
+// Max 구독자는 구독하기를 누르면 바로 전용 라운지로, 그 외에는 요금제 선택 모달로
+$("#sub-open").addEventListener("click", () => { if (guruPlan === "max") openMaxPage(); else openGuruModal(); });
 $("#login").addEventListener("click", () => alert("로그인 기능은 준비 중입니다."));
 $("#gu-close").addEventListener("click", closeGuruModal);
 $("#gu-modal").addEventListener("click", (e) => {
   if (e.target === e.currentTarget) return closeGuruModal();
-  // 요금제를 고르면 모달을 닫고 투자 대가 탭(전체 화면)으로 이동
-  const plan = e.target.closest("[data-plan]"); if (plan) { guruPlan = plan.dataset.plan; closeGuruModal(); state.guruSel = null; selectTab("gurus"); }
+  // 요금제 선택: Max 는 전용 라운지(별도 창), Pro 는 투자 대가 탭으로
+  const plan = e.target.closest("[data-plan]");
+  if (plan) {
+    guruPlan = plan.dataset.plan;
+    try { localStorage.setItem("md:plan", guruPlan); } catch {}
+    closeGuruModal(); state.guruSel = null;
+    if (guruPlan === "max") openMaxPage(); else selectTab("gurus");
+  }
 });
-document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("#gu-modal").hidden) closeGuruModal(); });
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+  if (!$("#gu-modal").hidden) closeGuruModal();
+  else if (!$("#max-page").hidden) closeMaxPage();
+});
 // 투자 대가 탭: 카드 → 전체 화면 상세, 뒤로 가기, 티커 → 종목 차트
 $("#panel-gurus").addEventListener("click", (e) => {
   if (e.target.closest("#gu-page-back")) { state.guruSel = null; return renderGuruTab(); }
