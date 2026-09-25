@@ -1351,6 +1351,10 @@ async function guruFollowRows(f) {
   const idxPrice = (t) => idx.find((x) => x.symbol === t)?.price ?? null;
   const rows = [], missing = [];
   for (const h of f.latest.holdings) {
+    // 추천 대상은 투자 대가 탭과 같은 기준만: 최근 분기까지 연속 매수 중(2분기 이상)이거나,
+    // 꾸준히 모으는 종목(최근 8분기 중 2회 이상 매수, 그 사이 매도 없음). 그 외(OXY·NVR 처럼
+    // 한참 전에 사고 만 종목)는 따라 살 대상이 아니므로 표에서 뺀다.
+    if (!(h.streak >= 2 || (h.buys8 >= 2 && !h.sold8))) continue;
     const buys = h.cusip ? guruBuys(f, h) : [];
     if (!buys.length) continue; // 데이터 범위 안에서 매수한 적이 없으면 따라갈 단가도 없다
     if (!h.ticker) { missing.push(h.name); continue; }
@@ -1376,7 +1380,7 @@ function followGradeHtml(r, g) {
 function followSectionHtml(g, f, rows, missing) {
   const table = rows.length ? `<div class="tablewrap"><table><thead><tr><th>종목</th><th>마지막 매수</th><th>매수 분기</th><th>추정 평균단가</th><th>최근 매수가 (추정)</th><th>현재가</th><th>최근 매수가 대비</th><th>판단</th></tr></thead><tbody>${rows.map((r) => `<tr>
       <td class="txt">${tickerHtml(r.h)}</td><td class="txt">${r.recent.period}</td><td>${r.nBuys}회</td><td>$${fmt.n(r.avg)}</td><td>$${fmt.n(r.recent.mid)}</td><td>${r.cur != null ? "$" + fmt.n(r.cur) : "–"}</td><td class="${r.rel == null ? "" : r.rel <= 0 ? "pos" : "neg"}">${r.rel == null ? "–" : fmt.pct(r.rel)}</td><td class="txt">${followGradeHtml(r, g)}</td>
-    </tr>`).join("")}</tbody></table></div>` : `<div class="empty">데이터 범위 안에서 매수 이력을 계산할 수 있는 종목이 없습니다</div>`;
+    </tr>`).join("")}</tbody></table></div>` : `<div class="empty">지금은 연속 매수 중이거나 꾸준히 모으는 종목이 없습니다</div>`;
   const note = missing.length ? `<p class="small faint" style="margin-top:8px">주가 이력이 없어 계산에서 제외: ${missing.join(", ")}</p>` : "";
   return `<div class="card-head"><h3>${g.name} · ${g.org}</h3><span class="small faint">${f.latest.period} 분기 공시까지 반영</span></div>${table}${note}`;
 }
@@ -1385,7 +1389,7 @@ async function renderMaxPrices() {
   const gurus = GURUS.filter((g) => g.ready);
   body.innerHTML = [
     maxBackBtn,
-    `<p class="desc"><strong>추정 평균단가</strong>는 대가가 매수한 분기마다 그 분기 종가의 최저·최고 <strong>중앙값</strong>을 매수 단가로 보고, 그 분기에 늘린 주식수로 가중평균한 값입니다. <strong>최근 매수가</strong>는 가장 최근에 매수한 분기의 중앙값이고, 따라 사기 판단은 이 값을 기준으로 합니다. 현재가가 <strong>최근 매수가보다 낮으면 강력 추천</strong>, <strong>+10% 이내면 추천</strong>, 그보다 높으면 관망입니다. 티커를 누르면 종목 차트로 이동합니다.</p>`,
+    `<p class="desc">추천 대상은 투자 대가 탭과 같은 기준입니다: <strong>최근 분기까지 연속 매수 중</strong>이거나 <strong>꾸준히 모으는 종목</strong>(최근 8분기 중 2회 이상 매수, 그 사이 매도 없음)만 올립니다. <strong>추정 평균단가</strong>는 대가가 매수한 분기마다 그 분기 종가의 최저·최고 <strong>중앙값</strong>을 매수 단가로 보고, 그 분기에 늘린 주식수로 가중평균한 값입니다. <strong>최근 매수가</strong>는 가장 최근에 매수한 분기의 중앙값이고, 따라 사기 판단은 이 값을 기준으로 합니다. 현재가가 <strong>최근 매수가보다 낮으면 강력 추천</strong>, <strong>+10% 이내면 추천</strong>, 그보다 높으면 관망입니다. 티커를 누르면 종목 차트로 이동합니다.</p>`,
     gurus.map((g) => `<div class="card" id="mx-follow-${g.id}"><div class="card-head"><h3>${g.name} · ${g.org}</h3></div><div class="empty">분기별 매수와 주가 이력으로 추정 단가를 계산하는 중…</div></div>`).join(""),
     `<p class="small faint">13F는 분기 말 보유분이 45일 뒤에 공개되는 자료이고, 단가는 분기 주가 범위로 계산한 추정치라 실제 체결가와 다를 수 있습니다 (예: 블록딜). 투자 판단과 책임은 본인에게 있습니다.</p>`,
   ].join("");
