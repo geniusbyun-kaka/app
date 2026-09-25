@@ -21,7 +21,7 @@ const LIMIT = Number(process.env.LIMIT || 0);
 const CONCURRENCY = Number(process.env.CONCURRENCY || 4);
 // 투자 대가 13F 스냅샷 (filings 브랜치). 대가 보유 종목도 차트·현재가를 쓸 수 있게 스냅샷에 포함시킨다.
 const FILINGS_BASE = process.env.FILINGS_BASE || `https://raw.githubusercontent.com/${process.env.GITHUB_REPOSITORY || "geniusbyun-kaka/app"}/filings`;
-const GURU_FILES = ["berkshire.json", "pershing.json", "baupost.json", "thirdpoint.json", "greenlight.json", "himalaya.json"];
+const GURU_FILES = ["berkshire.json", "pershing.json", "baupost.json", "thirdpoint.json", "greenlight.json", "himalaya.json", "patient.json", "firsteagle.json"];
 
 // 비교 도구에서 자주 쓰는 ETF. S&P 500 구성종목 목록에 없는 것들.
 const ETFS = [

@@ -5,6 +5,8 @@
 // 결과물 (출력 폴더 기준): FILERS 에 등록된 투자자마다 JSON 하나
 //   berkshire.json 버핏 · pershing.json 애크먼 · baupost.json 클라르만
 //   thirdpoint.json 러브 · greenlight.json 아인혼 · himalaya.json 리 루
+//   patient.json 매클레모어 · firsteagle.json 퍼스트 이글
+//   events.json      13F 사이의 매매 공시 (Form 4 · Schedule 13D/G, 최근 200일)
 //   cusips.json      CUSIP → 티커 매핑 캐시 (OpenFIGI). 다음 실행에서 재사용
 // FILERS 에서 빠진 투자자의 이전 JSON 은 실행이 끝날 때 출력 폴더에서 지운다.
 //
@@ -30,6 +32,8 @@ const FILERS = [
   { file: "thirdpoint.json", cik: "0001040273", name: "Third Point LLC", expect: ["third point"], dollarFloor: 5e8 },
   { file: "greenlight.json", cik: "0001489933", name: "DME Capital Management, LP (Greenlight Capital)", expect: ["greenlight", "dme"], dollarFloor: 5e8 },
   { file: "himalaya.json", cik: "0001709323", name: "Himalaya Capital Management LLC", expect: ["himalaya"], dollarFloor: 5e8 },
+  { file: "patient.json", cik: "0001854794", name: "Patient Capital Management, LLC", expect: ["patient capital"], dollarFloor: 5e7 },
+  { file: "firsteagle.json", cik: "0001325447", name: "First Eagle Investment Management, LLC", expect: ["first eagle"], dollarFloor: 5e9 },
 ];
 const EDGAR_DATA = process.env.EDGAR_BASE || "https://data.sec.gov";
 const EDGAR_WWW = process.env.EDGAR_BASE || "https://www.sec.gov";
@@ -83,15 +87,23 @@ async function list13F(cik) {
     try { pages.push(await edgar(`${EDGAR_DATA}/submissions/${f.name}`)); } catch (err) { console.warn(`[13f] 추가 페이지 실패 ${f.name}: ${err.message}`); }
   }
   const out = [];
+  const eventForms = /^(4|4\/A|SC(HEDULE)? 13[DG](\/A)?)$/; // 분기 사이의 매매를 보여주는 공시: Form 4 (10% 보유자 거래), 13D/G (5% 지분)
+  const eventCutoff = new Date(Date.now() - 200 * 86400000).toISOString().slice(0, 10);
+  const events = [];
   for (const p of pages) {
     for (let i = 0; i < p.accessionNumber.length; i++) {
       const form = p.form[i];
+      if (eventForms.test(form) && p.filingDate[i] >= eventCutoff) {
+        events.push({ accession: p.accessionNumber[i], form, filed: p.filingDate[i], primary: p.primaryDocument[i], cik: String(Number(cik)) });
+        continue;
+      }
       if (form !== "13F-HR" && form !== "13F-HR/A" && form !== "13F-NT" && form !== "13F-NT/A") continue;
       out.push({ accession: p.accessionNumber[i], form, filed: p.filingDate[i], period: p.reportDate[i], primary: p.primaryDocument[i], cik: String(Number(cik)) });
     }
   }
   out.sort((a, b) => a.period.localeCompare(b.period) || a.filed.localeCompare(b.filed));
-  return { entityName: sub.name || "", filings: out };
+  events.sort((a, b) => b.filed.localeCompare(a.filed));
+  return { entityName: sub.name || "", filings: out, events };
 }
 
 const text = (xml, tag) => { const m = xml.match(new RegExp(`<(?:[a-zA-Z0-9]+:)?${tag}[^>]*>([\\s\\S]*?)</(?:[a-zA-Z0-9]+:)?${tag}>`)); return m ? m[1].replace(/<!\[CDATA\[|\]\]>/g, "").trim() : null; };
@@ -190,16 +202,18 @@ async function buildFiler(filer) {
   const seen = new Set(); // 이미 목록을 받은 CIK
   const extraCiks = new Set(prev?.extraCiks || []); // 이전 실행에서 NT 를 따라가 발견한 CIK
   let all = [];
+  const rawEvents = []; // Form 4 · 13D/G 등 분기 사이의 매매 공시 (events.json 용)
   const addCik = async (cik, expect, label) => {
     const key = String(Number(cik));
     if (seen.has(key)) return;
     seen.add(key);
-    const { entityName, filings } = await list13F(cik);
+    const { entityName, filings, events } = await list13F(cik);
     if (expect && !expect.some((e) => entityName.toLowerCase().includes(e))) {
       throw new Error(`CIK ${cik} 이름 불일치: EDGAR="${entityName}", 기대="${expect.join(" / ")}" — 수집을 건너뜁니다`);
     }
     console.log(`[13f] ${label || filer.name}: ${entityName} (CIK ${key}) 13F 제출 ${filings.length}건`);
     all.push(...filings);
+    rawEvents.push(...events);
   };
   await addCik(filer.cik, filer.expect);
   for (const c of [...extraCiks]) {
@@ -255,7 +269,61 @@ async function buildFiler(filer) {
     quarters.push({ period, filed, accession: original.accession, amended, totalValue: agg.totalValue, count: agg.holdings.length, holdings: agg.holdings });
   }
   if (!quarters.length) throw new Error(`${filer.name}: 정리된 분기가 없음`);
-  return { filer, quarters, filings, extraCiks: [...extraCiks] };
+  return { filer, quarters, filings, extraCiks: [...extraCiks], rawEvents };
+}
+
+// ── 13F 사이의 매매 공시 (events.json) ──
+// Form 4: 지분 10% 이상 보유자는 매매 후 이틀 안에 날짜·주식수·단가까지 신고한다 (버크셔의 레너·OXY 매수가 이렇게 공개됐다).
+// Schedule 13D/G: 5% 지분을 넘길 때의 공시. 두 가지를 모아 앱의 공통 매수 화면에 "13F 밖 소식"으로 보여준다.
+async function readForm4(ev) {
+  const folder = `${EDGAR_WWW}/Archives/edgar/data/${ev.cik}/${ev.accession.replace(/-/g, "")}`;
+  const idx = await edgar(`${folder}/index.json`);
+  const files = (idx.directory?.item || []).map((x) => x.name);
+  const xmlName = files.find((n) => /\.xml$/i.test(n) && !/^primary_doc/i.test(n) && !/xsl/i.test(n)) || files.find((n) => /\.xml$/i.test(n));
+  if (!xmlName) return [];
+  const xml = await edgar(`${folder}/${xmlName}`, true);
+  const ticker = text(xml, "issuerTradingSymbol"), issuer = text(xml, "issuerName");
+  const sides = {};
+  for (const m of xml.matchAll(/<nonDerivativeTransaction>([\s\S]*?)<\/nonDerivativeTransaction>/g)) {
+    const b = m[1];
+    const val = (tag) => { const seg = text(b, tag); return seg == null ? null : (text(seg, "value") ?? seg).trim(); };
+    const code = val("transactionAcquiredDisposedCode");
+    if (code !== "A" && code !== "D") continue;
+    const shares = Number(val("transactionShares")) || 0, price = Number(val("transactionPricePerShare")) || null, date = val("transactionDate");
+    const s = sides[code] || (sides[code] = { shares: 0, priceLow: null, priceHigh: null, from: null, to: null });
+    s.shares += shares;
+    if (price > 0) { s.priceLow = s.priceLow == null ? price : Math.min(s.priceLow, price); s.priceHigh = s.priceHigh == null ? price : Math.max(s.priceHigh, price); }
+    if (date) { if (!s.from || date < s.from) s.from = date; if (!s.to || date > s.to) s.to = date; }
+  }
+  return Object.entries(sides).filter(([, s]) => s.shares > 0).map(([code, s]) => ({
+    form: ev.form, filed: ev.filed, url: folder, ticker: ticker || null, issuer: issuer || null,
+    side: code === "A" ? "buy" : "sell", shares: s.shares, priceLow: s.priceLow, priceHigh: s.priceHigh, from: s.from, to: s.to,
+  }));
+}
+async function readSched13(ev) {
+  const folder = `${EDGAR_WWW}/Archives/edgar/data/${ev.cik}/${ev.accession.replace(/-/g, "")}`;
+  const idx = await edgar(`${folder}/index.json`);
+  const files = (idx.directory?.item || []).map((x) => x.name);
+  const primaryName = files.filter((n) => /\.xml$/i.test(n)).find((n) => /primary_doc/i.test(n));
+  if (!primaryName) return null; // 옛 텍스트 양식은 건너뛴다 (2024년 말부터 XML)
+  const xml = await edgar(`${folder}/${primaryName}`, true);
+  const issuer = text(xml, "issuerName");
+  if (!issuer) return null;
+  const pm = xml.match(/<(?:[a-zA-Z0-9]+:)?percent[A-Za-z]*>\s*([\d.]+)/);
+  return { form: ev.form, filed: ev.filed, url: folder, ticker: null, issuer, side: "stake", percent: pm ? Number(pm[1]) : null };
+}
+async function collectEvents(results) {
+  const out = [];
+  for (const r of results) {
+    for (const ev of (r.rawEvents || []).slice(0, 12)) { // filer 당 최근 12건이면 충분
+      try {
+        if (/^4/.test(ev.form)) out.push(...(await readForm4(ev)).map((e) => ({ guru: r.filer.file, ...e })));
+        else { const s = await readSched13(ev); if (s) out.push({ guru: r.filer.file, ...s }); }
+      } catch (err) { console.warn(`[13f] 이벤트 공시 ${ev.form} ${ev.accession} 파싱 실패: ${err.message}`); }
+    }
+  }
+  out.sort((a, b) => b.filed.localeCompare(a.filed));
+  return out.slice(0, 60);
 }
 
 async function main() {
@@ -279,8 +347,16 @@ async function main() {
     console.log(`[13f] ${r.filer.name} 완료: ${r.quarters.length}분기 (${r.quarters[0]?.period} ~ ${last?.period}), 최근 분기 ${last?.count}종목, 평가액 $${(last?.totalValue / 1e9).toFixed(1)}B → ${r.filer.file}`);
   }
   await writeFile(path.join(OUT_DIR, "cusips.json"), JSON.stringify(tickerMap));
+  // 13F 사이의 매매 공시(Form 4 · 13D/G) → events.json
+  try {
+    const events = await collectEvents(results);
+    await writeFile(path.join(OUT_DIR, "events.json"), JSON.stringify({ updated: new Date().toISOString(), source: "SEC EDGAR Form 4 · Schedule 13D/G", events }));
+    console.log(`[13f] 13F 밖 매매 공시 ${events.length}건 → events.json`);
+  } catch (err) {
+    console.warn(`[13f] events.json 생성 실패: ${err.message}`);
+  }
   // FILERS 에서 빠진 투자자의 이전 스냅샷은 지운다 (filings 브랜치에 남아 있지 않도록)
-  const keep = new Set([...FILERS.map((f) => f.file), "cusips.json"]);
+  const keep = new Set([...FILERS.map((f) => f.file), "cusips.json", "events.json"]);
   for (const name of await readdir(OUT_DIR)) {
     if (name.endsWith(".json") && !keep.has(name)) { await rm(path.join(OUT_DIR, name)); console.log(`[13f] 목록에서 빠진 파일 삭제: ${name}`); }
   }
