@@ -1313,11 +1313,13 @@ function openMaxPage() { $("#max-page").hidden = false; document.body.style.over
 function closeMaxPage() { $("#max-page").hidden = true; document.body.style.overflow = ""; }
 const maxBackBtn = `<button class="btn gu-back" type="button" id="max-back">← Max 라운지</button>`;
 function renderMaxHome() {
+  $("#max-body").dataset.screen = "home";
   $("#max-body").innerHTML = `<div class="card">
     <div class="card-head"><h3>Max 전용 기능</h3><span class="small faint">데모 화면 · 실제 결제 없음</span></div>
     <div class="max-grid">
       <button class="max-feat" type="button" data-maxfeat="prices"><span class="t">투자 대가 매수 가격 따라가기</span><span class="d">대가들이 연속으로 사 모으는 종목의 분기말 단가와 현재가를 비교해, 대가보다 싸게 살 수 있는 종목을 찾아드립니다.</span><span class="go">열기 →</span></button>
       <button class="max-feat" type="button" data-maxfeat="lev"><span class="t">AI 나스닥 레버리지 투자법 따라하기</span><span class="d">나스닥 100이 200일 이동평균 위에 있을 때만 레버리지(TQQQ)를 보유하는 추세 전략. 오늘의 신호와 백테스트를 제공합니다.</span><span class="go">열기 →</span></button>
+      <button class="max-feat" type="button" data-maxfeat="common"><span class="t">대가들의 공통 매수 종목</span><span class="d">여러 대가가 함께 들고 있거나 이번 분기에 같이 사들인 종목을 한눈에 봅니다.</span><span class="go">열기 →</span></button>
       <button class="max-feat" type="button" data-maxfeat="alerts"><span class="t">원하는 매입 가격 실시간 알림</span><span class="d">종목과 목표 매입가를 등록해 두고 도달 여부를 확인합니다.</span><span class="go">열기 →</span></button>
       <button class="max-feat" type="button" data-maxfeat="gurus"><span class="t">투자 대가 추천 종목</span><span class="d">대가 6인이 연속으로 사 모으는 종목과 그 근거를 투자 대가 탭에서 봅니다.</span><span class="go">이동 →</span></button>
     </div></div>`;
@@ -1386,6 +1388,7 @@ function followSectionHtml(g, f, rows, missing) {
 }
 async function renderMaxPrices() {
   const body = $("#max-body");
+  body.dataset.screen = "prices";
   const gurus = GURUS.filter((g) => g.ready);
   body.innerHTML = [
     maxBackBtn,
@@ -1409,6 +1412,56 @@ async function renderMaxPrices() {
     }
   }
 }
+// ── 공통 매수·보유 종목: 대가 6인의 최신 13F 를 티커로 묶어 2명 이상 겹치는 종목만 ──
+const SHARE_CLASS_ALIAS = { GOOG: "GOOGL", "LEN-B": "LEN", "HEI-A": "HEI", "BRK-A": "BRK-B", LILAK: "LILA", LLYVK: "LLYVA" }; // 같은 회사의 클래스 주식은 한 종목으로
+const GURU_SHORT = { buffett: "버핏", ackman: "애크먼", klarman: "클라르만", loeb: "러브", einhorn: "아인혼", lilu: "리 루" };
+async function renderMaxCommon() {
+  const body = $("#max-body");
+  body.dataset.screen = "common";
+  body.innerHTML = `${maxBackBtn}<div class="card"><div class="empty">대가 6인의 13F 를 모아 겹치는 종목을 찾는 중…</div></div>`;
+  try { await ensureStockIndex(); } catch {}
+  const loaded = await Promise.all(GURUS.filter((g) => g.ready).map((g) => ensureGuruFilings(g).then((f) => ({ g, f })).catch(() => null)));
+  if ($("#max-page").hidden || body.dataset.screen !== "common") return;
+  const isBuy = (c) => c === "inc" || c === "new";
+  const byKey = new Map();
+  for (const { g, f } of loaded.filter(Boolean)) {
+    for (const h of f.latest.holdings) {
+      const t = h.ticker || null;
+      const key = t ? SHARE_CLASS_ALIAS[t] || t : h.name;
+      const e = byKey.get(key) || { key, tickers: new Set(), name: h.name, holders: [] };
+      if (t) e.tickers.add(t);
+      const ex = e.holders.find((x) => x.g.id === g.id); // 클래스 주식을 둘 다 들고 있으면 한 명으로 합산
+      if (ex) { ex.buy = ex.buy || isBuy(h.change); ex.dec = ex.dec || h.change === "dec"; ex.weight += h.weight; }
+      else e.holders.push({ g, buy: isBuy(h.change), dec: h.change === "dec", weight: h.weight });
+      byKey.set(key, e);
+    }
+  }
+  const rows = [...byKey.values()].filter((e) => e.holders.length >= 2);
+  rows.forEach((e) => { e.buyers = e.holders.filter((x) => x.buy).length; });
+  rows.sort((a, b) => b.buyers - a.buyers || b.holders.length - a.holders.length);
+  const idx = state.stockIndex?.items || [];
+  const priceOf = (e) => { for (const t of e.tickers) { const p = idx.find((x) => x.symbol === t)?.price; if (p != null) return p; } return null; };
+  const tickerCell = (e) => {
+    const first = [...e.tickers].find((t) => idx.some((x) => x.symbol === t));
+    const label = e.tickers.size ? [...e.tickers].join("·") : "–";
+    return `<span class="tk ${first ? "" : "plain"}" ${first ? `data-stock="${first}"` : ""}>${label}</span><span class="nm">${e.name}</span>`;
+  };
+  const holderTags = (e) => [...e.holders].sort((a, b) => (b.buy - a.buy) || (b.weight - a.weight))
+    .map((x) => `<span class="tag ${x.buy ? "inc" : x.dec ? "dec" : ""}">${GURU_SHORT[x.g.id] || x.g.name} ${x.buy ? "매수" : x.dec ? "축소" : "보유"} · ${fmt.n(x.weight * 100, 1)}%</span>`).join(" ");
+  const table = (list) => `<div class="tablewrap"><table><thead><tr><th>종목</th><th>보유</th><th>이번 분기 매수</th><th>대가별 상태 · 비중</th><th>현재가</th></tr></thead><tbody>${list.map((e) => {
+    const p = priceOf(e);
+    return `<tr><td class="txt">${tickerCell(e)}</td><td>${e.holders.length}명</td><td class="${e.buyers >= 2 ? "pos" : ""}">${e.buyers ? `${e.buyers}명` : "–"}</td><td class="txt" style="white-space:normal">${holderTags(e)}</td><td>${p != null ? "$" + fmt.n(p) : "–"}</td></tr>`;
+  }).join("")}</tbody></table></div>`;
+  const commonBuys = rows.filter((e) => e.buyers >= 2);
+  const commonHolds = rows.filter((e) => e.buyers < 2);
+  body.innerHTML = [
+    maxBackBtn,
+    `<p class="desc">대가 6인의 최신 13F 를 겹쳐 본 화면입니다. <strong>2명 이상이 같은 종목</strong>을 들고 있으면 여기에 나오고, 이번 분기에 <strong>2명 이상이 함께 매수</strong>한 종목은 맨 위에 따로 모았습니다. 같은 회사의 클래스 주식(GOOG·GOOGL 등)은 한 종목으로 합쳤습니다. 티커를 누르면 종목 차트로 이동합니다.</p>`,
+    `<div class="card"><div class="card-head"><h3>이번 분기 공통 매수</h3><span class="small faint">최근 분기에 2명 이상이 주식수를 늘리거나 신규 편입</span></div>${commonBuys.length ? table(commonBuys) : '<div class="empty">이번 분기에 2명 이상이 함께 매수한 종목이 없습니다</div>'}</div>`,
+    `<div class="card"><div class="card-head"><h3>공통 보유</h3><span class="small faint">2명 이상이 보유 중 (공통 매수는 위 표에)</span></div>${commonHolds.length ? table(commonHolds) : '<div class="empty">겹치는 보유 종목이 없습니다</div>'}</div>`,
+    `<p class="small faint">13F 는 분기 말 보유분이 45일 뒤에 공개되는 자료라 실제 매매보다 늦습니다. 투자 판단과 책임은 본인에게 있습니다.</p>`,
+  ].join("");
+}
 function sma200Signal() {
   const h = state.history?.symbols, s = h?.["^NDX"] || h?.["QQQ"];
   if (!s || s.close.length < 200) return null;
@@ -1417,6 +1470,7 @@ function sma200Signal() {
   return { name: s.name, date: s.to || s.dates[s.dates.length - 1], last, avg, on: last > avg };
 }
 function renderMaxLev() {
+  $("#max-body").dataset.screen = "lev";
   const sig = sma200Signal();
   $("#max-body").innerHTML = [
     maxBackBtn,
@@ -1444,6 +1498,7 @@ function runLevBacktest() {
 }
 function maxAlerts() { return cacheGet("md:alerts") || []; }
 function renderMaxAlerts() {
+  $("#max-body").dataset.screen = "alerts";
   const list = maxAlerts();
   $("#max-body").innerHTML = [
     maxBackBtn,
@@ -1469,6 +1524,7 @@ $("#max-page").addEventListener("click", (e) => {
   if (feat) {
     const k = feat.dataset.maxfeat;
     if (k === "prices") return renderMaxPrices();
+    if (k === "common") return renderMaxCommon();
     if (k === "lev") return renderMaxLev();
     if (k === "alerts") return ensureStockIndex().catch(() => {}).then(renderMaxAlerts);
     if (k === "gurus") { closeMaxPage(); state.guruSel = null; return selectTab("gurus"); }
