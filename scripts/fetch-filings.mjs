@@ -321,10 +321,14 @@ async function readSched13(ev) {
 async function collectEvents(results) {
   const out = [];
   for (const r of results) {
+    // 발행사 이름이 filer 자신을 가리키면(예: 버크셔 주식에 대한 내부자 13D) 대가의 매매가 아니다.
+    // CIK 비교가 놓치는 표기 차이를 이름(expect 부분 문자열)으로 한 번 더 거른다.
+    const selfWords = r.filer.expect || [];
+    const isSelf = (e) => selfWords.some((w) => `${e.issuer || ""} ${e.ticker || ""}`.toLowerCase().includes(w));
     for (const ev of (r.rawEvents || []).slice(0, 12)) { // filer 당 최근 12건이면 충분
       try {
-        if (/^4/.test(ev.form)) out.push(...(await readForm4(ev)).map((e) => ({ guru: r.filer.file, ...e })));
-        else { const s = await readSched13(ev); if (s) out.push({ guru: r.filer.file, ...s }); }
+        if (/^4/.test(ev.form)) out.push(...(await readForm4(ev)).filter((e) => !isSelf(e)).map((e) => ({ guru: r.filer.file, ...e })));
+        else { const s = await readSched13(ev); if (s && !isSelf(s)) out.push({ guru: r.filer.file, ...s }); }
       } catch (err) { console.warn(`[13f] 이벤트 공시 ${ev.form} ${ev.accession} 파싱 실패: ${err.message}`); }
     }
   }
