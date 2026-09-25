@@ -524,12 +524,13 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
       <p class="desc">분기마다 SEC 에 제출하는 13F 보고서 기준입니다. 분기 말 보유분이 45일 뒤에 공개되므로 가장 최근 매매는 다음 보고서에 나옵니다.</p>
       <div class="bf-head" id="bf-head"></div>
     </div>
-    <div class="card">
-      <div class="card-head"><h3>계속 모으고 있는 종목</h3><span class="small faint">현재 보유 중이면서 최근 분기까지 연속으로 주식수를 늘린 종목. 4분기 이상은 진하게 표시</span></div>
+    <!-- 관리자 전용 분석 (연속 매수·꾸준한 매수). ?admin=암호 로 열람 -->
+    <div class="card admin-only" hidden>
+      <div class="card-head"><h3>계속 모으고 있는 종목 <span class="tag">관리자 전용</span></h3><span class="small faint">현재 보유 중이면서 최근 분기까지 연속으로 주식수를 늘린 종목. 4분기 이상은 진하게 표시</span></div>
       <div class="tablewrap"><table id="bf-streak"><thead><tr><th>종목</th><th>연속 매수</th><th>최근 분기</th><th>최근 8분기 (오른쪽 최근)</th><th>8분기 매수</th><th>보유 주식</th><th>비중</th></tr></thead><tbody></tbody></table></div>
     </div>
-    <div class="card">
-      <div class="card-head"><h3>꾸준히 사는 종목 (연속은 아님)</h3><span class="small faint">현재 보유 중이고 최근 8분기 중 2번 이상 매수, 그 사이 한 번도 매도하지 않은 종목 (연속 매수는 아님)</span></div>
+    <div class="card admin-only" hidden>
+      <div class="card-head"><h3>꾸준히 사는 종목 (연속은 아님) <span class="tag">관리자 전용</span></h3><span class="small faint">현재 보유 중이고 최근 8분기 중 2번 이상 매수, 그 사이 한 번도 매도하지 않은 종목 (연속 매수는 아님)</span></div>
       <div class="tablewrap"><table id="bf-often"><thead><tr><th>종목</th><th>8분기 매수</th><th>최근 8분기 (오른쪽 최근)</th><th>마지막 매수</th><th>보유 주식</th><th>비중</th></tr></thead><tbody></tbody></table></div>
     </div>
     <div class="card">
@@ -655,6 +656,28 @@ const fmt = {
   ago: (iso) => { if (!iso) return ""; const m = Math.round((Date.now() - new Date(iso)) / 60000); return m < 1 ? "방금" : m < 60 ? `${m}분 전` : m < 1440 ? `${Math.floor(m / 60)}시간 ${m % 60}분 전` : `${Math.floor(m / 1440)}일 전`; },
 };
 const state = { latest: null, intraday: null, history: null, charts: {}, lastBacktest: null, stockIndex: null, stocks: {}, stockSel: null, stockRange: "1Y", cmpLast: null, filings: null, bfQuarter: null, dvcLast: null, dvMarket: "kr", dvSub: "all", guruSel: null };
+
+// ───────────────────────── 관리자 전용 표시 ─────────────────────────
+// 버핏 탭의 연속 매수·꾸준한 매수 분석은 관리자만 봅니다.
+// 켜기: 주소 뒤에 ?admin=암호  ·  끄기: ?admin=off  (한 번 켜면 이 브라우저에 기억됩니다)
+// 암호를 바꾸려면 브라우저 콘솔에서
+//   crypto.subtle.digest("SHA-256", new TextEncoder().encode("새암호")).then(b => console.log([...new Uint8Array(b)].map(x => x.toString(16).padStart(2, "0")).join("")))
+// 로 해시를 만들어 아래 값을 교체하세요. 정적 사이트라 화면에서만 숨겨질 뿐,
+// 원본 13F 데이터(filings 브랜치)는 공개 저장소에 있다는 점은 유의.
+const ADMIN_HASH = "5d1b227b062f8310e4f6ad013ea7fd6092c983c04fa13b8c243610bba6925302";
+let adminOn = false;
+async function sha256hex(s) { const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)); return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join(""); }
+function applyAdmin() { $$(".admin-only").forEach((el) => { el.hidden = !adminOn; }); }
+async function initAdmin() {
+  const q = params.get("admin");
+  try {
+    if (q === "off") localStorage.removeItem("md:admin");
+    else if (q) { const h = await sha256hex(q); if (h === ADMIN_HASH) localStorage.setItem("md:admin", h); }
+    adminOn = localStorage.getItem("md:admin") === ADMIN_HASH;
+  } catch { adminOn = false; }
+  applyAdmin();
+  if (state.filings) renderBuffett(); // 먼저 그려졌으면 관리자 상태 반영해 다시
+}
 
 // ───────────────────────── 데이터 로딩 ─────────────────────────
 async function getJson(name) {
@@ -1625,12 +1648,14 @@ function renderBuffett() {
   const newOnes = L.holdings.filter((h) => h.change === "new");
   $("#bf-head").innerHTML = [
     kpi("포트폴리오 평가액", fmtB(L.totalValue), `${L.count}종목 · ${L.period} 기준`),
-    kpi("연속 매수 중", `${streaks.length}종목`, streaks.slice(0, 4).map((h) => h.ticker || h.name.split(" ")[0]).join(", ") || "없음"),
+    adminOn ? kpi("연속 매수 중", `${streaks.length}종목`, streaks.slice(0, 4).map((h) => h.ticker || h.name.split(" ")[0]).join(", ") || "없음") : "",
     kpi("이번 분기 신규", `${newOnes.length}종목`, newOnes.map((h) => h.ticker || h.name.split(" ")[0]).join(", ") || "없음"),
     kpi("이번 분기 청산", `${L.exits.length}종목`, L.exits.map((h) => h.ticker || h.name.split(" ")[0]).join(", ") || "없음"),
   ].join("");
-  $("#bf-streak tbody").innerHTML = streaks.length ? streaks.map((h) => `<tr class="${h.streak >= 4 ? "hl4" : h.streak >= 3 ? "hl3" : ""}"><td class="txt">${tickerHtml(h)}</td><td><span class="streak s${Math.min(h.streak, 4)}">${h.streak}분기</span></td><td class="txt">${changeHtml(h)}</td><td>${histHtml(h.hist)}</td><td>${h.buys8}회</td><td>${fmtSh(h.shares)}</td><td>${fmt.n(h.weight * 100, 1)}%</td></tr>`).join("") : `<tr><td class="txt faint" colspan="7">최근 분기까지 2분기 이상 연속 매수한 종목이 없습니다</td></tr>`;
-  $("#bf-often tbody").innerHTML = often.length ? often.map((h) => `<tr><td class="txt">${tickerHtml(h)}</td><td>${h.buys8}회</td><td>${histHtml(h.hist)}</td><td class="txt">${h.lastBuy || "–"}</td><td>${fmtSh(h.shares)}</td><td>${fmt.n(h.weight * 100, 1)}%</td></tr>`).join("") : `<tr><td class="txt faint" colspan="6">해당 종목 없음</td></tr>`;
+  // 연속 매수·꾸준한 매수 분석은 관리자만 (카드 자체도 admin-only 로 숨김)
+  $("#bf-streak tbody").innerHTML = !adminOn ? "" : streaks.length ? streaks.map((h) => `<tr class="${h.streak >= 4 ? "hl4" : h.streak >= 3 ? "hl3" : ""}"><td class="txt">${tickerHtml(h)}</td><td><span class="streak s${Math.min(h.streak, 4)}">${h.streak}분기</span></td><td class="txt">${changeHtml(h)}</td><td>${histHtml(h.hist)}</td><td>${h.buys8}회</td><td>${fmtSh(h.shares)}</td><td>${fmt.n(h.weight * 100, 1)}%</td></tr>`).join("") : `<tr><td class="txt faint" colspan="7">최근 분기까지 2분기 이상 연속 매수한 종목이 없습니다</td></tr>`;
+  $("#bf-often tbody").innerHTML = !adminOn ? "" : often.length ? often.map((h) => `<tr><td class="txt">${tickerHtml(h)}</td><td>${h.buys8}회</td><td>${histHtml(h.hist)}</td><td class="txt">${h.lastBuy || "–"}</td><td>${fmtSh(h.shares)}</td><td>${fmt.n(h.weight * 100, 1)}%</td></tr>`).join("") : `<tr><td class="txt faint" colspan="6">해당 종목 없음</td></tr>`;
+  applyAdmin();
   const sel = $("#bf-quarter");
   if (!sel.options.length) { sel.innerHTML = [...qs].reverse().map((q) => `<option value="${q.period}">${q.period}${q.amended ? " (정정 반영)" : ""}</option>`).join(""); sel.value = state.bfQuarter || L.period; }
   renderBuffettQuarter();
@@ -1833,6 +1858,7 @@ $("#panel-dividend").addEventListener("click", (e) => { const t = e.target.close
 $("#dvc-run").addEventListener("click", runDividendCompare);
 
 // ───────────────────────── 시작 ─────────────────────────
+initAdmin();
 updateParamVisibility();
 const cachedLatest = cacheGet("md:latest"), cachedIntraday = cacheGet("md:intraday");
 if (cachedLatest) { state.latest = cachedLatest; state.intraday = cachedIntraday; renderQuotes(); }
