@@ -1227,7 +1227,7 @@ function closeGuruModal() { $("#gu-modal").hidden = true; document.body.style.ov
 function renderPlanMenu() {
   $("#gu-title").textContent = "구독 서비스";
   $("#gu-body").innerHTML = `
-    <p class="desc">투자 대가들의 실제 매수를 따라가는 구독 서비스입니다. 원하는 구독 형태를 선택하면 투자 대가 탭이 열립니다.</p>
+    <p class="desc">투자 대가들의 실제 매수를 따라가는 구독 서비스입니다. 원하는 구독 형태를 선택하세요. Max 를 선택하면 Max 전용 라운지가 열립니다.</p>
     <div class="plan-grid">${PLANS.map((p) => `<button class="plan-card ${p.hot ? "hot" : ""}" type="button" data-plan="${p.id}">
       ${p.hot ? '<span class="plan-badge">인기</span>' : ""}
       <span class="plan-name">${p.name}</span>
@@ -1235,7 +1235,8 @@ function renderPlanMenu() {
       <ul class="plan-feats">${p.feats.map((t) => `<li>${t}</li>`).join("")}</ul>
       <span class="plan-cta">${p.name} 시작하기</span>
       <span class="plan-note">데모 화면이라 실제 결제는 연결되어 있지 않습니다</span>
-    </button>`).join("")}</div>`;
+    </button>`).join("")}</div>
+    ${guruPlan === "max" ? `<div class="form-actions"><button class="btn primary" type="button" id="gu-max-lounge">이미 Max 구독 중 · Max 라운지 바로가기 →</button></div>` : ""}`;
 }
 const guruFilings = {};
 function ensureGuruFilings(g) {
@@ -1243,12 +1244,11 @@ function ensureGuruFilings(g) {
   if (guruFilings[g.id]) return Promise.resolve(guruFilings[g.id]);
   return fetch(`${FILINGS_BASE}${g.file}?t=${Date.now()}`, { cache: "no-store" }).then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }).then((f) => (guruFilings[g.id] = analyzeFilings(f)));
 }
-// ── 투자 대가 탭: 작은 카드 목록 ↔ 전체 화면 상세 ──
-const planTagHtml = () => { const plan = PLANS.find((p) => p.id === guruPlan); return plan ? `<span class="gu-plan-tag">${plan.name}</span>` : ""; };
+// ── 투자 대가 탭: 작은 카드 목록 ↔ 전체 화면 상세 (모든 이용자 공개) ──
 function renderGuruTab() {
   if (state.guruSel) return renderGuruPage(state.guruSel);
   $("#panel-gurus").innerHTML = `<div class="card">
-    <div class="card-head"><h3>투자 대가 따라가기${planTagHtml()}</h3><span class="small faint">분기 공시(13F) 기준</span></div>
+    <div class="card-head"><h3>투자 대가 따라가기</h3><span class="small faint">분기 공시(13F) 기준</span></div>
     <p class="desc">대가들이 실제로 사 모으는 종목을 분기 공시(13F)로 따라갑니다. 워렌 버핏 상세 분석은 버핏 탭에 그대로 있고, 여기서는 투자자를 누르면 이 화면 전체에 추천 종목과 근거가 열립니다.</p>
     <div class="gu-grid sm" style="margin-top:12px">${GURUS.map((g) => `<button class="gu-card" type="button" data-guru="${g.id}">
       <span class="gu-name">${g.name}</span>
@@ -1257,7 +1257,7 @@ function renderGuruTab() {
       <span class="gu-cta">추천 종목 보기 →</span>
     </button>`).join("")}</div></div>`;
 }
-const guruHeadHtml = (g) => `<div class="gu-page-head"><button class="btn" type="button" id="gu-page-back">← 대가 목록</button><h2>${g.name} 추천 종목${planTagHtml()}</h2><span class="small faint">${g.org}</span></div>`;
+const guruHeadHtml = (g) => `<div class="gu-page-head"><button class="btn" type="button" id="gu-page-back">← 대가 목록</button><h2>${g.name} 추천 종목</h2><span class="small faint">${g.org}</span></div>`;
 function renderGuruPage(id) {
   const g = GURUS.find((x) => x.id === id); if (!g) { state.guruSel = null; return renderGuruTab(); }
   state.guruSel = id;
@@ -1322,31 +1322,91 @@ function renderMaxHome() {
       <button class="max-feat" type="button" data-maxfeat="gurus"><span class="t">투자 대가 추천 종목</span><span class="d">대가 6인이 연속으로 사 모으는 종목과 그 근거를 투자 대가 탭에서 봅니다.</span><span class="go">이동 →</span></button>
     </div></div>`;
 }
+// 분기 시작일: 13F 분기말 날짜(3·6·9·12월 말)에서 그 분기의 첫날을 구한다
+function quarterStart(period) { const m = { "03": "01", "06": "04", "09": "07", "12": "10" }[period.slice(5, 7)] || "01"; return `${period.slice(0, 4)}-${m}-01`; }
+// 해당 분기 동안 종가의 최저·최고의 중앙값 = 그 분기 매수 단가 추정치
+function quarterMid(stock, period) {
+  const a = quarterStart(period), { dates, close } = stock.daily;
+  let lo = Infinity, hi = -Infinity;
+  for (let i = 0; i < dates.length; i++) { const d = dates[i]; if (d >= a && d <= period) { const c = close[i]; if (c < lo) lo = c; if (c > hi) hi = c; } }
+  return isFinite(lo) ? (lo + hi) / 2 : null;
+}
+// 분기별 순매수(주식수 증가분) 목록. 이후 분기에 액면분할이 있으면 이전 매수 수량을 현재 기준으로 환산한다.
+function guruBuys(f, h) {
+  const buys = []; let prevShares = null;
+  for (const q of f.quarters) {
+    const x = q.map.get(h.cusip);
+    if (!x) { prevShares = null; continue; }
+    if (x.change === "split" && x.splitRatio) { for (const b of buys) b.shares *= x.splitRatio; }
+    else if (x.change === "new") buys.push({ period: q.period, shares: x.shares });
+    else if (x.change === "inc" && prevShares != null) buys.push({ period: q.period, shares: x.shares - prevShares });
+    prevShares = x.shares;
+  }
+  return buys.filter((b) => b.shares > 0);
+}
+// 버핏(버크셔) 정밀 계산: 매수 분기마다 중앙값 단가 × 늘린 주식수 → 추정 평균단가와 최근 매수가
+async function buffettFollowRows(f) {
+  const idx = state.stockIndex?.items || [];
+  const idxPrice = (t) => idx.find((x) => x.symbol === t)?.price ?? null;
+  const rows = [];
+  for (const h of f.latest.holdings) {
+    if (!h.ticker) continue;
+    const buys = guruBuys(f, h);
+    if (!buys.length) continue;
+    let stock; try { stock = await loadStock(h.ticker); } catch { continue; }
+    let cost = 0, sh = 0, recent = null;
+    for (const b of buys) { const mid = quarterMid(stock, b.period); if (mid == null) continue; cost += mid * b.shares; sh += b.shares; recent = { period: b.period, mid }; }
+    if (!sh || !recent) continue;
+    const cur = idxPrice(h.ticker) ?? stock.quote?.price ?? null;
+    const rel = cur != null ? cur / recent.mid - 1 : null;
+    // 판단: 최근 매수가 아래면 강력 추천, +10% 이내면 추천, 그 위는 관망
+    const grade = rel == null ? -1 : rel <= 0 ? 2 : rel <= 0.1 ? 1 : 0;
+    rows.push({ h, nBuys: buys.length, avg: cost / sh, recent, cur, rel, grade });
+  }
+  rows.sort((a, b) => b.grade - a.grade || (a.rel ?? 9) - (b.rel ?? 9) || b.h.weight - a.h.weight);
+  return rows;
+}
+function followGradeHtml(r) {
+  if (r.rel == null) return '<span class="faint">현재가 없음</span>';
+  if (r.grade === 2) return `<span class="tag inc">강력 추천</span> <span class="small faint">버핏 최근 매수가보다 쌉니다</span>`;
+  if (r.grade === 1) return `<span class="tag new">추천</span> <span class="small faint">최근 매수가 +10% 이내</span>`;
+  return `<span class="faint">관망 · 최근 매수가보다 ${fmt.n(r.rel * 100, 1)}% 높음</span>`;
+}
 async function renderMaxPrices() {
   const body = $("#max-body");
-  body.innerHTML = `${maxBackBtn}<div class="card"><div class="empty">대가들의 13F와 현재가를 불러오는 중…</div></div>`;
+  body.innerHTML = `${maxBackBtn}<div class="card"><div class="empty">버크셔의 분기별 매수와 주가 이력으로 추정 단가를 계산하는 중… (처음에는 10~20초 걸릴 수 있습니다)</div></div>`;
   try { await ensureStockIndex(); } catch {}
-  const loaded = await Promise.all(GURUS.filter((g) => g.ready).map((g) => ensureGuruFilings(g).then((f) => ({ g, f })).catch(() => null)));
+  let bf = null; try { bf = await ensureFilings(); } catch {}
+  let bfRows = [];
+  if (bf) { try { bfRows = await buffettFollowRows(bf); } catch {} }
   if ($("#max-page").hidden) return;
-  const idx = state.stockIndex?.items || [];
-  const price = (t) => idx.find((x) => x.symbol === t)?.price ?? null;
-  const sections = loaded.filter(Boolean).map(({ g, f }) => {
+  const bfSection = bfRows.length ? `<div class="card"><div class="card-head"><h3>워렌 버핏 · 버크셔 해서웨이</h3><span class="small faint">${bf.latest.period} 분기 공시까지 반영</span></div>
+    <div class="tablewrap"><table><thead><tr><th>종목</th><th>마지막 매수</th><th>매수 분기</th><th>추정 평균단가</th><th>최근 매수가 (추정)</th><th>현재가</th><th>최근 매수가 대비</th><th>판단</th></tr></thead><tbody>${bfRows.map((r) => `<tr>
+      <td class="txt">${tickerHtml(r.h)}</td><td class="txt">${r.recent.period}</td><td>${r.nBuys}회</td><td>$${fmt.n(r.avg)}</td><td>$${fmt.n(r.recent.mid)}</td><td>${r.cur != null ? "$" + fmt.n(r.cur) : "–"}</td><td class="${r.rel == null ? "" : r.rel <= 0 ? "pos" : "neg"}">${r.rel == null ? "–" : fmt.pct(r.rel)}</td><td class="txt">${followGradeHtml(r)}</td>
+    </tr>`).join("")}</tbody></table></div></div>` : `<div class="card"><div class="empty">버크셔 13F 또는 주가 데이터를 불러오지 못해 계산할 수 없습니다.</div></div>`;
+  // 나머지 대가는 분기말 단가 비교(간이 방식). 버핏식 정밀 계산은 순차 적용 예정.
+  const others = await Promise.all(GURUS.filter((g) => g.ready && g.file).map((g) => ensureGuruFilings(g).then((f) => ({ g, f })).catch(() => null)));
+  if ($("#max-page").hidden) return;
+  const idx2 = state.stockIndex?.items || [];
+  const price2 = (t) => idx2.find((x) => x.symbol === t)?.price ?? null;
+  const otherSections = others.filter(Boolean).map(({ g, f }) => {
     const L = f.latest;
     const picks = L.holdings.filter((h) => h.streak >= 2 && h.shares > 0).sort((a, b) => b.streak - a.streak || b.weight - a.weight);
     if (!picks.length) return "";
     const rows = picks.map((h) => {
-      const paid = h.value / h.shares, cur = h.ticker ? price(h.ticker) : null;
+      const paid = h.value / h.shares, cur = h.ticker ? price2(h.ticker) : null;
       const diff = cur != null && paid > 0 ? cur / paid - 1 : null, cheap = diff != null && diff <= 0;
-      return `<tr><td class="txt">${tickerHtml(h)}</td><td><span class="streak s${Math.min(h.streak, 4)}">${h.streak}분기</span></td><td>$${fmt.n(paid)}</td><td>${cur != null ? "$" + fmt.n(cur) : "–"}</td><td class="${diff == null ? "" : cheap ? "pos" : "neg"}">${diff == null ? "–" : fmt.pct(diff)}</td><td class="txt">${diff == null ? "–" : cheap ? "<strong>대가 단가보다 쌉니다</strong>" : "대가 단가보다 비쌉니다"}</td></tr>`;
+      return `<tr><td class="txt">${tickerHtml(h)}</td><td><span class="streak s${Math.min(h.streak, 4)}">${h.streak}분기</span></td><td>$${fmt.n(paid)}</td><td>${cur != null ? "$" + fmt.n(cur) : "–"}</td><td class="${diff == null ? "" : cheap ? "pos" : "neg"}">${diff == null ? "–" : fmt.pct(diff)}</td></tr>`;
     }).join("");
-    return `<div class="card"><div class="card-head"><h3>${g.name} · ${g.org}</h3><span class="small faint">${L.period} 분기 · 연속 매수 종목</span></div>
-      <div class="tablewrap"><table><thead><tr><th>종목</th><th>연속 매수</th><th>대가 단가 (분기말)</th><th>현재가</th><th>차이</th><th>판단</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+    return `<div class="card"><div class="card-head"><h3>${g.name} · ${g.org}</h3><span class="small faint">${L.period} 분기 · 연속 매수 종목 · 분기말 단가 기준 (간이)</span></div>
+      <div class="tablewrap"><table><thead><tr><th>종목</th><th>연속 매수</th><th>분기말 단가</th><th>현재가</th><th>차이</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
   }).join("");
   body.innerHTML = [
     maxBackBtn,
-    `<p class="desc"><strong>대가 단가</strong>는 13F의 분기말 평가액 ÷ 주식수로 계산한 추정치입니다 (실제 체결가가 아니라 분기말 종가 수준). 현재가가 이보다 낮으면 대가가 산 가격보다 싸게 담을 수 있다는 뜻입니다. 티커를 누르면 종목 차트로 이동합니다.</p>`,
-    sections || `<div class="card"><div class="empty">불러올 수 있는 13F 데이터가 없습니다. 저장소 Actions 탭에서 13F 스냅샷을 먼저 실행해 주세요.</div></div>`,
-    `<p class="small faint">13F는 분기 말 보유분이 45일 뒤에 공개되는 자료라 실제 매매보다 늦습니다. 투자 판단과 책임은 본인에게 있습니다.</p>`,
+    `<p class="desc"><strong>추정 평균단가</strong>는 버핏이 매수한 분기마다 그 분기 종가의 최저·최고 <strong>중앙값</strong>을 매수 단가로 보고, 그 분기에 늘린 주식수로 가중평균한 값입니다. <strong>최근 매수가</strong>는 가장 최근에 매수한 분기의 중앙값이고, 따라 사기 판단은 이 값을 기준으로 합니다. 현재가가 <strong>최근 매수가보다 낮으면 강력 추천</strong>, <strong>+10% 이내면 추천</strong>, 그보다 높으면 관망입니다. 티커를 누르면 종목 차트로 이동합니다.</p>`,
+    bfSection,
+    otherSections,
+    `<p class="small faint">13F는 분기 말 보유분이 45일 뒤에 공개되는 자료이고, 단가는 분기 주가 범위로 계산한 추정치라 실제 체결가와 다를 수 있습니다 (예: 블록딜). 투자 판단과 책임은 본인에게 있습니다.</p>`,
   ].join("");
 }
 function sma200Signal() {
@@ -1428,12 +1488,13 @@ $("#max-page").addEventListener("click", (e) => {
 
 $("#sc-buffett").addEventListener("click", openGuruModal);
 $("#sc-gurus").addEventListener("click", () => { state.guruSel = null; selectTab("gurus"); });
-// Max 구독자는 구독하기를 누르면 바로 전용 라운지로, 그 외에는 요금제 선택 모달로
-$("#sub-open").addEventListener("click", () => { if (guruPlan === "max") openMaxPage(); else openGuruModal(); });
+// 구독하기는 항상 요금제 선택 모달부터 (Max 구독 중이면 모달 안에 라운지 바로가기 표시)
+$("#sub-open").addEventListener("click", openGuruModal);
 $("#login").addEventListener("click", () => alert("로그인 기능은 준비 중입니다."));
 $("#gu-close").addEventListener("click", closeGuruModal);
 $("#gu-modal").addEventListener("click", (e) => {
   if (e.target === e.currentTarget) return closeGuruModal();
+  if (e.target.closest("#gu-max-lounge")) { closeGuruModal(); return openMaxPage(); }
   // 요금제 선택: Max 는 전용 라운지(별도 창), Pro 는 투자 대가 탭으로
   const plan = e.target.closest("[data-plan]");
   if (plan) {
