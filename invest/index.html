@@ -1321,8 +1321,6 @@ function renderMaxHome() {
       <button class="max-feat" type="button" data-maxfeat="lev"><span class="t">AI 나스닥 레버리지 투자법 따라하기</span><span class="d">나스닥 100이 200일 이동평균 위에 있을 때만 레버리지(TQQQ)를 보유하는 추세 전략. 오늘의 신호와 백테스트를 제공합니다.</span><span class="go">열기 →</span></button>
       <button class="max-feat" type="button" data-maxfeat="common"><span class="t">대가들의 공통 매수 종목</span><span class="d">여러 대가가 함께 들고 있거나 이번 분기에 같이 사들인 종목을 한눈에 봅니다.</span><span class="go">열기 →</span></button>
       <button class="max-feat" type="button" data-maxfeat="portfolio"><span class="t">포트폴리오 구성 및 적립식 추천 방식</span><span class="d">여유 자금에서 현금을 얼마나 남길지(버크셔의 현금 비중 참고), 매달 VOO 적립은 얼마가 되는지 계산합니다.</span><span class="go">열기 →</span></button>
-      <button class="max-feat" type="button" data-maxfeat="alerts"><span class="t">원하는 매입 가격 실시간 알림</span><span class="d">종목과 목표 매입가를 등록해 두고 도달 여부를 확인합니다.</span><span class="go">열기 →</span></button>
-      <button class="max-feat" type="button" data-maxfeat="gurus"><span class="t">투자 대가 추천 종목</span><span class="d">대가 8인이 연속으로 사 모으는 종목과 그 근거를 투자 대가 탭에서 봅니다.</span><span class="go">이동 →</span></button>
     </div></div>`;
 }
 // 분기 시작일: 13F 분기말 날짜(3·6·9·12월 말)에서 그 분기의 첫날을 구한다
@@ -1395,6 +1393,7 @@ async function renderMaxPrices() {
     maxBackBtn,
     `<p class="desc">추천 대상은 투자 대가 탭과 같은 기준입니다: <strong>최근 분기까지 연속 매수 중</strong>이거나 <strong>꾸준히 모으는 종목</strong>(최근 8분기 중 2회 이상 매수, 그 사이 매도 없음)만 올립니다. <strong>추정 평균단가</strong>는 대가가 매수한 분기마다 그 분기 종가의 최저·최고 <strong>중앙값</strong>을 매수 단가로 보고, 그 분기에 늘린 주식수로 가중평균한 값입니다. <strong>최근 매수가</strong>는 가장 최근에 매수한 분기의 중앙값이고, 따라 사기 판단은 이 값을 기준으로 합니다. 현재가가 <strong>최근 매수가보다 낮으면 강력 추천</strong>, <strong>+10% 이내면 추천</strong>, 그보다 높으면 관망입니다. 티커를 누르면 종목 차트로 이동합니다.</p>`,
     gurus.map((g) => `<div class="card" id="mx-follow-${g.id}"><div class="card-head"><h3>${g.name} · ${g.org}</h3></div><div class="empty">분기별 매수와 주가 이력으로 추정 단가를 계산하는 중…</div></div>`).join(""),
+    alertsCardHtml(),
     `<p class="small faint">13F는 분기 말 보유분이 45일 뒤에 공개되는 자료이고, 단가는 분기 주가 범위로 계산한 추정치라 실제 체결가와 다를 수 있습니다 (예: 블록딜). 투자 판단과 책임은 본인에게 있습니다.</p>`,
   ].join("");
   try { await ensureStockIndex(); } catch {}
@@ -1592,13 +1591,11 @@ function runPortfolioCalc() {
   r.hidden = false;
 }
 function maxAlerts() { return cacheGet("md:alerts") || []; }
-function renderMaxAlerts() {
-  $("#max-body").dataset.screen = "alerts";
+// 매수 가격 따라가기 화면 하단에 들어가는 매입 가격 알림 카드
+function alertsCardHtml() {
   const list = maxAlerts();
-  $("#max-body").innerHTML = [
-    maxBackBtn,
-    `<div class="card"><div class="card-head"><h3>원하는 매입 가격 알림</h3><span class="small faint">데모 · 발송 기능 준비 중</span></div>
-      <p class="desc">종목과 목표 매입가를 등록해 두세요. 푸시·메일 발송은 준비 중이라 지금은 이 브라우저에 저장되고, 이 화면에서 도달 여부를 보여드립니다.</p>
+  return `<div class="card" id="max-alerts-card"><div class="card-head"><h3>원하는 매입 가격 알림</h3><span class="small faint">데모 · 발송 기능 준비 중</span></div>
+      <p class="desc">위 표에서 눈여겨본 종목의 목표 매입가를 등록해 두세요. 푸시·메일 발송은 준비 중이라 지금은 이 브라우저에 저장되고, 이 화면에서 도달 여부를 보여드립니다.</p>
       <div class="cmp-row" style="margin-top:10px">
         <div class="field"><label for="max-al-sym">티커</label><input id="max-al-sym" list="sym-list" placeholder="예: AAPL" style="font-family:var(--mono);text-transform:uppercase"></div>
         <div class="field"><label for="max-al-price">목표 매입가 ($)</label><input id="max-al-price" type="number" min="0" step="0.01"></div>
@@ -1609,9 +1606,9 @@ function renderMaxAlerts() {
         const hit = cur != null && cur <= a.price;
         return `<tr><td class="txt"><strong>${a.sym}</strong></td><td>$${fmt.n(a.price)}</td><td>${cur != null ? "$" + fmt.n(cur) : "–"}</td><td class="${hit ? "pos" : ""}">${cur == null ? "–" : hit ? "도달! 매수 검토" : "대기 중"}</td><td><button class="chip" type="button" data-al-del="${i}">삭제</button></td></tr>`;
       }).join("")}</tbody></table></div>` : `<div class="empty">등록된 알림이 없습니다</div>`}
-    </div>`,
-  ].join("");
+    </div>`;
 }
+function refreshAlertsCard() { const c = $("#max-alerts-card"); if (c) c.outerHTML = alertsCardHtml(); }
 $("#max-close").addEventListener("click", closeMaxPage);
 $("#max-page").addEventListener("click", (e) => {
   if (e.target.closest("#max-back")) return renderMaxHome();
@@ -1622,8 +1619,6 @@ $("#max-page").addEventListener("click", (e) => {
     if (k === "common") return renderMaxCommon();
     if (k === "portfolio") return renderMaxPortfolio();
     if (k === "lev") return renderMaxLev();
-    if (k === "alerts") return ensureStockIndex().catch(() => {}).then(renderMaxAlerts);
-    if (k === "gurus") { closeMaxPage(); state.guruSel = null; return selectTab("gurus"); }
   }
   if (e.target.closest("#max-lev-bt")) return runLevBacktest();
   if (e.target.closest("#pf-run")) return runPortfolioCalc();
@@ -1638,10 +1633,10 @@ $("#max-page").addEventListener("click", (e) => {
     const sym = normSym($("#max-al-sym").value), p = Number($("#max-al-price").value);
     if (!sym || !(p > 0)) return alert("티커와 목표 매입가를 입력하세요.");
     cacheSet("md:alerts", [...maxAlerts(), { sym, price: p }]);
-    return renderMaxAlerts();
+    return refreshAlertsCard();
   }
   const del = e.target.closest("[data-al-del]");
-  if (del) { const l = maxAlerts(); l.splice(+del.dataset.alDel, 1); cacheSet("md:alerts", l); return renderMaxAlerts(); }
+  if (del) { const l = maxAlerts(); l.splice(+del.dataset.alDel, 1); cacheSet("md:alerts", l); return refreshAlertsCard(); }
   const t = e.target.closest("[data-stock]");
   if (t) { closeMaxPage(); selectTab("stocks"); ensureStockIndex().then(() => selectStock(t.dataset.stock)).catch(() => {}); }
 });
