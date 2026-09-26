@@ -1386,6 +1386,34 @@ function followGradeHtml(r, g) {
   if (r.grade === 1) return `<span class="tag new">추천</span> <span class="small faint">최근 매수가 +10% 이내</span>`;
   return `<span class="faint">관망 · 최근 매수가보다 ${fmt.n(r.rel * 100, 1)}% 높음</span>`;
 }
+function followTagHtml(grade) {
+  if (grade === 2) return '<span class="tag inc">강력 추천</span>';
+  if (grade === 1) return '<span class="tag new">추천</span>';
+  if (grade === 0) return '<span class="tag">관망</span>';
+  return "";
+}
+// 대가별 따라 사기 판단(강력 추천·추천·관망)을 티커별로 모은다. 여러 대가가 겹치면 가장 좋은 판단을 쓴다.
+// 공통 매수 화면에서 종목 이름 옆 태그로 쓰이며, 종목별 주가 이력을 내려받아 계산하므로 한 번 계산 후 캐시한다.
+let followGradesPromise = null;
+function ensureFollowGrades() {
+  if (!followGradesPromise) followGradesPromise = (async () => {
+    const map = new Map();
+    for (const g of GURUS.filter((x) => x.ready)) {
+      try {
+        const f = await ensureGuruFilings(g);
+        const { rows } = await guruFollowRows(f);
+        for (const r of rows) {
+          if (!r.h.ticker || r.grade < 0) continue;
+          const key = SHARE_CLASS_ALIAS[r.h.ticker] || r.h.ticker;
+          const prev = map.get(key);
+          if (prev == null || r.grade > prev) map.set(key, r.grade);
+        }
+      } catch {}
+    }
+    return map;
+  })();
+  return followGradesPromise;
+}
 function followSectionHtml(g, f, rows, missing) {
   const table = rows.length ? `<div class="tablewrap"><table><thead><tr><th>종목</th><th>마지막 매수</th><th>매수 분기</th><th>추정 평균단가</th><th>최근 매수가 (추정)</th><th>현재가</th><th>최근 매수가 대비</th><th>판단</th></tr></thead><tbody>${rows.map((r) => `<tr>
       <td class="txt">${tickerHtml(r.h)}</td><td class="txt">${r.recent.period}</td><td>${r.nBuys}회</td><td>$${fmt.n(r.avg)}</td><td>$${fmt.n(r.recent.mid)}</td><td>${r.cur != null ? "$" + fmt.n(r.cur) : "–"}</td><td class="${r.rel == null ? "" : r.rel <= 0 ? "pos" : "neg"}">${r.rel == null ? "–" : fmt.pct(r.rel)}</td><td class="txt">${followGradeHtml(r, g)}</td>
@@ -1422,6 +1450,9 @@ async function renderMaxPrices() {
 }
 // ── 공통 매수·보유 종목: 대가 6인의 최신 13F 를 티커로 묶어 2명 이상 겹치는 종목만 ──
 const SHARE_CLASS_ALIAS = { GOOG: "GOOGL", "LEN-B": "LEN", "HEI-A": "HEI", "BRK-A": "BRK-B", LILAK: "LILA", LLYVK: "LLYVA" }; // 같은 회사의 클래스 주식은 한 종목으로
+// 미국 시가총액 상위 50 언저리 종목 (수동 관리 · 새 13F 분기가 나올 때 한 번씩 갱신)
+const TOP50_US = new Set(["NVDA", "MSFT", "AAPL", "GOOGL", "AMZN", "META", "AVGO", "TSLA", "BRK-B", "LLY", "WMT", "JPM", "V", "ORCL", "MA", "XOM", "NFLX", "COST", "JNJ", "PG", "HD", "ABBV", "BAC", "PLTR", "KO", "UNH", "CRM", "PM", "GE", "CSCO", "WFC", "IBM", "ABT", "CVX", "LIN", "MCD", "INTU", "AMD", "MS", "GS", "AXP", "T", "ISRG", "PEP", "NOW", "RTX", "VZ", "QCOM", "AMGN", "BKNG"]);
+const RECO_MIN_BUY = 10e6; // 추천 종목은 대가 한 명당 이번 분기 매수액 $10M 이상만 센다
 const GURU_SHORT = { buffett: "버핏", ackman: "애크먼", klarman: "클라르만", loeb: "러브", einhorn: "아인혼", lilu: "리 루", mclemore: "매클레모어", firsteagle: "퍼스트 이글" };
 // 13F 밖 매매 소식: filings 브랜치의 events.json (SEC Form 4 · 13D/G 자동 수집) + guru-news.json (수기 등록)
 let guruEventsPromise = null;
@@ -1462,6 +1493,8 @@ async function renderMaxCommon() {
   ]);
   if ($("#max-page").hidden || body.dataset.screen !== "common") return;
   const isBuy = (c) => c === "inc" || c === "new";
+  // 이번 분기 매수액 추정: 신규 편입은 평가액 전부, 증가는 늘어난 주식수만큼의 평가액
+  const buyValOf = (h) => h.change === "new" ? h.value : h.change === "inc" && h.pct != null ? h.value * (h.pct / (1 + h.pct)) : 0;
   const byKey = new Map();
   for (const { g, f } of loaded.filter(Boolean)) {
     for (const h of f.latest.holdings) {
@@ -1470,23 +1503,44 @@ async function renderMaxCommon() {
       const e = byKey.get(key) || { key, tickers: new Set(), name: h.name, holders: [] };
       if (t) e.tickers.add(t);
       const ex = e.holders.find((x) => x.g.id === g.id); // 클래스 주식을 둘 다 들고 있으면 한 명으로 합산
-      if (ex) { ex.buy = ex.buy || isBuy(h.change); ex.dec = ex.dec || h.change === "dec"; ex.weight += h.weight; }
-      else e.holders.push({ g, buy: isBuy(h.change), dec: h.change === "dec", weight: h.weight });
+      if (ex) { ex.buy = ex.buy || isBuy(h.change); ex.dec = ex.dec || h.change === "dec"; ex.weight += h.weight; ex.buyVal += buyValOf(h); }
+      else e.holders.push({ g, buy: isBuy(h.change), dec: h.change === "dec", weight: h.weight, buyVal: buyValOf(h) });
       byKey.set(key, e);
     }
   }
-  const rows = [...byKey.values()].filter((e) => e.holders.length >= 2);
-  rows.forEach((e) => { e.buyers = e.holders.filter((x) => x.buy).length; });
+  const all = [...byKey.values()];
+  all.forEach((e) => { e.buyers = e.holders.filter((x) => x.buy).length; });
+  const rows = all.filter((e) => e.holders.length >= 2);
   rows.sort((a, b) => b.buyers - a.buyers || b.holders.length - a.holders.length);
   const idx = state.stockIndex?.items || [];
   const priceOf = (e) => { for (const t of e.tickers) { const p = idx.find((x) => x.symbol === t)?.price; if (p != null) return p; } return null; };
-  rows.forEach((e, i) => { e.id = i; e.price = priceOf(e); });
-  state.commonRows = rows; // 상세 창(숫자 클릭)에서 사용
-  const tickerCell = (e) => {
+  all.forEach((e, i) => { e.id = i; e.price = priceOf(e); });
+  state.commonRows = all; // 상세 창(숫자 클릭)에서 사용
+  const tickerCell = (e, withGrade = true) => {
     const first = [...e.tickers].find((t) => idx.some((x) => x.symbol === t));
     const label = e.tickers.size ? [...e.tickers].join("·") : "–";
-    return `<span class="tk ${first ? "" : "plain"}" ${first ? `data-stock="${first}"` : ""}>${label}</span><span class="nm">${e.name}</span>`;
+    return `<span class="tk ${first ? "" : "plain"}" ${first ? `data-stock="${first}"` : ""}>${label}</span><span class="nm">${e.name}</span>${withGrade ? `<span class="cm-grade" data-cm-grade="${e.id}"></span>` : ""}`;
   };
+  // ── 이번 분기 공통 매수 추천 종목: 대가당 $10M 이상 매수만 놓고, 근거가 많은 순으로 5종목 ──
+  const reco = all.filter((e) => (e.qualified = e.holders.filter((x) => x.buyVal >= RECO_MIN_BUY)).length);
+  reco.forEach((e) => {
+    e.reasons = [];
+    if (e.qualified.length >= 2) e.reasons.push(`${e.qualified.length}명이 함께 매수`);
+    if (e.qualified.some((x) => x.g.id === "buffett" || x.g.id === "ackman")) e.reasons.push("버핏·애크먼의 매수");
+    if ([...e.tickers].some((t) => TOP50_US.has(SHARE_CLASS_ALIAS[t] || t))) e.reasons.push("미국 시총 TOP 50");
+    e.buySum = e.qualified.reduce((s, x) => s + x.buyVal, 0);
+  });
+  reco.sort((a, b) => b.reasons.length - a.reasons.length || b.qualified.length - a.qualified.length || b.buySum - a.buySum);
+  const recoTop = reco.slice(0, 5);
+  const recoCard = `<div class="card"><div class="card-head"><h3>이번 분기 공통 매수 추천 종목</h3><span class="small faint">대가당 $10M 이상 매수한 종목 중 TOP 5</span></div>
+    <p class="desc">각 대가가 이번 분기에 <strong>$10M 이상</strong> 사들인 종목만 대상으로 합니다. ① 2명 이상이 함께 매수 ② 버핏·애크먼이 매수 ③ 미국 시가총액 TOP 50 — 셋 중 하나라도 해당하면 <strong>강력 추천</strong>이고, 근거가 많은 순으로 5종목만 추립니다.</p>
+    ${recoTop.length ? `<div class="tablewrap"><table><thead><tr><th>종목</th><th>판단</th><th>매수 대가 (추정 매수액)</th><th>근거</th><th>현재가</th></tr></thead><tbody>${recoTop.map((e) => `<tr>
+      <td class="txt">${tickerCell(e, false)}</td>
+      <td class="txt">${e.reasons.length ? '<span class="tag inc">강력 추천</span>' : '<span class="tag new">추천</span>'}</td>
+      <td class="txt">${e.qualified.map((x) => `${GURU_SHORT[x.g.id] || x.g.name} (${fmtB(x.buyVal)})`).join(", ")}</td>
+      <td class="txt">${e.reasons.length ? e.reasons.join(" · ") : "$10M 이상 매수"}</td>
+      <td>${e.price != null ? "$" + fmt.n(e.price) : "–"}</td>
+    </tr>`).join("")}</tbody></table></div>` : '<div class="empty">이번 분기에 $10M 이상 매수한 종목이 없습니다</div>'}</div>`;
   // 표는 이름만 간단히. 비중·보유/축소 상태는 인원수를 눌러 상세 창에서 본다.
   const buyerNames = (e) => e.holders.filter((x) => x.buy).map((x) => GURU_SHORT[x.g.id] || x.g.name).join(", ") || "–";
   const table = (list) => `<div class="tablewrap"><table><thead><tr><th>종목</th><th>매수 대가</th><th>이번 분기 매수</th><th>보유</th><th>현재가</th></tr></thead><tbody>${list.map((e) => `<tr>
@@ -1500,12 +1554,23 @@ async function renderMaxCommon() {
   const commonHolds = rows.filter((e) => e.buyers < 2);
   body.innerHTML = [
     maxBackBtn,
-    `<p class="desc">대가들의 최신 13F 를 겹쳐 본 화면입니다. 이번 분기에 <strong>2명 이상이 함께 매수</strong>한 종목이 맨 위에 나오고, 아래에 공통 보유와 분기 사이의 매매 공시·뉴스가 이어집니다. 같은 회사의 클래스 주식(GOOG·GOOGL 등)은 한 종목으로 합쳤습니다. <strong>인원수를 누르면</strong> 대가별 상태와 비중이 담긴 상세 창이 열리고, 티커를 누르면 종목 차트로 이동합니다.</p>`,
+    `<p class="desc">대가들의 최신 13F 를 겹쳐 본 화면입니다. 맨 위에는 매수 금액·대가 조합으로 추린 <strong>이번 분기 추천 종목 5개</strong>가 나오고, 그 아래로 <strong>2명 이상이 함께 매수</strong>한 종목, 공통 보유, 분기 사이의 매매 공시·뉴스가 이어집니다. 종목 이름 옆의 <strong>강력 추천·추천·관망</strong> 태그는 '투자 대가 매수 가격 따라가기'와 같은 기준입니다: 대가의 최근 매수가보다 현재가가 낮으면 강력 추천, +10% 이내면 추천, 그보다 높으면 관망 (여러 대가가 겹치면 가장 좋은 판단). 같은 회사의 클래스 주식(GOOG·GOOGL 등)은 한 종목으로 합쳤습니다. <strong>인원수를 누르면</strong> 대가별 상태와 비중이 담긴 상세 창이 열리고, 티커를 누르면 종목 차트로 이동합니다.</p>`,
+    recoCard,
     `<div class="card"><div class="card-head"><h3>이번 분기 공통 매수</h3><span class="small faint">최근 분기에 2명 이상이 주식수를 늘리거나 신규 편입</span></div>${commonBuys.length ? table(commonBuys) : '<div class="empty">이번 분기에 2명 이상이 함께 매수한 종목이 없습니다</div>'}</div>`,
     `<div class="card"><div class="card-head"><h3>공통 보유</h3><span class="small faint">2명 이상이 보유 중 (공통 매수는 위 표에)</span></div>${commonHolds.length ? table(commonHolds) : '<div class="empty">겹치는 보유 종목이 없습니다</div>'}</div>`,
     guruEventsCardHtml(evs),
-    `<p class="small faint">13F 는 분기 말 보유분이 45일 뒤에 공개되는 자료라 실제 매매보다 늦습니다. 투자 판단과 책임은 본인에게 있습니다.</p>`,
+    `<p class="small faint">13F 는 분기 말 보유분이 45일 뒤에 공개되는 자료라 실제 매매보다 늦습니다. 매수액은 분기 말 평가액에서 늘어난 주식수 비율로 나눈 추정치입니다. 투자 판단과 책임은 본인에게 있습니다.</p>`,
   ].join("");
+  // 종목 이름 옆 판단 태그: '투자 대가 매수 가격 따라가기'의 강력 추천·추천·관망을 그대로 가져와 붙인다.
+  // 종목별 주가 이력을 내려받아 계산하므로 표를 먼저 그리고, 계산이 끝나는 대로 태그를 채운다.
+  ensureFollowGrades().then((grades) => {
+    if ($("#max-page").hidden || body.dataset.screen !== "common") return;
+    $$(".cm-grade", body).forEach((el) => {
+      const e = state.commonRows?.[Number(el.dataset.cmGrade)];
+      const grade = e && grades.get(e.key);
+      if (grade != null) el.innerHTML = " " + followTagHtml(grade);
+    });
+  });
 }
 // 인원수 클릭 → 대가별 상태·비중 상세 창 (Max 라운지 위에 뜨는 작은 모달)
 function openCommonDetail(i) {
@@ -1568,7 +1633,7 @@ function renderMaxPortfolio() {
   body.innerHTML = [
     maxBackBtn,
     `<div class="card">
-      <div class="card-head"><h3>포트폴리오 구성 추천</h3><span class="small faint">현금 30~40% 원칙</span></div>
+      <div class="card-head"><h3>버핏식 현금 비중 원칙</h3><span class="small faint">현금 30~40% 원칙</span></div>
       <p class="desc">버핏과 멍거는 닷컴 버블과 2008년 금융위기의 한복판에서 남들이 팔 때 살 수 있었던 비결을 <strong>"항상 장전된 실탄"</strong>이라고 말해 왔습니다. 현금은 수익률이 낮아 보여도, 위기가 왔을 때 가장 좋은 자산을 가장 싸게 사게 해 주는 옵션입니다. 그래서 버크셔는 지금도 투자자산의 절반 가까이를 현금성 자산으로 쌓아 두고 기다립니다. 개인도 <strong>여유 자금의 30~40%를 현금으로</strong> 남겨 두면, 시장이 흔들리는 날 공포가 아니라 기회가 보입니다.</p>
       <div class="cmp-row" style="margin-top:12px">
         <div class="field"><label for="pf-total">총 투자 가능 여유 자금 (원)</label><input id="pf-total" class="num-comma" placeholder="예: 50,000,000" style="min-width:200px"></div>
