@@ -633,6 +633,14 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
   </div>
 </div>
 
+<!-- 공통 매수 종목 상세 (Max 라운지 위에 뜨는 작은 창) -->
+<div class="modal-ov" id="cm-modal" hidden style="z-index:70" role="dialog" aria-modal="true" aria-labelledby="cm-title">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-head"><h3 id="cm-title">상세</h3><button class="modal-close" id="cm-close" type="button" aria-label="닫기">×</button></div>
+    <div class="modal-body" id="cm-body"></div>
+  </div>
+</div>
+
 <!-- 초보 탭 · 투자 대가 따라하기 구독 모달 -->
 <div class="modal-ov" id="gu-modal" hidden role="dialog" aria-modal="true" aria-labelledby="gu-title">
   <div class="modal">
@@ -1446,7 +1454,7 @@ function guruEventsCardHtml(evs) {
 async function renderMaxCommon() {
   const body = $("#max-body");
   body.dataset.screen = "common";
-  body.innerHTML = `${maxBackBtn}<div class="card"><div class="empty">대가 6인의 13F 를 모아 겹치는 종목을 찾는 중…</div></div>`;
+  body.innerHTML = `${maxBackBtn}<div class="card"><div class="empty">대가들의 13F 를 모아 겹치는 종목을 찾는 중…</div></div>`;
   try { await ensureStockIndex(); } catch {}
   const [loaded, evs] = await Promise.all([
     Promise.all(GURUS.filter((g) => g.ready).map((g) => ensureGuruFilings(g).then((f) => ({ g, f })).catch(() => null))),
@@ -1472,28 +1480,50 @@ async function renderMaxCommon() {
   rows.sort((a, b) => b.buyers - a.buyers || b.holders.length - a.holders.length);
   const idx = state.stockIndex?.items || [];
   const priceOf = (e) => { for (const t of e.tickers) { const p = idx.find((x) => x.symbol === t)?.price; if (p != null) return p; } return null; };
+  rows.forEach((e, i) => { e.id = i; e.price = priceOf(e); });
+  state.commonRows = rows; // 상세 창(숫자 클릭)에서 사용
   const tickerCell = (e) => {
     const first = [...e.tickers].find((t) => idx.some((x) => x.symbol === t));
     const label = e.tickers.size ? [...e.tickers].join("·") : "–";
     return `<span class="tk ${first ? "" : "plain"}" ${first ? `data-stock="${first}"` : ""}>${label}</span><span class="nm">${e.name}</span>`;
   };
-  const holderTags = (e) => [...e.holders].sort((a, b) => (b.buy - a.buy) || (b.weight - a.weight))
-    .map((x) => `<span class="tag ${x.buy ? "inc" : x.dec ? "dec" : ""}">${GURU_SHORT[x.g.id] || x.g.name} ${x.buy ? "매수" : x.dec ? "축소" : "보유"} · ${fmt.n(x.weight * 100, 1)}%</span>`).join(" ");
-  const table = (list) => `<div class="tablewrap"><table><thead><tr><th>종목</th><th>보유</th><th>이번 분기 매수</th><th>대가별 상태 · 비중</th><th>현재가</th></tr></thead><tbody>${list.map((e) => {
-    const p = priceOf(e);
-    return `<tr><td class="txt">${tickerCell(e)}</td><td>${e.holders.length}명</td><td class="${e.buyers >= 2 ? "pos" : ""}">${e.buyers ? `${e.buyers}명` : "–"}</td><td class="txt" style="white-space:normal">${holderTags(e)}</td><td>${p != null ? "$" + fmt.n(p) : "–"}</td></tr>`;
-  }).join("")}</tbody></table></div>`;
+  // 표는 이름만 간단히. 비중·보유/축소 상태는 인원수를 눌러 상세 창에서 본다.
+  const buyerNames = (e) => e.holders.filter((x) => x.buy).map((x) => GURU_SHORT[x.g.id] || x.g.name).join(", ") || "–";
+  const table = (list) => `<div class="tablewrap"><table><thead><tr><th>종목</th><th>매수 대가</th><th>이번 분기 매수</th><th>보유</th><th>현재가</th></tr></thead><tbody>${list.map((e) => `<tr>
+      <td class="txt">${tickerCell(e)}</td>
+      <td class="txt">${buyerNames(e)}</td>
+      <td class="${e.buyers >= 2 ? "pos" : ""}"><button class="chip" type="button" data-cm-i="${e.id}">${e.buyers ? `${e.buyers}명` : "–"}</button></td>
+      <td><button class="chip" type="button" data-cm-i="${e.id}">${e.holders.length}명</button></td>
+      <td>${e.price != null ? "$" + fmt.n(e.price) : "–"}</td>
+    </tr>`).join("")}</tbody></table></div>`;
   const commonBuys = rows.filter((e) => e.buyers >= 2);
   const commonHolds = rows.filter((e) => e.buyers < 2);
   body.innerHTML = [
     maxBackBtn,
-    `<p class="desc">대가들의 최신 13F 를 겹쳐 본 화면입니다. <strong>2명 이상이 같은 종목</strong>을 들고 있으면 여기에 나오고, 이번 분기에 <strong>2명 이상이 함께 매수</strong>한 종목은 따로 모았습니다. 같은 회사의 클래스 주식(GOOG·GOOGL 등)은 한 종목으로 합쳤습니다. 맨 위에는 13F 를 기다리지 않고 나오는 <strong>분기 사이의 매매 공시·뉴스</strong>를 보여드립니다. 티커를 누르면 종목 차트로 이동합니다.</p>`,
-    guruEventsCardHtml(evs),
+    `<p class="desc">대가들의 최신 13F 를 겹쳐 본 화면입니다. 이번 분기에 <strong>2명 이상이 함께 매수</strong>한 종목이 맨 위에 나오고, 아래에 공통 보유와 분기 사이의 매매 공시·뉴스가 이어집니다. 같은 회사의 클래스 주식(GOOG·GOOGL 등)은 한 종목으로 합쳤습니다. <strong>인원수를 누르면</strong> 대가별 상태와 비중이 담긴 상세 창이 열리고, 티커를 누르면 종목 차트로 이동합니다.</p>`,
     `<div class="card"><div class="card-head"><h3>이번 분기 공통 매수</h3><span class="small faint">최근 분기에 2명 이상이 주식수를 늘리거나 신규 편입</span></div>${commonBuys.length ? table(commonBuys) : '<div class="empty">이번 분기에 2명 이상이 함께 매수한 종목이 없습니다</div>'}</div>`,
     `<div class="card"><div class="card-head"><h3>공통 보유</h3><span class="small faint">2명 이상이 보유 중 (공통 매수는 위 표에)</span></div>${commonHolds.length ? table(commonHolds) : '<div class="empty">겹치는 보유 종목이 없습니다</div>'}</div>`,
+    guruEventsCardHtml(evs),
     `<p class="small faint">13F 는 분기 말 보유분이 45일 뒤에 공개되는 자료라 실제 매매보다 늦습니다. 투자 판단과 책임은 본인에게 있습니다.</p>`,
   ].join("");
 }
+// 인원수 클릭 → 대가별 상태·비중 상세 창 (Max 라운지 위에 뜨는 작은 모달)
+function openCommonDetail(i) {
+  const e = state.commonRows?.[i]; if (!e) return;
+  const label = e.tickers.size ? [...e.tickers].join("·") : "";
+  const first = [...e.tickers][0];
+  const chartable = first && state.stockIndex?.items.some((x) => x.symbol === first);
+  $("#cm-title").textContent = `${label ? label + " · " : ""}${e.name}`;
+  $("#cm-body").innerHTML = [
+    `<p class="desc">현재가 <strong>${e.price != null ? "$" + fmt.n(e.price) : "–"}</strong> · 보유 <strong>${e.holders.length}명</strong> · 이번 분기 매수 <strong>${e.buyers}명</strong></p>`,
+    `<div class="tablewrap"><table><thead><tr><th>대가</th><th>이번 분기</th><th>포트폴리오 비중</th></tr></thead><tbody>${[...e.holders]
+      .sort((a, b) => (b.buy - a.buy) || (b.weight - a.weight))
+      .map((x) => `<tr><td class="txt">${GURU_SHORT[x.g.id] || x.g.name}</td><td class="txt">${x.buy ? '<span class="tag inc">매수</span>' : x.dec ? '<span class="tag dec">축소</span>' : '<span class="tag">보유</span>'}</td><td>${fmt.n(x.weight * 100, 1)}%</td></tr>`).join("")}</tbody></table></div>`,
+    chartable ? `<div class="form-actions"><button class="btn" type="button" data-stock="${first}">종목 차트 보기 →</button></div>` : "",
+  ].join("");
+  $("#cm-modal").hidden = false;
+}
+function closeCommonDetail() { $("#cm-modal").hidden = true; }
 function sma200Signal() {
   const h = state.history?.symbols, s = h?.["^NDX"] || h?.["QQQ"];
   if (!s || s.close.length < 200) return null;
@@ -1637,8 +1667,16 @@ $("#max-page").addEventListener("click", (e) => {
   }
   const del = e.target.closest("[data-al-del]");
   if (del) { const l = maxAlerts(); l.splice(+del.dataset.alDel, 1); cacheSet("md:alerts", l); return refreshAlertsCard(); }
+  const cm = e.target.closest("[data-cm-i]");
+  if (cm) return openCommonDetail(+cm.dataset.cmI);
   const t = e.target.closest("[data-stock]");
   if (t) { closeMaxPage(); selectTab("stocks"); ensureStockIndex().then(() => selectStock(t.dataset.stock)).catch(() => {}); }
+});
+$("#cm-close").addEventListener("click", closeCommonDetail);
+$("#cm-modal").addEventListener("click", (e) => {
+  if (e.target === e.currentTarget) return closeCommonDetail();
+  const t = e.target.closest("[data-stock]");
+  if (t) { closeCommonDetail(); closeMaxPage(); selectTab("stocks"); ensureStockIndex().then(() => selectStock(t.dataset.stock)).catch(() => {}); }
 });
 
 $("#sc-buffett").addEventListener("click", openGuruModal);
@@ -1661,7 +1699,8 @@ $("#gu-modal").addEventListener("click", (e) => {
 });
 document.addEventListener("keydown", (e) => {
   if (e.key !== "Escape") return;
-  if (!$("#gu-modal").hidden) closeGuruModal();
+  if (!$("#cm-modal").hidden) closeCommonDetail();
+  else if (!$("#gu-modal").hidden) closeGuruModal();
   else if (!$("#max-page").hidden) closeMaxPage();
 });
 // 투자 대가 탭: 카드 → 전체 화면 상세, 뒤로 가기, 티커 → 종목 차트
