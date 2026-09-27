@@ -45,6 +45,9 @@ invest/index.html               앱 화면 (시세 타일, 5분봉 차트, 백�
 invest/vendor/chart.umd.js      Chart.js 4.4.7 (MIT)
 invest/manifest.webmanifest     홈 화면 추가용 앱 정보 (이름 버픽, 아이콘)
 invest/icon.svg, icon-*.png     버픽 로고 아이콘
+invest/vendor/supabase.js       supabase-js 2.117.2 (MIT), 로그인·회원 정보
+supabase/schema.sql             회원 정보 테이블(profiles)과 보안 규칙. Supabase SQL Editor 에서 실행
+supabase/email-template.html    로그인 메일 양식 (인증 코드 포함)
 scripts/fetch-market-data.mjs   Yahoo Finance 에서 시세·일봉을 받아 JSON 으로 저장
 scripts/fetch-stocks.mjs        S&P 500 전 종목·주요 ETF 의 일봉·5분봉을 종목별 JSON 으로 저장
 scripts/fetch-filings.mjs       버크셔 해서웨이 13F-HR 을 SEC EDGAR 에서 받아 분기별 보유 종목으로 정리
@@ -84,3 +87,16 @@ cd invest && python3 -m http.server 8790         # 브라우저에서 http://loc
 ## 유의
 
 개인 참고용 도구이며 투자 권유가 아닙니다. 무료 지연 시세라 값이 누락되거나 틀릴 수 있으니 실제 주문 전에는 증권사 화면으로 확인하세요.
+
+## 버픽 로그인 (Supabase)
+
+`invest/` 의 로그인은 Supabase 프로젝트(`hzzmzpsjuovijtananmf`)를 씁니다. 이메일로 받은 인증 코드나 메일 속 링크로 로그인하고, 처음 로그인하면 자동 가입됩니다. 코드에는 공개용(publishable) 키만 들어 있습니다.
+
+처음 한 번 Supabase 대시보드에서 할 일:
+
+1. **SQL Editor**: `supabase/schema.sql` 전체를 붙여넣고 Run. 회원 정보 테이블(`profiles`)과 보안 규칙이 만들어집니다.
+2. **Authentication → URL Configuration**: Site URL 과 Redirect URLs 에 `https://geniusbyun-kaka.github.io/app/invest/` 추가.
+3. **Authentication → Emails**: `Magic Link` 와 `Confirm signup` 양식을 `supabase/email-template.html` 내용으로 바꾸기. 기본 양식에는 인증 코드가 없고 링크만 있습니다.
+4. 앱에서 한 번 로그인한 뒤 SQL Editor 에서 `update public.profiles set is_admin = true, plan = 'max' where email = '내 이메일';` 을 실행하면 관리자가 됩니다.
+
+회원 목록은 Authentication → Users, 구독 등급·관리자 여부는 Table Editor → profiles 에서 관리합니다. 회원은 자기 정보만 볼 수 있고 등급(plan)과 관리자 여부(is_admin)는 바꿀 수 없습니다.
