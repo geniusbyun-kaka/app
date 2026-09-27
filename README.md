@@ -43,6 +43,8 @@
 ```
 invest/index.html               앱 화면 (시세 타일, 5분봉 차트, 백테스트)
 invest/vendor/chart.umd.js      Chart.js 4.4.7 (MIT)
+invest/manifest.webmanifest     홈 화면 추가용 앱 정보 (이름 버픽, 아이콘)
+invest/icon.svg, icon-*.png     버픽 로고 아이콘
 scripts/fetch-market-data.mjs   Yahoo Finance 에서 시세·일봉을 받아 JSON 으로 저장
 scripts/fetch-stocks.mjs        S&P 500 전 종목·주요 ETF 의 일봉·5분봉을 종목별 JSON 으로 저장
 scripts/fetch-filings.mjs       버크셔 해서웨이 13F-HR 을 SEC EDGAR 에서 받아 분기별 보유 종목으로 정리
