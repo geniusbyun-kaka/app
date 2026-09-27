@@ -90,7 +90,7 @@ cd invest && python3 -m http.server 8790         # 브라우저에서 http://loc
 
 ## 버픽 로그인 (Supabase)
 
-`invest/` 의 로그인은 Supabase 프로젝트(`hzzmzpsjuovijtananmf`)를 씁니다. 이메일로 받은 인증 코드나 메일 속 링크로 로그인하고, 처음 로그인하면 자동 가입됩니다. 코드에는 공개용(publishable) 키만 들어 있습니다.
+`invest/` 의 로그인은 Supabase 프로젝트(`hzzmzpsjuovijtananmf`)를 씁니다. 로그인하지 않은 상태로 앱을 열면 로그인·가입 첫 화면이 먼저 뜨고, 로그인하면 메인 화면으로 들어갑니다. 이메일로 받은 인증 코드나 메일 속 링크로 로그인하고, 처음 로그인하면 자동 가입됩니다. 코드에는 공개용(publishable) 키만 들어 있습니다.
 
 처음 한 번 Supabase 대시보드에서 할 일:
 
