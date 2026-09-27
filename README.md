@@ -96,7 +96,7 @@ cd invest && python3 -m http.server 8790         # 브라우저에서 http://loc
 
 1. **SQL Editor**: `supabase/schema.sql` 전체를 붙여넣고 Run. 회원 정보 테이블(`profiles`)과 보안 규칙이 만들어집니다.
 2. **Authentication → URL Configuration**: Site URL 과 Redirect URLs 에 `https://geniusbyun-kaka.github.io/app/invest/` 추가.
-3. **Authentication → Emails**: `Magic Link` 와 `Confirm signup` 양식을 `supabase/email-template.html` 내용으로 바꾸기. 기본 양식에는 인증 코드가 없고 링크만 있습니다.
+3. (나중에) **Authentication → Emails**: 기본 메일에는 로그인 링크만 있습니다. 메일 양식은 SMTP(Gmail, Resend 등)를 연결해야 수정할 수 있고, 연결 후 `Magic Link` 와 `Confirm signup` 양식을 `supabase/email-template.html` 로 바꾸면 인증 코드 입력으로도 로그인됩니다. 홈 화면에 추가한 아이폰 앱에서는 메일 링크가 사파리로 열리므로 코드 방식이 필요합니다.
 4. 앱에서 한 번 로그인한 뒤 SQL Editor 에서 `update public.profiles set is_admin = true, plan = 'max' where email = '내 이메일';` 을 실행하면 관리자가 됩니다.
 
 회원 목록은 Authentication → Users, 구독 등급·관리자 여부는 Table Editor → profiles 에서 관리합니다. 회원은 자기 정보만 볼 수 있고 등급(plan)과 관리자 여부(is_admin)는 바꿀 수 없습니다.
