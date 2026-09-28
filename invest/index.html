@@ -323,6 +323,12 @@ html.gated,html.gated body{overflow:hidden}
 .max-sig .light{width:12px;height:12px;border-radius:50%;background:var(--flat)}
 .max-sig.on .light{background:#2E9E5B}
 .max-sig.off .light{background:var(--up)}
+/* Max 라운지 · 조커픽 (버핏식 한국 종목 선별) */
+.jk-scn{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.jk-verdict{display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-top:12px;padding:12px 14px;border-radius:10px;background:var(--surface-2);font-size:14px;line-height:1.6}
+.jk-verdict .tag{margin-left:0;font-size:12.5px;padding:3px 10px;flex-shrink:0}
+.jk-hot{background:color-mix(in srgb,var(--accent) 14%,transparent);font-weight:700}
+.jk-neg{color:var(--ink-3)}
 .gu-pick{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
 .gu-pick .top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .gu-pick .tk2{font-family:var(--mono);font-weight:700;font-size:16px;color:var(--accent);cursor:pointer}
@@ -1564,6 +1570,7 @@ function renderMaxHome() {
   $("#max-body").innerHTML = `<div class="card">
     <div class="card-head"><h3>Max 전용 기능</h3><span class="small faint">데모 화면 · 실제 결제 없음</span></div>
     <div class="max-grid">
+      <button class="max-feat" type="button" data-maxfeat="joker"><span class="t">조커픽 · 버핏이 한국 주식을 고른다면</span><span class="d">버핏·멍거가 2026년 한국 시장에 투자한다면? ROE·부채비율·현금흐름 5가지 기준과 오너 어닝스 DCF로 매주 1종목을 선별합니다. 사업보고서 숫자를 직접 넣는 버핏 계산기 포함.</span><span class="go">열기 →</span></button>
       <button class="max-feat" type="button" data-maxfeat="prices"><span class="t">투자 대가 매수 가격 따라가기</span><span class="d">대가들이 연속으로 사 모으는 종목의 분기말 단가와 현재가를 비교해, 대가보다 싸게 살 수 있는 종목을 찾아드립니다.</span><span class="go">열기 →</span></button>
       <button class="max-feat" type="button" data-maxfeat="lev"><span class="t">AI 나스닥 레버리지 투자법 따라하기</span><span class="d">나스닥 100이 200일 이동평균 위에 있을 때만 레버리지(TQQQ)를 보유하는 추세 전략. 오늘의 신호와 백테스트를 제공합니다.</span><span class="go">열기 →</span></button>
       <button class="max-feat" type="button" data-maxfeat="common"><span class="t">대가들의 공통 매수 종목</span><span class="d">여러 대가가 함께 들고 있거나 이번 분기에 같이 사들인 종목을 한눈에 봅니다.</span><span class="go">열기 →</span></button>
@@ -1924,6 +1931,185 @@ function runPortfolioCalc() {
     <div class="form-actions" style="margin-top:8px"><button class="btn primary" type="button" id="pf-to-voo">이 금액으로 VOO 적립 계산 →</button></div>`;
   r.hidden = false;
 }
+// ── 조커픽: 버핏·멍거가 2026년 한국 시장에 투자한다면 ──
+// 매주 1종목: 5가지 정량 체크리스트를 통과한 종목을 오너 어닝스 2단계 DCF 로 평가해
+// 안전마진이 충분한 순으로 올린다. 지금은 joker-picks.json 의 데모 데이터를 읽고,
+// 이후 DART 사업보고서 자동 수집 워크플로가 이 파일을 매주 갱신하는 구조로 확장한다.
+const JK_SCN = [
+  { key: "cons", name: "보수적", g: 0.04, r: 0.12, tg: 0.01 },
+  { key: "base", name: "기본", g: 0.08, r: 0.10, tg: 0.02 },
+  { key: "bull", name: "낙관적", g: 0.11, r: 0.09, tg: 0.025 },
+];
+const JK_CHECKS = [
+  { k: "roe10", label: "ROE 10년 평균", rule: "15% 이상", fmt: (v) => `${fmt.n(v, 1)}%`, pass: (v) => v >= 15 },
+  { k: "debt", label: "부채비율", rule: "50% 이하", fmt: (v) => `${fmt.n(v, 1)}%`, pass: (v) => v <= 50 },
+  { k: "opStd", label: "영업이익률 변동성 (10년 표준편차)", rule: "5%p 이하", fmt: (v) => `${fmt.n(v, 1)}%p`, pass: (v) => v <= 5 },
+  { k: "fcfYears", label: "잉여현금흐름 플러스", rule: "최근 10년 중 9년 이상", fmt: (v) => `${v}년`, pass: (v) => v >= 9 },
+  { k: "epsCagr", label: "순이익 10년 연평균 성장", rule: "7% 이상", fmt: (v) => `${fmt.n(v, 1)}%`, pass: (v) => v >= 7 },
+];
+// 오너 어닝스 2단계 DCF: 10년 현재가치 합 + 영구가치(현재가치) + 순현금 → 주당 가치 (모두 원 단위)
+function jokerFair(oe, netCash, shares, { g, r, tg }) {
+  if (!(shares > 0) || !(oe > 0) || r - tg < 0.005) return null;
+  let pv1 = 0;
+  for (let t = 1; t <= 10; t++) pv1 += (oe * Math.pow(1 + g, t)) / Math.pow(1 + r, t);
+  const pv2 = (oe * Math.pow(1 + g, 10) * (1 + tg)) / (r - tg) / Math.pow(1 + r, 10);
+  return (pv1 + pv2 + netCash) / shares;
+}
+const jkMargin = (fair, price) => (fair != null && fair > 0 && price > 0 ? (fair - price) / fair : null);
+const jkPrice = (v) => (v != null ? fmt.krw(Math.round(v / 100) * 100) : "–");
+function jkVerdictTag(m, passAll = true) {
+  if (m == null) return '<span class="tag">계산 불가</span>';
+  if (!passAll) return '<span class="tag exit">체크리스트 탈락</span>';
+  if (m >= 0.3) return '<span class="tag inc">버핏이라면 삽니다</span>';
+  if (m >= 0.1) return '<span class="tag new">관심 목록</span>';
+  return '<span class="tag">관망</span>';
+}
+const jkPassAll = (metrics) => JK_CHECKS.every((c) => metrics?.[c.k] != null && c.pass(metrics[c.k]));
+function jkChecklistHtml(metrics) {
+  return `<div class="tablewrap" style="margin-top:8px"><table><thead><tr><th>기준</th><th>커트라인</th><th>값</th><th>판정</th></tr></thead><tbody>${JK_CHECKS.map((c) => {
+    const v = metrics?.[c.k];
+    return `<tr><td class="txt">${c.label}</td><td class="txt">${c.rule}</td><td>${v != null ? c.fmt(v) : "–"}</td><td class="txt">${v == null ? "–" : c.pass(v) ? '<span class="tag inc">통과</span>' : '<span class="tag exit">탈락</span>'}</td></tr>`;
+  }).join("")}</tbody></table></div>`;
+}
+function jkScenarioKpis(oe, netCash, shares, price, scns = JK_SCN) {
+  return `<div class="jk-scn" style="margin-top:10px">${scns.map((s) => {
+    const m = jkMargin(jokerFair(oe, netCash, shares, s), price);
+    return kpi(`${s.name} 적정주가`, jkPrice(jokerFair(oe, netCash, shares, s)),
+      `성장 ${fmt.n(s.g * 100, 1)}% · 할인 ${fmt.n(s.r * 100, 1)}% · 영구 ${fmt.n(s.tg * 100, 1)}%${m != null ? ` → 안전마진 <b class="${m > 0 ? "pos" : "neg"}">${fmt.n(m * 100, 1)}%</b>` : ""}`);
+  }).join("")}</div>`;
+}
+function jkSensitivityHtml(oe, netCash, shares, price, gBase) {
+  const rs = [0.09, 0.1, 0.11, 0.12, 0.13], tgs = [0.005, 0.01, 0.02, 0.03];
+  return `<div class="tablewrap" style="margin-top:10px"><table><thead><tr><th>할인율 ↓ · 영구성장률 →</th>${tgs.map((t) => `<th>${fmt.n(t * 100, 1)}%</th>`).join("")}</tr></thead><tbody>${rs.map((r) => `<tr><td class="txt"><strong>${fmt.n(r * 100, 0)}%</strong></td>${tgs.map((tg) => {
+    const fair = jokerFair(oe, netCash, shares, { g: gBase, r, tg });
+    const m = jkMargin(fair, price);
+    return `<td class="${m != null && m >= 0.3 ? "jk-hot" : m != null && m < 0 ? "jk-neg" : ""}">${jkPrice(fair)}</td>`;
+  }).join("")}</tr>`).join("")}</tbody></table></div>`;
+}
+// 주간 자동 스크리닝 결과는 joker 브랜치에 올라온다 (joker-picks 워크플로).
+// 아직 없거나 픽이 비어 있으면 리포의 데모 파일(joker-picks.json)로 폴백.
+const JOKER_BASE = params.get("joker") || `https://raw.githubusercontent.com/${OWNER}/${REPO}/joker/`;
+let jokerPicksPromise = null;
+function ensureJokerPicks() {
+  const local = () => fetch(`joker-picks.json?t=${Date.now()}`, { cache: "no-store" }).then((r) => { if (!r.ok) throw new Error("picks"); return r.json(); });
+  if (!jokerPicksPromise) jokerPicksPromise = fetch(`${JOKER_BASE}joker-picks.json?t=${Date.now()}`, { cache: "no-store" })
+    .then((r) => { if (!r.ok) throw new Error("joker"); return r.json(); })
+    .then((d) => (d.picks?.length ? d : local()))
+    .catch(local);
+  return jokerPicksPromise;
+}
+function jkPickHtml(p, isLatest) {
+  const oe = p.ownerEarnings * 1e8, cash = p.netCash * 1e8;
+  const m = jkMargin(jokerFair(oe, cash, p.shares, JK_SCN[1]), p.price);
+  const passAll = jkPassAll(p.metrics);
+  return `<div class="card-head"><h3>${isLatest ? "이번 주 조커픽 · " : ""}${escHtml(p.name)} <span class="tk plain">${escHtml(p.ticker)}</span></h3><span class="small faint">${escHtml(p.week)} 주 선정 · ${escHtml(p.market || "")} · ${escHtml(p.source || "")}</span></div>
+    ${p.moat ? `<p class="desc"><strong>왜 이 종목인가:</strong> ${escHtml(p.moat)}</p>` : ""}
+    <div class="jk-verdict">${jkVerdictTag(m, passAll)}<span>기본 시나리오 적정주가 <strong>${jkPrice(jokerFair(oe, cash, p.shares, JK_SCN[1]))}</strong> vs 선정 시 주가 <strong>${fmt.krw(p.price)}</strong> → 안전마진 <strong class="${m != null && m > 0 ? "pos" : "neg"}">${m != null ? fmt.n(m * 100, 1) + "%" : "–"}</strong>${passAll ? " · 체크리스트 5개 모두 통과" : ""}</span></div>
+    <div class="eyebrow" style="margin-top:16px">버핏 체크리스트</div>
+    ${jkChecklistHtml(p.metrics)}
+    <div class="eyebrow" style="margin-top:16px">적정주가 3개 시나리오 · 오너 어닝스 ${fmt.n(p.ownerEarnings, 0)}억원 · 순현금 ${fmt.n(p.netCash, 0)}억원 기준</div>
+    ${jkScenarioKpis(oe, cash, p.shares, p.price)}`;
+}
+async function renderMaxJoker() {
+  const body = $("#max-body");
+  body.dataset.screen = "joker";
+  body.innerHTML = [
+    maxBackBtn,
+    `<p class="desc">"워렌 버핏과 찰리 멍거가 2026년 한국 시장에서 투자한다면 어떤 종목을 고를까"를 정해진 산식으로 재현한 화면입니다. 1단계로 <strong>정량 체크리스트 5개</strong>(ROE 10년 평균 15% 이상 · 부채비율 50% 이하 · 영업이익률 변동성 낮음 · 잉여현금흐름 계속 플러스 · 이익의 꾸준한 성장)를 통과한 회사만 남기고, 2단계로 <strong>오너 어닝스(순이익 + 감가상각비 − 유지보수 설비투자) 2단계 DCF</strong>로 적정주가를 계산해 <strong>안전마진 30% 이상</strong>인 종목을 매주 1개 올립니다. 할인율 2%p 차이로 적정주가가 20% 넘게 움직이기 때문에, 숫자 하나가 아니라 <strong>보수적·기본·낙관적 3개 시나리오</strong>를 항상 함께 보여줍니다.</p>`,
+    `<div class="card" id="jk-latest"><div class="empty">이번 주 조커픽을 불러오는 중…</div></div>`,
+    `<div class="card" id="jk-history" hidden></div>`,
+    `<div class="card">
+      <div class="card-head"><h3>버핏 계산기 · 직접 입력</h3><span class="small faint">DART 사업보고서 숫자로 적정주가 계산</span></div>
+      <p class="desc">DART(dart.fss.or.kr)에서 종목의 <strong>사업보고서(연간)</strong> 재무제표 숫자를 옮겨 적으면 같은 산식으로 계산합니다. 유지보수 설비투자를 따로 알기 어려우면 감가상각비와 비슷하다고 보고 두 칸을 비워 두세요 (그러면 오너 어닝스 ≈ 순이익).</p>
+      <div class="form" style="margin-top:12px">
+        <div class="field"><label for="jk-ni">순이익 (억원)</label><input id="jk-ni" class="num-comma" placeholder="예: 1,250"></div>
+        <div class="field"><label for="jk-da">감가상각비 (억원)</label><input id="jk-da" class="num-comma" placeholder="0"></div>
+        <div class="field"><label for="jk-capex">유지보수 설비투자 (억원)</label><input id="jk-capex" class="num-comma" placeholder="0"></div>
+        <div class="field"><label for="jk-cash">순현금 (억원)</label><input id="jk-cash" type="number" step="1" placeholder="순부채면 음수"><span class="hint">현금성 자산 − 총차입금</span></div>
+        <div class="field"><label for="jk-shares">발행주식수 (주)</label><input id="jk-shares" class="num-comma" placeholder="예: 15,242,370"></div>
+        <div class="field"><label for="jk-price">현재 주가 (원)</label><input id="jk-price" class="num-comma" placeholder="예: 125,000"></div>
+        <div class="field"><label for="jk-g">성장률 % (향후 10년)</label><input id="jk-g" type="number" step="0.5" value="8"></div>
+        <div class="field"><label for="jk-r">할인율 %</label><input id="jk-r" type="number" step="0.5" value="10"></div>
+        <div class="field"><label for="jk-tg">영구성장률 %</label><input id="jk-tg" type="number" step="0.5" value="2"></div>
+      </div>
+      <div class="form-actions" style="margin-top:12px"><button class="btn primary" type="button" id="jk-run">적정주가 계산</button></div>
+      <div id="jk-result" hidden style="margin-top:14px"></div>
+    </div>`,
+    `<div class="card">
+      <div class="card-head"><h3>사업보고서 PDF로 판정</h3><span class="small faint">준비 중 · 예시 판정만 제공</span></div>
+      <p class="desc">DART 사업보고서 PDF를 올리면 재무제표에서 위 5가지 기준과 오너 어닝스를 자동으로 뽑아 <strong>"버핏이라면 샀다 / 안 샀다"</strong>를 판정하는 기능입니다. 자동 분석 파이프라인은 준비 중이라, 지금은 판정 화면이 어떻게 나오는지 예시로 보여드립니다.</p>
+      <div class="cmp-row" style="margin-top:10px">
+        <div class="field"><label for="jk-pdf">사업보고서 PDF</label><input id="jk-pdf" type="file" accept="application/pdf"></div>
+        <button class="btn" type="button" id="jk-demo-report">예시: 삼성전자 판정 보기</button>
+      </div>
+      <div id="jk-report-out" hidden style="margin-top:12px"></div>
+    </div>`,
+    `<p class="small faint">이 화면은 특정 종목의 매수·매도를 권유하는 투자자문이 아니라, 공시된 재무제표에 위에 적힌 산식을 그대로 적용해 보여주는 <strong>계산 도구</strong>입니다. 오너 어닝스·성장률·유지보수 설비투자는 추정치이며, 가정이 조금만 달라져도 결과가 크게 바뀝니다. 투자 판단과 책임은 본인에게 있습니다.</p>`,
+  ].join("");
+  initCommaInputs(body);
+  $("#jk-pdf", body)?.addEventListener("change", (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const out = $("#jk-report-out");
+    out.innerHTML = `<div class="notice" style="margin:0"><strong>${escHtml(f.name)}</strong> 파일을 받았지만 자동 분석 파이프라인은 아직 준비 중입니다. 옆의 예시 버튼으로 판정이 어떤 형식으로 나오는지 확인해 보세요.</div>`;
+    out.hidden = false;
+  });
+  try {
+    const data = await ensureJokerPicks();
+    if ($("#max-page").hidden || body.dataset.screen !== "joker") return;
+    const picks = (data.picks || []).slice().sort((a, b) => String(b.week).localeCompare(String(a.week)));
+    if (!picks.length) { $("#jk-latest").innerHTML = `<div class="empty">아직 등록된 조커픽이 없습니다. 매주 월요일에 1종목씩 올라옵니다.</div>`; return; }
+    $("#jk-latest").innerHTML = jkPickHtml(picks[0], true) + (data.note ? `<p class="small faint" style="margin-top:10px">${escHtml(data.note)}</p>` : "");
+    const past = picks.slice(1);
+    if (past.length) {
+      const hist = $("#jk-history");
+      hist.innerHTML = `<div class="card-head"><h3>지난 조커픽</h3><span class="small faint">매주 1종목 · 선정 당시 기준</span></div>
+        <div class="tablewrap"><table><thead><tr><th>주차</th><th>종목</th><th>기본 적정주가</th><th>선정 시 주가</th><th>안전마진</th><th>판정</th></tr></thead><tbody>${past.map((p) => {
+          const m = jkMargin(jokerFair(p.ownerEarnings * 1e8, p.netCash * 1e8, p.shares, JK_SCN[1]), p.price);
+          return `<tr><td class="txt">${escHtml(p.week)}</td><td class="txt"><strong>${escHtml(p.name)}</strong> <span class="tk plain">${escHtml(p.ticker)}</span></td><td>${jkPrice(jokerFair(p.ownerEarnings * 1e8, p.netCash * 1e8, p.shares, JK_SCN[1]))}</td><td>${fmt.krw(p.price)}</td><td class="${m != null && m > 0 ? "pos" : "neg"}">${m != null ? fmt.n(m * 100, 1) + "%" : "–"}</td><td class="txt">${jkVerdictTag(m, jkPassAll(p.metrics))}</td></tr>`;
+        }).join("")}</tbody></table></div>`;
+      hist.hidden = false;
+    }
+  } catch {
+    const el = $("#jk-latest");
+    if (el && body.dataset.screen === "joker") el.innerHTML = `<div class="empty">조커픽 데이터(joker-picks.json)를 불러오지 못했습니다</div>`;
+  }
+}
+function runJokerCalc() {
+  const ni = numVal("#jk-ni"), da = numVal("#jk-da"), capex = numVal("#jk-capex");
+  const oeEok = ni + da - capex;
+  const cash = (Number($("#jk-cash").value) || 0) * 1e8, shares = numVal("#jk-shares"), price = numVal("#jk-price");
+  const g = (Number($("#jk-g").value) || 0) / 100, r = (Number($("#jk-r").value) || 0) / 100, tg = (Number($("#jk-tg").value) || 0) / 100;
+  if (!(oeEok > 0) || !(shares > 0)) return alert("순이익(오너 어닝스가 플러스가 되도록)과 발행주식수를 입력하세요.");
+  if (r - tg < 0.005) return alert("할인율은 영구성장률보다 커야 합니다.");
+  const oe = oeEok * 1e8;
+  // 보수적·낙관적은 기본 가정에서 성장 ∓3%p, 할인 ±2/−1%p 를 움직인 파생 시나리오
+  const scns = [
+    { name: "보수적", g: Math.max(g - 0.03, 0), r: r + 0.02, tg: Math.max(tg - 0.01, 0) },
+    { name: "기본", g, r, tg },
+    { name: "낙관적", g: g + 0.03, r: Math.max(r - 0.01, tg + 0.02), tg },
+  ];
+  const m = jkMargin(jokerFair(oe, cash, shares, scns[1]), price);
+  const out = $("#jk-result");
+  out.innerHTML = `
+    <div class="jk-verdict">${jkVerdictTag(m)}<span>오너 어닝스 <strong>${fmt.n(oeEok, 0)}억원</strong> 기준 · 기본 적정주가 <strong>${jkPrice(jokerFair(oe, cash, shares, scns[1]))}</strong>${price > 0 && m != null ? ` vs 현재가 ${fmt.krw(price)} → 안전마진 <strong class="${m > 0 ? "pos" : "neg"}">${fmt.n(m * 100, 1)}%</strong>` : ""}</span></div>
+    ${jkScenarioKpis(oe, cash, shares, price, scns)}
+    <div class="eyebrow" style="margin-top:16px">민감도 · 할인율×영구성장률에 따른 적정주가 (성장률 ${fmt.n(g * 100, 1)}% 고정)</div>
+    ${jkSensitivityHtml(oe, cash, shares, price, g)}
+    <p class="small faint" style="margin-top:8px">색이 칠해진 칸은 현재가 대비 안전마진 30% 이상, 흐린 칸은 현재가가 적정주가보다 비싼 조합입니다. 가정 2%p 차이로 적정주가가 20% 넘게 움직이니 숫자 하나가 아니라 범위로 읽으세요.</p>`;
+  out.hidden = false;
+}
+// 사업보고서 판정 예시: 삼성전자 (수치는 데모용 근사값)
+const JK_REPORT_DEMO = { name: "삼성전자", ticker: "005930", metrics: { roe10: 11.6, debt: 26.8, opStd: 8.9, fcfYears: 8, epsCagr: 5.2 } };
+function runJokerReportDemo() {
+  const s = JK_REPORT_DEMO;
+  const fails = JK_CHECKS.filter((c) => !c.pass(s.metrics[c.k]));
+  const out = $("#jk-report-out");
+  out.innerHTML = `<div class="card-head"><h3>${s.name} <span class="tk plain">${s.ticker}</span> · 사업보고서 기준 예시 판정</h3><span class="small faint">데모 수치 · 실제 공시 검증 전</span></div>
+    ${jkChecklistHtml(s.metrics)}
+    <div class="jk-verdict"><span class="tag exit">버핏이라면 보류</span><span>${fails.length}개 기준 탈락 — 세계 최고 수준의 회사지만, 메모리 반도체 사이클 때문에 이익과 영업이익률의 변동이 커서 "10년 뒤 이익을 어느 정도 확신할 수 있는가"라는 버핏·멍거의 첫 번째 관문을 넘기 어렵습니다. 훌륭한 회사와 <strong>이익이 예측 가능한 회사</strong>는 다르다는 것이 이 필터의 핵심입니다.</span></div>`;
+  out.hidden = false;
+}
 function maxAlerts() { return cacheGet("md:alerts") || []; }
 // 매수 가격 따라가기 화면 하단에 들어가는 매입 가격 알림 카드
 function alertsCardHtml() {
@@ -1953,7 +2139,10 @@ $("#max-page").addEventListener("click", (e) => {
     if (k === "common") return renderMaxCommon();
     if (k === "portfolio") return renderMaxPortfolio();
     if (k === "lev") return renderMaxLev();
+    if (k === "joker") return renderMaxJoker();
   }
+  if (e.target.closest("#jk-run")) return runJokerCalc();
+  if (e.target.closest("#jk-demo-report")) return runJokerReportDemo();
   if (e.target.closest("#max-lev-bt")) return runLevBacktest();
   if (e.target.closest("#pf-run")) return runPortfolioCalc();
   if (e.target.closest("#sc-run")) return runStarterCalc();
