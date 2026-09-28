@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>버픽 (Buffpick)</title>
+<title>모픽 (Mopick)</title>
 <meta name="description" content="워렌 버핏의 가치투자법을 따라가는 투자의 픽">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="버픽">
+<meta name="apple-mobile-web-app-title" content="모픽">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="icon" href="icon-192.png" sizes="192x192" type="image/png">
@@ -382,10 +382,10 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
 </head>
 <body>
 <!-- 첫 화면: 로그인 · 가입. 로그인하면 사라지고 원래 메인 화면이 보입니다 -->
-<div class="gate" id="gate" role="dialog" aria-modal="true" aria-label="버픽 로그인">
-  <div class="gate-top">Buffpick</div>
+<div class="gate" id="gate" role="dialog" aria-modal="true" aria-label="모픽 로그인">
+  <div class="gate-top">Mopick</div>
   <div class="gate-hero">
-    <svg viewBox="18 30 190 150" role="img" aria-label="버픽 로고">
+    <svg viewBox="18 30 190 150" role="img" aria-label="모픽 로고">
       <g fill="none" stroke-linejoin="miter" stroke-miterlimit="10" stroke-width="6.3">
         <polyline points="25.2,172.5 79.5,98.8 133.8,172.5" stroke="#1E6B52"/>
         <polyline class="ko" points="52.4,172.5 112.6,40.1 172.6,172.5" stroke-width="15"/>
@@ -404,7 +404,7 @@ try { if (localStorage.getItem("sb-hzzmzpsjuovijtananmf-auth-token")) document.g
 <div class="wrap">
   <header class="top">
     <div class="brand">
-      <h1>버픽 (Buffpick)</h1>
+      <h1>모픽 (Mopick)</h1>
       <p>워렌 버핏의 가치투자법을 따라가는 투자의 픽</p>
     </div>
     <div class="status">
@@ -696,9 +696,9 @@ try { if (localStorage.getItem("sb-hzzmzpsjuovijtananmf-auth-token")) document.g
   <div class="wrap">
     <div class="max-head">
       <div>
-        <span class="eyebrow">MAX 전용</span>
+        <span class="eyebrow">구독 전용</span>
         <h1 id="max-title">Max 라운지<span class="max-badge">MAX</span></h1>
-        <p class="muted small" style="margin-top:2px">Max 구독자에게만 보이는 화면입니다</p>
+        <p class="muted small" style="margin-top:2px">Pro · Max 구독자에게 보이는 화면입니다. Pro는 첫 번째 기능만 사용할 수 있습니다</p>
       </div>
       <button class="btn" id="max-close" type="button">← 앱으로 돌아가기</button>
     </div>
@@ -1461,8 +1461,8 @@ function runStarterCalc() {
 }
 // 투자 대가 따라하기 구독 모달
 const PLANS = [
-  { id: "pro", name: "Pro 구독형", price: "3만원", feats: ["투자 대가들을 따라하며 추천종목 받기"] },
-  { id: "max", name: "Max 구독형", price: "9.9만원", hot: true, feats: ["투자 대가들의 추천종목 받기", "원하는 매입 가격 실시간 알림", "AI 추천 투자 포트폴리오 구성", "나스닥 레버리지 투자법 등 훨씬 더 다양한 투자방안 추천"] },
+  { id: "pro", name: "Pro 구독형", price: "29,000원", feats: ["투자 대가들을 따라하며 추천종목 받기"] },
+  { id: "max", name: "Max 구독형", price: "89,000원", hot: true, feats: ["투자 대가들의 추천종목 받기", "원하는 매입 가격 실시간 알림", "AI 추천 투자 포트폴리오 구성", "나스닥 레버리지 투자법 등 훨씬 더 다양한 투자방안 추천"] },
 ];
 const GURUS = [
   { id: "buffett", name: "워렌 버핏", org: "버크셔 해서웨이", filer: "버크셔", ready: true, desc: "가치투자의 대가. 버크셔 해서웨이 13F를 바탕으로 연속으로 사 모으는 종목과 그 근거를 보여드립니다." },
@@ -1489,7 +1489,7 @@ function renderPlanMenu() {
       <span class="plan-cta">${p.name} 시작하기</span>
       <span class="plan-note">데모 화면이라 실제 결제는 연결되어 있지 않습니다</span>
     </button>`).join("")}</div>
-    ${guruPlan === "max" ? `<div class="form-actions"><button class="btn primary" type="button" id="gu-max-lounge">이미 Max 구독 중 · Max 라운지 바로가기 →</button></div>` : ""}`;
+    ${guruPlan === "max" || guruPlan === "pro" ? `<div class="form-actions"><button class="btn primary" type="button" id="gu-max-lounge">이미 ${guruPlan === "max" ? "Max" : "Pro"} 구독 중 · 라운지 바로가기 →</button></div>` : ""}`;
 }
 const guruFilings = {};
 function ensureGuruFilings(g) {
@@ -1568,14 +1568,17 @@ const maxBackBtn = `<button class="btn gu-back" type="button" id="max-back">← 
 function renderMaxHome() {
   $("#max-body").dataset.screen = "home";
   $("#max-body").innerHTML = `<div class="card">
-    <div class="card-head"><h3>Max 전용 기능</h3><span class="small faint">데모 화면 · 실제 결제 없음</span></div>
-    <div class="max-grid">
-      <button class="max-feat" type="button" data-maxfeat="joker"><span class="t">조커픽 · 버핏이 한국 주식을 고른다면</span><span class="d">버핏·멍거가 2026년 한국 시장에 투자한다면? ROE·부채비율·현금흐름 5가지 기준과 오너 어닝스 DCF로 매주 1종목을 선별합니다. 사업보고서 숫자를 직접 넣는 버핏 계산기 포함.</span><span class="go">열기 →</span></button>
-      <button class="max-feat" type="button" data-maxfeat="prices"><span class="t">투자 대가 매수 가격 따라가기</span><span class="d">대가들이 연속으로 사 모으는 종목의 분기말 단가와 현재가를 비교해, 대가보다 싸게 살 수 있는 종목을 찾아드립니다.</span><span class="go">열기 →</span></button>
-      <button class="max-feat" type="button" data-maxfeat="lev"><span class="t">AI 나스닥 레버리지 투자법 따라하기</span><span class="d">나스닥 100이 200일 이동평균 위에 있을 때만 레버리지(TQQQ)를 보유하는 추세 전략. 오늘의 신호와 백테스트를 제공합니다.</span><span class="go">열기 →</span></button>
-      <button class="max-feat" type="button" data-maxfeat="common"><span class="t">대가들의 공통 매수 종목</span><span class="d">여러 대가가 함께 들고 있거나 이번 분기에 같이 사들인 종목을 한눈에 봅니다.</span><span class="go">열기 →</span></button>
-      <button class="max-feat" type="button" data-maxfeat="portfolio"><span class="t">포트폴리오 구성 및 적립식 추천 방식</span><span class="d">여유 자금에서 현금을 얼마나 남길지(버크셔의 현금 비중 참고), 매달 VOO 적립은 얼마가 되는지 계산합니다.</span><span class="go">열기 →</span></button>
+    <div class="card-head"><h3>구독 전용 기능</h3><span class="small faint">데모 화면 · 실제 결제 없음</span></div>
+    <p class="desc">Max 구독은 모든 기능을, Pro 구독은 <strong>투자 레전드의 공통 매수 종목</strong>을 사용할 수 있습니다.</p>
+    <div class="max-grid" style="margin-top:12px">
+      <button class="max-feat" type="button" data-maxfeat="common"><span class="t">투자 레전드의 공통 매수 종목<span class="tag new">Pro 구독</span></span><span class="d">여러 레전드가 함께 들고 있거나 이번 분기에 같이 사들인 종목을 한눈에 봅니다.</span><span class="go">열기 →</span></button>
+      <button class="max-feat" type="button" data-maxfeat="prices"><span class="t">레전드 픽 매수 가격 따라가기<span class="tag">Max 구독 전용</span></span><span class="d">레전드들이 연속으로 사 모으는 종목의 분기말 단가와 현재가를 비교해, 레전드보다 싸게 살 수 있는 종목을 찾아드립니다.</span><span class="go" data-mf-go>열기 →</span></button>
+      <button class="max-feat" type="button" data-maxfeat="joker"><span class="t">버핏이 한국주식에 투자한다면?<span class="tag">Max 구독 전용</span></span><span class="d">버핏·멍거가 2026년 한국 시장에 투자한다면? ROE·부채비율·현금흐름 5가지 기준과 오너 어닝스 DCF로 매주 1종목을 선별합니다. 사업보고서 숫자를 직접 넣는 버핏 계산기 포함.</span><span class="go" data-mf-go>열기 →</span></button>
+      <button class="max-feat" type="button" data-maxfeat="portfolio"><span class="t">포트폴리오 구성 및 적립식 추천 방식<span class="tag">Max 구독 전용</span></span><span class="d">여유 자금에서 현금을 얼마나 남길지(버크셔의 현금 비중 참고), 매달 VOO 적립은 얼마가 되는지 계산합니다.</span><span class="go" data-mf-go>열기 →</span></button>
+      <button class="max-feat" type="button" data-maxfeat="lev"><span class="t">AI 나스닥 레버리지 투자법 따라하기<span class="tag">Max 구독 전용</span></span><span class="d">나스닥 100이 200일 이동평균 위에 있을 때만 레버리지(TQQQ)를 보유하는 추세 전략. 오늘의 신호와 백테스트를 제공합니다.</span><span class="go" data-mf-go>열기 →</span></button>
     </div></div>`;
+  // Pro 구독(또는 미구독)에게는 Max 전용 카드가 잠겨 있음을 열기 버튼 자리에 보여준다
+  if (guruPlan !== "max") $$("[data-mf-go]", $("#max-body")).forEach((el) => { el.textContent = "Max 구독으로 업그레이드 →"; });
 }
 // 분기 시작일: 13F 분기말 날짜(3·6·9·12월 말)에서 그 분기의 첫날을 구한다
 function quarterStart(period) { const m = { "03": "01", "06": "04", "09": "07", "12": "10" }[period.slice(5, 7)] || "01"; return `${period.slice(0, 4)}-${m}-01`; }
@@ -2135,6 +2138,8 @@ $("#max-page").addEventListener("click", (e) => {
   const feat = e.target.closest("[data-maxfeat]");
   if (feat) {
     const k = feat.dataset.maxfeat;
+    // Pro 는 '투자 레전드의 공통 매수 종목'만. 나머지는 Max 전용이라 구독 창을 띄운다
+    if (k !== "common" && guruPlan !== "max") return openGuruModal();
     if (k === "prices") return renderMaxPrices();
     if (k === "common") return renderMaxCommon();
     if (k === "portfolio") return renderMaxPortfolio();
@@ -2181,13 +2186,13 @@ $("#gu-close").addEventListener("click", closeGuruModal);
 $("#gu-modal").addEventListener("click", (e) => {
   if (e.target === e.currentTarget) return closeGuruModal();
   if (e.target.closest("#gu-max-lounge")) { closeGuruModal(); return openMaxPage(); }
-  // 요금제 선택: Max 는 전용 라운지(별도 창), Pro 는 투자 대가 탭으로
+  // 요금제 선택: Pro·Max 모두 라운지가 열린다 (Pro 는 첫 번째 기능만 사용 가능)
   const plan = e.target.closest("[data-plan]");
   if (plan) {
     guruPlan = plan.dataset.plan;
     try { localStorage.setItem("md:plan", guruPlan); } catch {}
     closeGuruModal(); state.guruSel = null;
-    if (guruPlan === "max") openMaxPage(); else selectTab("gurus");
+    openMaxPage();
   }
 });
 document.addEventListener("keydown", (e) => {
