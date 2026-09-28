@@ -36,6 +36,11 @@ const KEY = process.env.DART_API_KEY?.trim();
 const DART_BASE = process.env.DART_BASE || "https://opendart.fss.or.kr";
 const MAX_CALLS = Number(process.env.MAX_CALLS || 15000);
 const MIN_COVER = Number(process.env.MIN_COVER || 0.7);
+// 실행 시간 예산: DART 가 느린 시간대에는 15,000건이 워크플로 타임아웃(300분) 안에 못 끝나
+// 잡이 통째로 취소되고 그 실행의 캐시가 유실된다. 시간이 다 되면 수집을 멈추고
+// 그때까지 모은 캐시를 발행하도록, 타임아웃보다 넉넉히 짧은 예산을 둔다.
+const TIME_BUDGET_MIN = Number(process.env.TIME_BUDGET_MIN || 240);
+const T0 = Date.now();
 if (!KEY) {
   console.error("[joker] DART_API_KEY 가 없습니다. opendart.fss.or.kr 에서 발급받아 리포 시크릿 DART_API_KEY 로 넣어주세요.");
   process.exit(1);
@@ -56,10 +61,14 @@ const MAX_PRICE_LOOKUPS = 120; // 주가·주식수 조회 상한 (통과 종목
 // 금융업·스팩·리츠·지주사는 산식이 맞지 않아 이름으로 거른다 (보수적: 애매하면 제외)
 const EXCLUDE_NAME = /스팩|기업인수목적|리츠|위탁관리부동산|은행|증권|보험|카드|캐피탈|금융|생명|화재|해상|손해|저축|자산운용|투자자문|창업투자|벤처투자|인베스트|홀딩스|지주/;
 
-let calls = 0, budgetOut = false;
+let calls = 0, budgetOut = false, timeOut = false;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function dart(pathname, params = {}) {
-  if (budgetOut || calls >= MAX_CALLS) { budgetOut = true; return null; }
+  if (!timeOut && Date.now() - T0 > TIME_BUDGET_MIN * 60000) {
+    timeOut = true;
+    console.warn(`[joker] 시간 예산 ${TIME_BUDGET_MIN}분 도달 — 남은 조회는 다음 실행으로 미루고 지금까지의 캐시를 저장합니다`);
+  }
+  if (budgetOut || timeOut || calls >= MAX_CALLS) { budgetOut = true; return null; }
   calls++;
   const q = new URLSearchParams({ crtfc_key: KEY, ...params });
   const url = `${DART_BASE}/api/${pathname}?${q}`;
@@ -299,7 +308,7 @@ async function main() {
     note: `DART ${LAST_YEAR} 사업보고서 기반 자동 스크리닝 (10년치 수집 완료 ${complete}/${universe.length}개 회사). 유지보수 설비투자는 min(감가상각비, 10년 CAPEX 중앙값) 근사치이며, 금융사·지주사·스팩·리츠는 제외했습니다.`,
     picks: picks.slice(0, 26),
   }, null, 1));
-  await writeFile(path.join(OUT_DIR, "meta.json"), JSON.stringify({ updated: now.toISOString(), universe: universe.length, complete, coverage: Math.round(cover * 1000) / 1000, calls, budgetOut, passed: screened.length, priced: candidates.length }, null, 1));
+  await writeFile(path.join(OUT_DIR, "meta.json"), JSON.stringify({ updated: now.toISOString(), universe: universe.length, complete, coverage: Math.round(cover * 1000) / 1000, calls, budgetOut, timeOut, minutes: Math.round((Date.now() - T0) / 60000), passed: screened.length, priced: candidates.length }, null, 1));
 }
 
 main().catch((err) => { console.error("[joker] 실패:", err); process.exit(1); });
