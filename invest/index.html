@@ -1986,9 +1986,16 @@ function jkSensitivityHtml(oe, netCash, shares, price, gBase) {
     return `<td class="${m != null && m >= 0.3 ? "jk-hot" : m != null && m < 0 ? "jk-neg" : ""}">${jkPrice(fair)}</td>`;
   }).join("")}</tr>`).join("")}</tbody></table></div>`;
 }
+// 주간 자동 스크리닝 결과는 joker 브랜치에 올라온다 (joker-picks 워크플로).
+// 아직 없거나 픽이 비어 있으면 리포의 데모 파일(joker-picks.json)로 폴백.
+const JOKER_BASE = params.get("joker") || `https://raw.githubusercontent.com/${OWNER}/${REPO}/joker/`;
 let jokerPicksPromise = null;
 function ensureJokerPicks() {
-  if (!jokerPicksPromise) jokerPicksPromise = fetch(`joker-picks.json?t=${Date.now()}`, { cache: "no-store" }).then((r) => { if (!r.ok) throw new Error("picks"); return r.json(); });
+  const local = () => fetch(`joker-picks.json?t=${Date.now()}`, { cache: "no-store" }).then((r) => { if (!r.ok) throw new Error("picks"); return r.json(); });
+  if (!jokerPicksPromise) jokerPicksPromise = fetch(`${JOKER_BASE}joker-picks.json?t=${Date.now()}`, { cache: "no-store" })
+    .then((r) => { if (!r.ok) throw new Error("joker"); return r.json(); })
+    .then((d) => (d.picks?.length ? d : local()))
+    .catch(local);
   return jokerPicksPromise;
 }
 function jkPickHtml(p, isLatest) {

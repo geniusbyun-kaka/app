@@ -1,0 +1,53 @@
+name: Joker picks (Buffett-style KR screen)
+
+# 매주 월요일 DART 사업보고서 재무제표로 한국 상장사를 버핏식 기준으로 스크리닝해
+# 이번 주 조커픽을 `joker` 브랜치에 저장합니다 (invest/index.html 의 Max 라운지가 읽습니다).
+#
+# 필요한 시크릿: DART_API_KEY — opendart.fss.or.kr 에서 무료 발급 (하루 20,000건 한도).
+# 첫 실행은 회사별 10년치 재무를 처음 받느라 캐시가 다 안 찹니다. Actions 탭에서
+# workflow_dispatch 로 며칠에 걸쳐 몇 번 더 돌리면 캐시가 채워지고, 수집률 70%를
+# 넘긴 실행부터 주간 픽이 뽑히기 시작합니다. 이후에는 새 사업보고서 분만 받아 빠릅니다.
+on:
+  schedule:
+    - cron: "0 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: joker-picks
+  cancel-in-progress: false
+
+jobs:
+  screen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300 # 첫 수집은 DART 호출이 많아 오래 걸린다 (캐시가 차면 수 분)
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Restore previous cache (past-year financials are reused)
+        run: |
+          git clone -q --depth 1 --branch joker "https://github.com/${GITHUB_REPOSITORY}.git" out 2>/dev/null || mkdir -p out
+          rm -rf out/.git
+
+      - name: Screen KR market via DART
+        env:
+          DART_API_KEY: ${{ secrets.DART_API_KEY }}
+        run: node scripts/fetch-joker-picks.mjs out
+
+      - name: Publish to joker branch
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd out
+          git init -q -b joker
+          git config user.name "market-data-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add .
+          git commit -q -m "Joker picks $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          git push -q --force "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" joker
