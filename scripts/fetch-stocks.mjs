@@ -254,13 +254,17 @@ async function main() {
   const guruTickers = await fetchGuruTickers();
   const guruItems = [...guruTickers]
     .filter(([symbol]) => !known.has(symbol))
+    // CUSIP→티커 변환(OpenFIGI)이 가끔 돌려주는 비정상 코드는 뺀다:
+    // 통화 접미사(CHUYUSD·TTS1EUR 등)나 숫자가 든 것은 미국 상장 티커가 아니다
+    .filter(([symbol]) => !/[0-9]/.test(symbol) && !/(USD|EUR|GBP|JPY|CHF)$/.test(symbol))
     .map(([symbol, name]) => ({ symbol, name, sector: "대가 보유", kind: "stock", preferYahooName: true }));
   console.log(`[stocks] 투자 대가 보유 종목 추가: ${guruItems.length}개${guruItems.length ? ` (${guruItems.slice(0, 12).map((x) => x.symbol).join(", ")}${guruItems.length > 12 ? " …" : ""})` : ""}`);
   const items = [...baseItems, ...guruItems];
 
   const prevItems = new Map((prevIndex?.items || []).map((x) => [x.symbol, x]));
   const results = [];
-  const failed = [];
+  const failed = []; // 기존 데이터가 있는데 이번에 갱신하지 못한 종목 (직전 파일 유지)
+  const skipped = []; // 한 번도 시세를 받은 적 없는 티커 (상장폐지·피인수·잘못된 변환) — 갱신 실패로 세지 않는다
   let cursor = 0;
   const worker = async () => {
     while (cursor < items.length) {
@@ -271,18 +275,18 @@ async function main() {
         results.push({ symbol: item.symbol, name: data.name, sector: item.sector, kind: item.kind, currency: data.currency, price: data.quote.price, changePercent: data.quote.changePercent, from: data.daily.from, to: data.daily.to, updated: data.updated, div: data.div });
       } catch (err) {
         const prev = prevItems.get(item.symbol);
-        failed.push(item.symbol);
-        console.warn(`[stocks] ${item.symbol} 실패: ${err.message}${prev ? " (직전 파일 유지)" : ""}`);
-        if (prev) results.push({ ...prev, stale: true });
+        if (prev) { failed.push(item.symbol); results.push({ ...prev, stale: true }); }
+        else skipped.push(item.symbol);
+        console.warn(`[stocks] ${item.symbol} 실패: ${err.message}${prev ? " (직전 파일 유지)" : " (데이터 없음 — 목록에서 제외)"}`);
       }
       await new Promise((r) => setTimeout(r, 150)); // 야후에 부담 주지 않도록 간격
     }
   };
   await Promise.all(Array.from({ length: CONCURRENCY }, worker));
   results.sort((a, b) => a.symbol.localeCompare(b.symbol));
-  const index = { updated: new Date().toISOString(), source: "Yahoo Finance (지연 시세) · 구성종목: Wikipedia", count: results.length, failed, items: results };
+  const index = { updated: new Date().toISOString(), source: "Yahoo Finance (지연 시세) · 구성종목: Wikipedia", count: results.length, failed, skipped, items: results };
   await writeFile(path.join(OUT_DIR, "index.json"), JSON.stringify(index));
-  console.log(`[stocks] 완료: ${results.length}개 저장, 실패 ${failed.length}개${failed.length ? ` (${failed.slice(0, 20).join(", ")}${failed.length > 20 ? " …" : ""})` : ""}`);
+  console.log(`[stocks] 완료: ${results.length}개 저장, 갱신 실패 ${failed.length}개${failed.length ? ` (${failed.slice(0, 20).join(", ")}${failed.length > 20 ? " …" : ""})` : ""}, 제외 ${skipped.length}개${skipped.length ? ` (${skipped.slice(0, 20).join(", ")}${skipped.length > 20 ? " …" : ""})` : ""}`);
   if (results.length < items.length * 0.5) throw new Error("절반 이상 실패 → 스냅샷을 올리지 않음");
 }
 
