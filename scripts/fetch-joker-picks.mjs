@@ -72,18 +72,30 @@ async function dart(pathname, params = {}) {
   calls++;
   const q = new URLSearchParams({ crtfc_key: KEY, ...params });
   const url = `${DART_BASE}/api/${pathname}?${q}`;
-  const res = await withRetry(async () => {
-    const r = await fetch(url);
-    if (!r.ok) throw new Error(`${r.status} for ${pathname}`);
-    return r;
-  });
+  let res;
+  try {
+    res = await withRetry(async () => {
+      const r = await fetch(url);
+      if (!r.ok) throw new Error(`${r.status} for ${pathname}`);
+      return r;
+    });
+  } catch (err) {
+    // 재시도까지 전부 실패하는 지속적 네트워크 오류 (예: DART 쪽 ECONNRESET).
+    // 여기서 예외가 새 나가면 실행 전체가 죽고 이번 실행의 캐시가 유실되므로,
+    // 한도 소진과 똑같이 수집을 멈추고 지금까지 모은 캐시를 저장하러 간다.
+    const code = err?.cause?.code || err?.code || err?.message || err;
+    console.warn(`[joker] DART 네트워크 오류가 계속됩니다 (${code}) — 남은 조회는 다음 실행으로 미루고 지금까지의 캐시를 저장합니다`);
+    budgetOut = true;
+    return null;
+  }
   await sleep(50);
   return res;
 }
 async function dartJson(pathname, params) {
   const res = await dart(pathname, params);
   if (!res) return null;
-  const j = await res.json();
+  let j;
+  try { j = await res.json(); } catch { return null; } // 본문이 끊긴 응답은 이 호출만 건너뛴다 (캐시에 기록 안 함)
   if (j.status === "020" || j.status === "021") { console.warn(`[joker] DART 사용 한도 도달 (status ${j.status}) — 남은 조회는 다음 실행으로 미룹니다`); budgetOut = true; return null; }
   return j;
 }
