@@ -65,6 +65,9 @@ a{color:var(--accent)}
 /* header */
 header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 20px;padding-bottom:14px;border-bottom:1px solid var(--line);margin-bottom:16px}
 .brand p{color:var(--ink-2);font-size:13px;margin-top:2px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-logo{width:46px;height:37px;flex-shrink:0}
+.brand-logo .ko{stroke:var(--bg)}
 .status{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-2)}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--flat);display:inline-block;margin-right:6px;vertical-align:1px}
 .dot.ok{background:#2E9E5B}.dot.warn{background:#D9A400}.dot.bad{background:var(--up)}
@@ -322,6 +325,8 @@ html.gated,html.gated body{overflow:hidden}
 .max-feat .t{font-weight:700;font-size:15.5px;color:var(--ink)}
 .max-feat .d{font-size:13px;color:var(--ink-2);line-height:1.6}
 .max-feat .go{margin-top:auto;font-size:13px;font-weight:600;color:var(--accent)}
+.max-feat .plan{align-self:flex-start;margin-top:-2px}
+.max-feat .plan .tag{margin-left:0;font-size:11.5px;padding:2px 8px}
 .max-sig{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;border-radius:10px;background:var(--surface-2);font-size:14px}
 .max-sig .light{width:12px;height:12px;border-radius:50%;background:var(--flat)}
 .max-sig.on .light{background:#2E9E5B}
@@ -407,8 +412,19 @@ try { if (localStorage.getItem("sb-hzzmzpsjuovijtananmf-auth-token")) document.g
 <div class="wrap">
   <header class="top">
     <div class="brand">
-      <h1>모픽 (Mopick)</h1>
-      <p>워렌 버핏의 가치투자법을 따라가는 투자의 픽</p>
+      <svg class="brand-logo" viewBox="18 30 190 150" role="img" aria-label="모픽 로고">
+        <g fill="none" stroke-linejoin="miter" stroke-miterlimit="10" stroke-width="6.3">
+          <polyline points="25.2,172.5 79.5,98.8 133.8,172.5" stroke="#1E6B52"/>
+          <polyline class="ko" points="52.4,172.5 112.6,40.1 172.6,172.5" stroke-width="15"/>
+          <polyline points="52.4,172.5 112.6,40.1 172.6,172.5" stroke="#1F4E8C"/>
+          <polyline class="ko" points="91.35,172.5 145.5,109.5 199.65,172.5" stroke-width="15"/>
+          <polyline points="91.35,172.5 145.5,109.5 199.65,172.5" stroke="#9E2B35"/>
+        </g>
+      </svg>
+      <div>
+        <h1>모픽 - Mopick</h1>
+        <p>워렌 버핏의 가치투자법을 따라가는 투자의 픽</p>
+      </div>
     </div>
     <div class="status">
       <span id="status"><span class="dot"></span>데이터 불러오는 중</span>
@@ -434,8 +450,7 @@ try { if (localStorage.getItem("sb-hzzmzpsjuovijtananmf-auth-token")) document.g
     <button class="tab more-toggle" type="button" id="tab-more" aria-expanded="false">더보기 ▾</button>
     <div class="tabs-extra" id="tabs-extra" hidden>
       <button class="tab" role="tab" aria-selected="false" data-tab="backtest" id="tab-backtest">백테스트</button>
-      <button class="tab" role="tab" aria-selected="false" data-tab="buffett" id="tab-buffett">버핏</button>
-      <button class="tab" role="tab" aria-selected="false" data-tab="gurus" id="tab-gurus">투자 대가</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="buffett" id="tab-buffett">버크셔해서웨이(버핏)</button>
       <button class="tab" role="tab" aria-selected="false" data-tab="crypto" id="tab-crypto">코인</button>
       <button class="tab" role="tab" aria-selected="false" data-tab="dividend" id="tab-dividend">배당</button>
     </div>
@@ -479,7 +494,6 @@ try { if (localStorage.getItem("sb-hzzmzpsjuovijtananmf-auth-token")) document.g
   <section class="panel" id="panel-news" role="tabpanel" hidden>
     <div class="card">
       <div class="card-head"><h3>오늘의 헤드라인 뉴스</h3><span class="small faint" id="news-status">불러오는 중</span></div>
-      <p class="desc">매일 오전 6시 메인의 상위 3개 기사를 자동 번역합니다. 기계 번역이라 부정확할 수 있고, 본문은 일부만 싣습니다. 전문은 원문 링크에서 확인하세요.</p>
     </div>
     <div id="news-list"></div>
   </section>
@@ -1543,7 +1557,7 @@ function ensureGuruFilings(g) {
 function renderGuruTab() {
   if (state.guruSel) return renderGuruPage(state.guruSel);
   $("#panel-gurus").innerHTML = `<div class="card">
-    <div class="card-head"><h3>투자 대가 따라가기</h3><span class="small faint">분기 공시(13F) 기준</span></div>
+    <div class="card-head"><h3>레전드 연속 매수 종목</h3><span class="small faint">분기 공시(13F) 기준</span></div>
     <p class="desc">대가들이 실제로 사 모으는 종목을 분기 공시(13F)로 따라갑니다. 워렌 버핏 상세 분석은 버핏 탭에 그대로 있고, 여기서는 투자자를 누르면 이 화면 전체에 추천 종목과 근거가 열립니다.</p>
     <div class="gu-grid sm" style="margin-top:12px">${GURUS.map((g) => `<button class="gu-card" type="button" data-guru="${g.id}">
       <span class="gu-name">${g.name}</span>
@@ -1605,22 +1619,44 @@ function guruPicksHtml(g, f) {
 }
 // ───────────────────────── Max 라운지 (Max 구독자 전용 별도 창) ─────────────────────────
 function openMaxPage() { $("#max-page").hidden = false; document.body.style.overflow = "hidden"; renderMaxHome(); $("#max-page").scrollTop = 0; }
-function closeMaxPage() { $("#max-page").hidden = true; document.body.style.overflow = ""; }
+function closeMaxPage() { restoreGuruPanel(); $("#max-page").hidden = true; document.body.style.overflow = ""; }
 const maxBackBtn = `<button class="btn gu-back" type="button" id="max-back">← Max 라운지</button>`;
+// 배지는 제목 아래 줄에 통일: Pro 는 파란(강조색), Max 는 같은 톤의 은은한 빨강
+const mfPro = `<span class="plan"><span class="tag new">Pro 구독</span></span>`;
+const mfMax = `<span class="plan"><span class="tag inc">Max 구독 전용</span></span>`;
 function renderMaxHome() {
+  restoreGuruPanel();
   $("#max-body").dataset.screen = "home";
   $("#max-body").innerHTML = `<div class="card">
     <div class="card-head"><h3>구독 전용 기능</h3><span class="small faint">데모 화면 · 실제 결제 없음</span></div>
-    <p class="desc">Max 구독은 모든 기능을, Pro 구독은 <strong>투자 레전드의 공통 매수 종목</strong>을 사용할 수 있습니다.</p>
+    <p class="desc">Max 구독은 모든 기능을, Pro 구독은 <strong>Pro 구독 표시가 있는 기능</strong>을 사용할 수 있습니다.</p>
     <div class="max-grid" style="margin-top:12px">
-      <button class="max-feat" type="button" data-maxfeat="common"><span class="t">투자 레전드의 공통 매수 종목<span class="tag new">Pro 구독</span></span><span class="d">여러 레전드가 함께 들고 있거나 이번 분기에 같이 사들인 종목을 한눈에 봅니다.</span><span class="go">열기 →</span></button>
-      <button class="max-feat" type="button" data-maxfeat="prices"><span class="t">레전드 픽 매수 가격 따라가기<span class="tag">Max 구독 전용</span></span><span class="d">레전드들이 연속으로 사 모으는 종목의 분기말 단가와 현재가를 비교해, 레전드보다 싸게 살 수 있는 종목을 찾아드립니다.</span><span class="go" data-mf-go>열기 →</span></button>
-      <button class="max-feat" type="button" data-maxfeat="joker"><span class="t">버핏이 한국주식에 투자한다면?<span class="tag">Max 구독 전용</span></span><span class="d">버핏·멍거가 2026년 한국 시장에 투자한다면? ROE·부채비율·현금흐름 5가지 기준과 오너 어닝스 DCF로 매주 1종목을 선별합니다. 사업보고서 숫자를 직접 넣는 버핏 계산기 포함.</span><span class="go" data-mf-go>열기 →</span></button>
-      <button class="max-feat" type="button" data-maxfeat="portfolio"><span class="t">포트폴리오 구성 및 적립식 추천 방식<span class="tag">Max 구독 전용</span></span><span class="d">여유 자금에서 현금을 얼마나 남길지(버크셔의 현금 비중 참고), 매달 VOO 적립은 얼마가 되는지 계산합니다.</span><span class="go" data-mf-go>열기 →</span></button>
-      <button class="max-feat" type="button" data-maxfeat="lev"><span class="t">AI 나스닥 레버리지 투자법 따라하기<span class="tag">Max 구독 전용</span></span><span class="d">나스닥 100이 200일 이동평균 위에 있을 때만 레버리지(TQQQ)를 보유하는 추세 전략. 오늘의 신호와 백테스트를 제공합니다.</span><span class="go" data-mf-go>열기 →</span></button>
+      <button class="max-feat" type="button" data-maxfeat="common"><span class="t">투자 레전드의 공통 매수 종목</span>${mfPro}<span class="d">여러 레전드가 함께 들고 있거나 이번 분기에 같이 사들인 종목을 한눈에 봅니다.</span><span class="go">열기 →</span></button>
+      <button class="max-feat" type="button" data-maxfeat="gurus"><span class="t">레전드 연속 매수 종목</span>${mfPro}<span class="d">워렌 버핏, 빌 애크먼 등 투자 레전드 8인의 13F를 분석해, 연속으로 사 모으는 종목과 꾸준히 모으는 종목을 레전드별로 보여드립니다.</span><span class="go">열기 →</span></button>
+      <button class="max-feat" type="button" data-maxfeat="prices"><span class="t">레전드 픽 매수 가격 따라가기</span>${mfMax}<span class="d">레전드들이 연속으로 사 모으는 종목의 분기말 단가와 현재가를 비교해, 레전드보다 싸게 살 수 있는 종목을 찾아드립니다.</span><span class="go" data-mf-go>열기 →</span></button>
+      <button class="max-feat" type="button" data-maxfeat="joker"><span class="t">버핏이 한국주식에 투자한다면?</span>${mfMax}<span class="d">버핏·멍거가 2026년 한국 시장에 투자한다면? ROE·부채비율·현금흐름 5가지 기준과 오너 어닝스 DCF로 매주 1종목을 선별합니다. 사업보고서 숫자를 직접 넣는 버핏 계산기 포함.</span><span class="go" data-mf-go>열기 →</span></button>
+      <button class="max-feat" type="button" data-maxfeat="portfolio"><span class="t">포트폴리오 구성 및 적립식 추천 방식</span>${mfMax}<span class="d">여유 자금에서 현금을 얼마나 남길지(버크셔의 현금 비중 참고), 매달 VOO 적립은 얼마가 되는지 계산합니다.</span><span class="go" data-mf-go>열기 →</span></button>
+      <button class="max-feat" type="button" data-maxfeat="lev"><span class="t">AI 나스닥 레버리지 투자법 따라하기</span>${mfMax}<span class="d">나스닥 100이 200일 이동평균 위에 있을 때만 레버리지(TQQQ)를 보유하는 추세 전략. 오늘의 신호와 백테스트를 제공합니다.</span><span class="go" data-mf-go>열기 →</span></button>
     </div></div>`;
   // Pro 구독(또는 미구독)에게는 Max 전용 카드가 잠겨 있음을 열기 버튼 자리에 보여준다
   if (guruPlan !== "max") $$("[data-mf-go]", $("#max-body")).forEach((el) => { el.textContent = "Max 구독으로 업그레이드 →"; });
+}
+// 투자 레전드(구 투자 대가 탭) 패널을 라운지 안으로 옮겨 보여준다.
+// 라운지의 다른 화면으로 갈 때는 패널을 원래 자리로 되돌려 innerHTML 덮어쓰기에 지워지지 않게 한다.
+const guruPanelHome = $("#panel-gurus").parentElement;
+function restoreGuruPanel() {
+  const p = $("#panel-gurus");
+  p.hidden = true;
+  if (p.parentElement !== guruPanelHome) guruPanelHome.appendChild(p);
+}
+function renderMaxGurus() {
+  const body = $("#max-body");
+  body.dataset.screen = "gurus";
+  body.innerHTML = maxBackBtn;
+  body.appendChild($("#panel-gurus"));
+  $("#panel-gurus").hidden = false;
+  state.guruSel = null;
+  renderGuruTab();
 }
 // 분기 시작일: 13F 분기말 날짜(3·6·9·12월 말)에서 그 분기의 첫날을 구한다
 function quarterStart(period) { const m = { "03": "01", "06": "04", "09": "07", "12": "10" }[period.slice(5, 7)] || "01"; return `${period.slice(0, 4)}-${m}-01`; }
@@ -2180,8 +2216,9 @@ $("#max-page").addEventListener("click", (e) => {
   const feat = e.target.closest("[data-maxfeat]");
   if (feat) {
     const k = feat.dataset.maxfeat;
-    // Pro 는 '투자 레전드의 공통 매수 종목'만. 나머지는 Max 전용이라 구독 창을 띄운다
-    if (k !== "common" && guruPlan !== "max") return openGuruModal();
+    // Pro 는 Pro 표시가 있는 기능(공통 매수·레전드 연속 매수)만. 나머지는 Max 전용이라 구독 창을 띄운다
+    if (!["common", "gurus"].includes(k) && guruPlan !== "max") return openGuruModal();
+    if (k === "gurus") return renderMaxGurus();
     if (k === "prices") return renderMaxPrices();
     if (k === "common") return renderMaxCommon();
     if (k === "portfolio") return renderMaxPortfolio();
@@ -2220,7 +2257,10 @@ $("#cm-modal").addEventListener("click", (e) => {
 });
 
 $("#sc-buffett").addEventListener("click", openGuruModal);
-$("#sc-gurus").addEventListener("click", () => { state.guruSel = null; selectTab("gurus"); });
+// 초보 탭의 '대가 목록 보기': 투자 레전드는 이제 라운지 안에 있다 (구독 전이면 구독 창)
+$("#sc-gurus").addEventListener("click", () => {
+  if (guruPlan === "max" || guruPlan === "pro") { openMaxPage(); renderMaxGurus(); } else openGuruModal();
+});
 // 구독하기는 항상 요금제 선택 모달부터 (Max 구독 중이면 모달 안에 라운지 바로가기 표시)
 $("#sub-open").addEventListener("click", openGuruModal);
 $("#login").addEventListener("click", openAuth);
@@ -2253,7 +2293,7 @@ $("#panel-gurus").addEventListener("click", (e) => {
 
 // ───────────────────────── 탭 · 이벤트 ─────────────────────────
 // 더보기 줄에 들어 있는 탭들. 이 중 하나가 선택되면 접힌 줄을 자동으로 펼친다
-const EXTRA_TABS = ["backtest", "buffett", "gurus", "crypto", "dividend"];
+const EXTRA_TABS = ["backtest", "buffett", "crypto", "dividend"];
 function toggleMoreTabs(open) {
   const x = $("#tabs-extra"), open2 = open ?? x.hidden;
   x.hidden = !open2;
@@ -2264,10 +2304,10 @@ function toggleMoreTabs(open) {
 function selectTab(name) {
   $$(".tab[data-tab]").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.tab === name)));
   if (EXTRA_TABS.includes(name) && $("#tabs-extra").hidden) toggleMoreTabs(true);
-  ["intro", "starter", "buffett", "gurus", "news", "backtest", "stocks", "dividend", "crypto"].forEach((p) => { $(`#panel-${p}`).hidden = p !== name; });
+  // 투자 레전드(panel-gurus)는 탭이 아니라 Max 라운지 안에서 보여준다
+  ["intro", "starter", "buffett", "news", "backtest", "stocks", "dividend", "crypto"].forEach((p) => { $(`#panel-${p}`).hidden = p !== name; });
   if (name === "dividend") ensureStockIndex().then(renderDividend).catch(() => {});
   if (name === "buffett") ensureFilings().catch(() => {});
-  if (name === "gurus") renderGuruTab();
   if (name === "starter") ensureLessons();
   if (name === "news") ensureNews();
   if (name === "crypto") { renderCoinTiles(); renderKimchi(); ensureStockIndex().then(renderCoinList).catch(() => {}); }
@@ -2830,7 +2870,7 @@ initCommaInputs();
 const cachedLatest = cacheGet("md:latest"), cachedIntraday = cacheGet("md:intraday");
 if (cachedLatest) { state.latest = cachedLatest; state.intraday = cachedIntraday; renderQuotes(); }
 try { state.stockRange = localStorage.getItem("md:range") || "1Y"; const ss = localStorage.getItem("md:stock"); if (ss) state.stockSel = ss; } catch {}
-const TABS = ["intro", "starter", "buffett", "gurus", "news", "backtest", "stocks", "dividend", "crypto"];
+const TABS = ["intro", "starter", "buffett", "news", "backtest", "stocks", "dividend", "crypto"];
 let savedTab = "intro"; try { savedTab = localStorage.getItem("md:tab") || "intro"; } catch {}
 if (!TABS.includes(savedTab)) savedTab = "intro";
 selectTab(savedTab);

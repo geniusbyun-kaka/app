@@ -35,19 +35,34 @@ jobs:
           git clone -q --depth 1 --branch joker "https://github.com/${GITHUB_REPOSITORY}.git" out 2>/dev/null || mkdir -p out
           rm -rf out/.git
 
-      - name: Screen KR market via DART
+      # 수집 스크립트를 돌리면서 1시간마다 중간 저장(체크포인트)을 joker 브랜치에
+      # 발행한다. 러너가 갑자기 죽거나 예상 못 한 오류로 실패해도 마지막 체크포인트
+      # 까지의 캐시는 남는다. 발행은 진행 중인 out 폴더를 복사한 스냅샷에서 한다.
+      - name: Screen KR market via DART (hourly checkpoint publish)
         env:
           DART_API_KEY: ${{ secrets.DART_API_KEY }}
-        run: node scripts/fetch-joker-picks.mjs out
-
-      - name: Publish to joker branch
-        env:
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cd out
-          git init -q -b joker
-          git config user.name "market-data-bot"
-          git config user.email "actions@users.noreply.github.com"
-          git add .
-          git commit -q -m "Joker picks $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
-          git push -q --force "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" joker
+          publish() {
+            rm -rf snap
+            cp -r out snap
+            cd snap
+            git init -q -b joker
+            git config user.name "market-data-bot"
+            git config user.email "actions@users.noreply.github.com"
+            git add .
+            if git commit -q -m "Joker picks $1 $(date -u +'%Y-%m-%dT%H:%M:%SZ')"; then
+              git push -q --force "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" joker || echo "::warning::checkpoint push failed"
+            fi
+            cd ..
+          }
+          node scripts/fetch-joker-picks.mjs out &
+          PID=$!
+          while kill -0 "$PID" 2>/dev/null; do
+            for i in $(seq 60); do kill -0 "$PID" 2>/dev/null || break; sleep 60; done
+            if kill -0 "$PID" 2>/dev/null; then publish checkpoint; fi
+          done
+          SCRIPT_RC=0
+          wait "$PID" || SCRIPT_RC=$?
+          publish final
+          exit "$SCRIPT_RC"
