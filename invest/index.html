@@ -152,7 +152,8 @@ td{font-family:var(--mono);font-variant-numeric:tabular-nums}
 td.txt{font-family:var(--font)}
 .tablewrap{overflow-x:auto}
 /* 표가 화면보다 넓으면 첫 번째 열(종목)이 고정된 채 나머지만 가로 스크롤된다 */
-.tablewrap th:first-child,.tablewrap td:first-child{position:sticky;left:0;background:var(--surface);z-index:1;border-right:1px solid var(--line-2);box-shadow:6px 0 8px -6px rgba(0,0,0,.3)}
+.tablewrap th:first-child,.tablewrap td:first-child,.stock-list th:first-child,.stock-list td:first-child{position:sticky;left:0;background:var(--surface);z-index:1;border-right:1px solid var(--line-2);box-shadow:6px 0 8px -6px rgba(0,0,0,.3)}
+.stock-list th:first-child{z-index:2}
 .stock-list tbody tr:hover td:first-child{background:var(--surface-2)}
 .stock-list tbody tr[aria-selected="true"] td:first-child{background:color-mix(in srgb,var(--accent) 12%,var(--surface))}
 @media (max-width:520px){
@@ -160,6 +161,9 @@ td.txt{font-family:var(--font)}
   /* 피델리티식 2줄 종목 칸: 티커는 윗줄, 회사명은 아랫줄에 작게 말줄임 */
   .tablewrap td:first-child .tk{display:block}
   .tablewrap td:first-child .nm{display:block;margin-left:0;font-size:11px;line-height:1.35;max-width:34vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* 옆으로 스크롤하는 동안에는 회사명을 접고 얇은 티커만 고정되어 따라온다 (피델리티 방식) */
+  .tablewrap.scrolled td:first-child .nm{display:none}
+  .tablewrap.scrolled th:first-child,.tablewrap.scrolled td:first-child{max-width:none}
 }
 .pos{color:var(--up)} .neg{color:var(--down)}
 
@@ -619,7 +623,9 @@ try { if (localStorage.getItem("sb-hzzmzpsjuovijtananmf-auth-token")) document.g
       <div class="stock-tools">
         <input id="stock-search" type="search" placeholder="티커 또는 회사명 검색 (예: AAPL, Nvidia, TQQQ)" autocomplete="off">
       </div>
-      <div class="stock-list"><table id="stock-table"><thead><tr><th>티커</th><th>종목</th><th>섹터</th><th>가격</th><th>전일비</th></tr></thead><tbody><tr><td class="txt faint" colspan="5">불러오는 중</td></tr></tbody></table></div>
+      <!-- 목록은 기본 접힘: 검색어를 입력하면 나타나고, 전체 목록은 버튼으로 펼친다 -->
+      <div class="form-actions" style="margin-top:8px"><button class="chip" id="stock-list-toggle" type="button">전체 목록 보기 ▾</button></div>
+      <div class="stock-list" id="stock-listbox" hidden><table id="stock-table"><thead><tr><th>티커</th><th>종목</th><th>섹터</th><th>가격</th><th>전일비</th></tr></thead><tbody><tr><td class="txt faint" colspan="5">불러오는 중</td></tr></tbody></table></div>
       <div class="small faint" style="margin-top:6px" id="stock-count"></div>
     </div>
     <div class="card" id="stock-detail">
@@ -2351,6 +2357,12 @@ matchMedia("(prefers-color-scheme: dark)").addEventListener("change", rerenderAl
 new MutationObserver(rerenderAll).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 // 종목 탭 이벤트
 ["input", "change"].forEach((ev) => { $("#stock-search").addEventListener(ev, renderStockList); });
+$("#stock-list-toggle").addEventListener("click", () => { state.stockListOpen = !state.stockListOpen; renderStockList(); });
+// 표를 옆으로 스크롤하면 종목 칸을 티커만 남기고 얇게 접는다 (scroll 은 버블링이 없어 캡처로 받는다)
+document.addEventListener("scroll", (e) => {
+  const w = e.target;
+  if (w instanceof Element && w.classList.contains("tablewrap")) w.classList.toggle("scrolled", w.scrollLeft > 4);
+}, true);
 $("#stock-search").addEventListener("keydown", (e) => { if (e.key === "Enter") { const first = $("#stock-table tbody tr[data-sym]"); if (first) selectStock(first.dataset.sym); } });
 $("#stock-table").addEventListener("click", (e) => { const tr = e.target.closest("tr[data-sym]"); if (tr) selectStock(tr.dataset.sym); });
 $("#stock-detail").addEventListener("click", (e) => {
@@ -2410,6 +2422,13 @@ async function loadStock(sym) {
 function renderStockList() {
   const idx = state.stockIndex; if (!idx) return;
   const q = $("#stock-search").value.trim().toLowerCase();
+  // 검색어가 없으면 목록을 접어둔다 (전체 목록 보기 버튼으로만 펼침)
+  const open = !!q || state.stockListOpen;
+  $("#stock-listbox").hidden = !open;
+  const tg = $("#stock-list-toggle");
+  tg.hidden = !!q;
+  tg.textContent = state.stockListOpen ? "전체 목록 접기 ▴" : "전체 목록 보기 ▾";
+  if (!open) { $("#stock-count").textContent = ""; return; }
   let items = idx.items.filter((x) => x.kind !== "coin" && (!q || x.symbol.toLowerCase().includes(q) || x.name.toLowerCase().includes(q)));
   if (q) items.sort((a, b) => (a.symbol.toLowerCase().startsWith(q) ? 0 : 1) - (b.symbol.toLowerCase().startsWith(q) ? 0 : 1));
   const shown = items.slice(0, 200);
