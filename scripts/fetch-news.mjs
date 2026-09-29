@@ -147,21 +147,31 @@ function parseArticle(html, url, debug) {
   return { url, title, desc, image, published, keyPoints, paras, premium, via };
 }
 
-// Google 번역 비공식 엔드포인트 (무료·무키). 하루 수십 건 수준이라 충분하다.
+// 무료·무키 번역 엔드포인트 3곳을 차례로 시도한다. 러너 IP 가 한 곳에서 막혀
+// 뉴스가 영어 원문으로 나가는 일이 있어, 한 곳이 실패하면 다음 곳으로 넘어간다.
 async function toKorean(text) {
   if (!text?.trim()) return "";
-  const u = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ko&dt=t&q=${encodeURIComponent(text)}`;
+  const q = encodeURIComponent(text);
+  const endpoints = [
+    { u: `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ko&dt=t&q=${q}`, pick: (j) => (j?.[0] || []).map((seg) => seg?.[0] || "").join("") },
+    { u: `https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl=en&tl=ko&q=${q}`, pick: (j) => (Array.isArray(j) ? (Array.isArray(j[0]) ? j[0][0] : j[0]) : "") },
+    // MyMemory 는 익명 무료지만 요청당 500자 제한이 있어 짧은 텍스트에만 쓴다
+    ...(text.length < 480 ? [{ u: `https://api.mymemory.translated.net/get?langpair=en%7Cko&q=${q}`, pick: (j) => j?.responseData?.translatedText }] : []),
+  ];
   for (let i = 0; i < 3; i++) {
-    try {
-      await sleep(300);
-      const res = await fetch(u, { headers: { "User-Agent": UA } });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const j = await res.json();
-      const out = (j?.[0] || []).map((seg) => seg?.[0] || "").join("").trim();
-      if (out) return out;
-      throw new Error("빈 응답");
-    } catch (err) { if (i === 2) { console.warn(`[news] 번역 실패: ${err.message} — 원문 유지`); return null; } await sleep(1500 * (i + 1)); }
+    for (const e of endpoints) {
+      try {
+        await sleep(300);
+        const res = await fetch(e.u, { headers: { "User-Agent": UA } });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const out = String(e.pick(await res.json()) || "").trim();
+        // 번역기가 원문을 그대로 돌려주면 실패로 보고 다음 엔드포인트로
+        if (out && out.toLowerCase() !== text.trim().toLowerCase()) return out;
+      } catch {}
+    }
+    await sleep(1500 * (i + 1));
   }
+  console.warn(`[news] 번역 실패 — 원문 유지: ${text.slice(0, 60)}`);
   return null;
 }
 
