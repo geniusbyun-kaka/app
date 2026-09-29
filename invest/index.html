@@ -151,6 +151,11 @@ th:first-child,td:first-child{text-align:left}
 td{font-family:var(--mono);font-variant-numeric:tabular-nums}
 td.txt{font-family:var(--font)}
 .tablewrap{overflow-x:auto}
+/* 표가 화면보다 넓으면 첫 번째 열(종목)이 고정된 채 나머지만 가로 스크롤된다 */
+.tablewrap th:first-child,.tablewrap td:first-child{position:sticky;left:0;background:var(--surface);z-index:1;border-right:1px solid var(--line-2)}
+.stock-list tbody tr:hover td:first-child{background:var(--surface-2)}
+.stock-list tbody tr[aria-selected="true"] td:first-child{background:color-mix(in srgb,var(--accent) 12%,var(--surface))}
+@media (max-width:520px){.tablewrap th:first-child,.tablewrap td:first-child{max-width:45vw;overflow:hidden;text-overflow:ellipsis}}
 .pos{color:var(--up)} .neg{color:var(--down)}
 
 /* backtest form */
@@ -325,6 +330,7 @@ html.gated,html.gated body{overflow:hidden}
 .max-feat .t{font-weight:700;font-size:15.5px;color:var(--ink)}
 .max-feat .d{font-size:13px;color:var(--ink-2);line-height:1.6}
 .max-feat .go{margin-top:auto;font-size:13px;font-weight:600;color:var(--accent)}
+.max-page .desc strong{color:var(--accent)}
 .max-feat .plan{align-self:flex-start;margin-top:-2px}
 .max-feat .plan .tag{margin-left:0;font-size:11.5px;padding:2px 8px}
 .max-sig{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;border-radius:10px;background:var(--surface-2);font-size:14px}
@@ -766,7 +772,7 @@ try { if (localStorage.getItem("sb-hzzmzpsjuovijtananmf-auth-token")) document.g
       <div>
         <span class="eyebrow">구독 전용</span>
         <h1 id="max-title">Max 라운지<span class="max-badge">MAX</span></h1>
-        <p class="muted small" style="margin-top:2px">Pro · Max 구독자에게 보이는 화면입니다. Pro는 첫 번째 기능만 사용할 수 있습니다</p>
+        <p class="muted small" style="margin-top:2px">Pro · Max 구독자에게 보이는 화면입니다</p>
       </div>
       <button class="btn" id="max-close" type="button">← 앱으로 돌아가기</button>
     </div>
