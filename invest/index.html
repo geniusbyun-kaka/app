@@ -94,7 +94,10 @@ header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:spac
 @keyframes pulse{50%{opacity:.5}}
 
 /* tabs */
-.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:8px;border:1px solid var(--tab-line);border-radius:16px;margin-bottom:16px}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr) auto;gap:6px;padding:8px;border:1px solid var(--tab-line);border-radius:16px;margin-bottom:16px}
+.tab.more-toggle{padding:14px 16px;font-size:13px;color:var(--ink-3)}
+.tabs-extra{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:6px}
+.tabs-extra[hidden]{display:none}
 .tab{background:var(--tab-bg);border:0;border-radius:12px;padding:14px 0;text-align:center;font-size:14px;font-weight:600;color:var(--ink-2);white-space:nowrap;transition:background .2s ease,color .2s ease}
 .tab:hover{color:var(--ink)}
 .tab:active{background:var(--tab-press)}
@@ -422,18 +425,57 @@ try { if (localStorage.getItem("sb-hzzmzpsjuovijtananmf-auth-token")) document.g
     <span class="strip-item" id="strip-fx"><span class="k">USD/KRW</span><span class="v num">–</span></span>
   </div>
 
+  <!-- 기본 탭 4개 + 더보기. 더보기를 누르면 아래 줄에 나머지 탭이 펼쳐진다 -->
   <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-tab="intro" id="tab-intro">소개</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="starter" id="tab-starter">초보</button>
-    <button class="tab" role="tab" aria-selected="true" data-tab="buffett" id="tab-buffett">버핏</button>
-    <button class="tab" role="tab" aria-selected="false" data-tab="gurus" id="tab-gurus">투자 대가</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="news" id="tab-news">뉴스</button>
-    <button class="tab" role="tab" aria-selected="false" data-tab="backtest" id="tab-backtest">백테스트</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="stocks" id="tab-stocks">종목</button>
-    <button class="tab" role="tab" aria-selected="false" data-tab="dividend" id="tab-dividend">배당</button>
-    <button class="tab" role="tab" aria-selected="false" data-tab="crypto" id="tab-crypto">코인</button>
+    <button class="tab more-toggle" type="button" id="tab-more" aria-expanded="false">더보기 ▾</button>
+    <div class="tabs-extra" id="tabs-extra" hidden>
+      <button class="tab" role="tab" aria-selected="false" data-tab="backtest" id="tab-backtest">백테스트</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="buffett" id="tab-buffett">버핏</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="gurus" id="tab-gurus">투자 대가</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="crypto" id="tab-crypto">코인</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="dividend" id="tab-dividend">배당</button>
+    </div>
   </div>
 
   <!-- 뉴스 -->
+  <!-- 소개 탭: 회사 소개와 투자 인증. 글은 계속 추가됩니다 -->
+  <section class="panel" id="panel-intro" role="tabpanel" hidden>
+    <div class="card">
+      <div class="card-head"><h3>모픽 (Mopick) 인베스트를 소개합니다</h3><span class="small faint">우리가 하려는 것</span></div>
+      <p class="desc">모픽 (Mopick) 인베스트 찾아주셔서 감사합니다. 저희는 벤저민 그레이엄의 가치 투자를 이은 워렌 버핏, 찰리 멍거 투자 레전드 분들의 투자법을 배우고 연구하고, 이를 한국인분들에게도 널리 알리기 위해 회사를 설립하게 되었습니다.</p>
+      <p class="desc" style="margin-top:10px">최근 한국 시장은 AI, 반도체 등으로 매우 뜨거운 시장이 되었으며, 많은 한국인분들이 부동산 대신 주식에 관심을 갖고 시작하셨지만, 주식은 절대로 공부하지 않고는 함부로 도전할 수 있는 투자자산이 아닙니다.</p>
+      <p class="desc" style="margin-top:10px">다만, 저희는 주식을 공부하지 않은 초보자들도 쉽게 따라할 수 있는 투자 방법이 널리 알려져야 한다고 생각했습니다.</p>
+      <p class="desc" style="margin-top:10px">그 방법은 세계 최고의 투자자 워렌 버핏과 찰리 멍거 두 분이 이미 수차례 말씀하셨고 증명된 투자법들입니다. 그 중 가장 쉬운 방법이 <strong>미국 S&amp;P 500 투자</strong>, 그다음이 <strong>가치투자</strong>입니다.</p>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>오랫동안 투자하면 정말 벌 수 있나요</h3><span class="small faint">투자 인증 · 예시 화면</span></div>
+      <p class="desc">말이 아니라 계좌로 보여드리려 합니다. 아래는 인증 글이 올라올 형식의 예시이며, 실제 계좌 인증 글이 준비되는 대로 이 자리를 채워갑니다.</p>
+      <div class="two" style="margin-top:12px">
+        <div class="card" style="margin-bottom:0">
+          <div class="card-head"><h3>미국 S&amp;P 500, 매달 100만원씩 10년<span class="tag">예시</span></h3></div>
+          <div class="kpis">
+            <div class="kpi"><div class="k">투자 원금</div><div class="v">1억 2,000만원</div><div class="b">매월 100만원 × 120개월</div></div>
+            <div class="kpi"><div class="k">평가액</div><div class="v">약 2억 400만원</div><div class="b">연평균 10% 가정 · 배당 재투자</div></div>
+            <div class="kpi"><div class="k">수익률</div><div class="v pos">+70%</div><div class="b">공부 없이, 매달 사기만 했습니다</div></div>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:0">
+          <div class="card-head"><h3>버크셔 해서웨이, 20년 보유<span class="tag">예시</span></h3></div>
+          <div class="kpis">
+            <div class="kpi"><div class="k">투자 원금</div><div class="v">1,000만원</div><div class="b">2005년 매수 후 보유만</div></div>
+            <div class="kpi"><div class="k">평가액</div><div class="v">약 8,700만원</div><div class="b">버핏·멍거에게 맡긴 결과</div></div>
+            <div class="kpi"><div class="k">수익률</div><div class="v pos">약 8.7배</div><div class="b">한 번도 팔지 않았습니다</div></div>
+          </div>
+        </div>
+      </div>
+      <p class="small faint" style="margin-top:10px">위 두 칸은 형식을 보여드리는 예시 수치입니다. 실제 인증 글로 교체됩니다.</p>
+    </div>
+  </section>
+
   <section class="panel" id="panel-news" role="tabpanel" hidden>
     <div class="card">
       <div class="card-head"><h3>오늘의 헤드라인 뉴스</h3><span class="small faint" id="news-status">불러오는 중</span></div>
@@ -2210,9 +2252,19 @@ $("#panel-gurus").addEventListener("click", (e) => {
 });
 
 // ───────────────────────── 탭 · 이벤트 ─────────────────────────
+// 더보기 줄에 들어 있는 탭들. 이 중 하나가 선택되면 접힌 줄을 자동으로 펼친다
+const EXTRA_TABS = ["backtest", "buffett", "gurus", "crypto", "dividend"];
+function toggleMoreTabs(open) {
+  const x = $("#tabs-extra"), open2 = open ?? x.hidden;
+  x.hidden = !open2;
+  const b = $("#tab-more");
+  b.setAttribute("aria-expanded", String(open2));
+  b.textContent = open2 ? "접기 ▴" : "더보기 ▾";
+}
 function selectTab(name) {
-  $$(".tab").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.tab === name)));
-  ["starter", "buffett", "gurus", "news", "backtest", "stocks", "dividend", "crypto"].forEach((p) => { $(`#panel-${p}`).hidden = p !== name; });
+  $$(".tab[data-tab]").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.tab === name)));
+  if (EXTRA_TABS.includes(name) && $("#tabs-extra").hidden) toggleMoreTabs(true);
+  ["intro", "starter", "buffett", "gurus", "news", "backtest", "stocks", "dividend", "crypto"].forEach((p) => { $(`#panel-${p}`).hidden = p !== name; });
   if (name === "dividend") ensureStockIndex().then(renderDividend).catch(() => {});
   if (name === "buffett") ensureFilings().catch(() => {});
   if (name === "gurus") renderGuruTab();
@@ -2224,7 +2276,8 @@ function selectTab(name) {
   if (name === "backtest" && state.lastBacktest) renderBacktest();
   if (name === "stocks") ensureStockIndex().catch(() => {}).then(() => { if (state.cmpLast) renderCompare(); else if (state.history) runCompare(true); });
 }
-$$(".tab").forEach((t) => t.addEventListener("click", () => selectTab(t.dataset.tab)));
+$$(".tab[data-tab]").forEach((t) => t.addEventListener("click", () => selectTab(t.dataset.tab)));
+$("#tab-more").addEventListener("click", () => toggleMoreTabs());
 $("#refresh").addEventListener("click", loadAll);
 $("#bt-asset2-add").addEventListener("click", () => { $("#bt-asset2-wrap").hidden = false; $("#bt-asset2-add-wrap").hidden = true; $("#bt-asset2").focus(); });
 $("#bt-asset2-remove").addEventListener("click", () => { $("#bt-asset2-wrap").hidden = true; $("#bt-asset2-add-wrap").hidden = false; $("#bt-asset2").value = ""; });
@@ -2777,9 +2830,9 @@ initCommaInputs();
 const cachedLatest = cacheGet("md:latest"), cachedIntraday = cacheGet("md:intraday");
 if (cachedLatest) { state.latest = cachedLatest; state.intraday = cachedIntraday; renderQuotes(); }
 try { state.stockRange = localStorage.getItem("md:range") || "1Y"; const ss = localStorage.getItem("md:stock"); if (ss) state.stockSel = ss; } catch {}
-const TABS = ["starter", "buffett", "gurus", "news", "backtest", "stocks", "dividend", "crypto"];
-let savedTab = "buffett"; try { savedTab = localStorage.getItem("md:tab") || "buffett"; } catch {}
-if (!TABS.includes(savedTab)) savedTab = "buffett";
+const TABS = ["intro", "starter", "buffett", "gurus", "news", "backtest", "stocks", "dividend", "crypto"];
+let savedTab = "intro"; try { savedTab = localStorage.getItem("md:tab") || "intro"; } catch {}
+if (!TABS.includes(savedTab)) savedTab = "intro";
 selectTab(savedTab);
 loadAll().then(() => { if (!$("#panel-stocks").hidden && !state.cmpLast) runCompare(true); });
 })();
