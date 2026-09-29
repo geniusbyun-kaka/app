@@ -152,10 +152,15 @@ td{font-family:var(--mono);font-variant-numeric:tabular-nums}
 td.txt{font-family:var(--font)}
 .tablewrap{overflow-x:auto}
 /* 표가 화면보다 넓으면 첫 번째 열(종목)이 고정된 채 나머지만 가로 스크롤된다 */
-.tablewrap th:first-child,.tablewrap td:first-child{position:sticky;left:0;background:var(--surface);z-index:1;border-right:1px solid var(--line-2)}
+.tablewrap th:first-child,.tablewrap td:first-child{position:sticky;left:0;background:var(--surface);z-index:1;border-right:1px solid var(--line-2);box-shadow:6px 0 8px -6px rgba(0,0,0,.3)}
 .stock-list tbody tr:hover td:first-child{background:var(--surface-2)}
 .stock-list tbody tr[aria-selected="true"] td:first-child{background:color-mix(in srgb,var(--accent) 12%,var(--surface))}
-@media (max-width:520px){.tablewrap th:first-child,.tablewrap td:first-child{max-width:45vw;overflow:hidden;text-overflow:ellipsis}}
+@media (max-width:520px){
+  .tablewrap th:first-child,.tablewrap td:first-child{max-width:36vw;overflow:hidden;text-overflow:ellipsis}
+  /* 피델리티식 2줄 종목 칸: 티커는 윗줄, 회사명은 아랫줄에 작게 말줄임 */
+  .tablewrap td:first-child .tk{display:block}
+  .tablewrap td:first-child .nm{display:block;margin-left:0;font-size:11px;line-height:1.35;max-width:34vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+}
 .pos{color:var(--up)} .neg{color:var(--down)}
 
 /* backtest form */
