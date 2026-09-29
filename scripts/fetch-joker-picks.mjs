@@ -40,6 +40,8 @@ const MIN_COVER = Number(process.env.MIN_COVER || 0.7);
 // 잡이 통째로 취소되고 그 실행의 캐시가 유실된다. 시간이 다 되면 수집을 멈추고
 // 그때까지 모은 캐시를 발행하도록, 타임아웃보다 넉넉히 짧은 예산을 둔다.
 const TIME_BUDGET_MIN = Number(process.env.TIME_BUDGET_MIN || 240);
+// DART 응답이 느린 날에도 처리량을 지키기 위한 동시 요청 수 (공식 한도인 분당 1,000건보다 한참 낮다)
+const CONCURRENCY = Number(process.env.CONCURRENCY || 4);
 const T0 = Date.now();
 if (!KEY) {
   console.error("[joker] DART_API_KEY 가 없습니다. opendart.fss.or.kr 에서 발급받아 리포 시크릿 DART_API_KEY 로 넣어주세요.");
@@ -169,14 +171,17 @@ function extractYear(list) {
   if (ni == null || eq == null) return null; // 최소한 순이익·자본이 없으면 못 쓴다
   return { rev, op, ni, eq, liab, cfo, capex, dep, cash, borrow };
 }
-async function fetchYear(corp, year) {
-  for (const fs of ["CFS", "OFS"]) { // 연결 우선, 없으면 별도
+// prefer 가 "OFS" 면 별도재무제표부터 조회한다 (연결이 없는 회사로 확인된 경우 호출 절약).
+// 반환: undefined = 한도 소진, null = 데이터 없음, { data, fs } = 성공(어느 재무제표였는지 포함)
+async function fetchYear(corp, year, prefer) {
+  const order = prefer === "OFS" ? ["OFS", "CFS"] : ["CFS", "OFS"];
+  for (const fs of order) {
     const j = await dartJson("fnlttSinglAcntAll.json", { corp_code: corp.code, bsns_year: String(year), reprt_code: "11011", fs_div: fs });
     if (j == null) return undefined; // 한도 소진 — 캐시에 기록하지 않는다
     if (j.status === "013" || !j.list?.length) continue;
     if (j.status !== "000") { console.warn(`[joker] ${corp.name} ${year} ${fs}: status ${j.status} ${j.message || ""}`); continue; }
     const y = extractYear(j.list);
-    if (y) return y;
+    if (y) return { data: y, fs };
   }
   return null; // 조회했지만 데이터 없음 (다시 받지 않는다)
 }
@@ -251,27 +256,36 @@ async function main() {
   const universe = await fetchUniverse();
   console.log(`[joker] 유니버스 ${universe.length}개 회사 (금융·스팩·리츠·지주 제외) · 대상 연도 ${YEARS[0]}~${LAST_YEAR}`);
 
-  // 1) 회사별 10년치 재무 수집 (캐시 우선, 이번 실행 한도 안에서 빈 곳만 채운다)
+  // 1) 회사별 10년치 재무 수집 (캐시 우선, 이번 실행 한도 안에서 빈 곳만 채운다).
+  // DART 가 요청당 응답을 느리게 줄 때가 있어(한 건에 수 초) 워커 여러 개로 동시에 받는다.
   let complete = 0;
   const screened = [];
-  for (const corp of universe) {
+  const processCorp = async (corp) => {
     const cachePath = path.join(OUT_DIR, "dart", `${corp.code}.json`);
     const cache = await readJson(cachePath, { code: corp.code, stock: corp.stock, name: corp.name, years: {} });
     let dirty = false;
-    for (const y of YEARS) {
+    // 최신 연도부터 조회: 최신이 없으면(신규 상장 등) 과거 조회를 건너뛰고,
+    // 연결재무제표가 없는 회사로 확인되면 다음 연도부터 별도를 먼저 조회해 호출을 아낀다
+    for (const y of [...YEARS].reverse()) {
       if (cache.years[y] !== undefined || budgetOut) continue;
-      const got = await fetchYear(corp, y);
+      const got = await fetchYear(corp, y, cache.fs);
       if (got === undefined) break; // 한도 소진
-      cache.years[y] = got;
+      cache.years[y] = got ? got.data : null;
+      if (got && got.fs === "OFS" && cache.fs !== "OFS") cache.fs = "OFS";
       dirty = true;
-      // 최신 연도가 없으면 (신규 상장 등) 과거 연도는 조회해 봐야 10년을 못 채운다 — 호출 아끼기
       if (y === LAST_YEAR && got === null) { for (const yy of YEARS) if (cache.years[yy] === undefined) { cache.years[yy] = null; } break; }
     }
     if (dirty) await writeFile(cachePath, JSON.stringify(cache));
     if (YEARS.every((y) => cache.years[y] !== undefined)) complete++;
     const s = screenCorp(cache.years);
     if (s?.pass) screened.push({ ...corp, ...s, sharesCached: cache.shares, sharesYear: cache.sharesYear, cachePath, cache });
-  }
+  };
+  let ci = 0;
+  await Promise.all(Array.from({ length: CONCURRENCY }, async () => {
+    while (ci < universe.length && !budgetOut) await processCorp(universe[ci++]);
+  }));
+  // 한도 소진 뒤에는 남은 회사들의 캐시만 읽어 수집률·통과 목록을 채운다
+  while (ci < universe.length) await processCorp(universe[ci++]);
   const cover = complete / Math.max(universe.length, 1);
   console.log(`[joker] 10년치 수집 완료 ${complete}/${universe.length} (${(cover * 100).toFixed(1)}%) · 이번 실행 DART 호출 ${calls}건 · 체크리스트 통과 ${screened.length}개`);
 
