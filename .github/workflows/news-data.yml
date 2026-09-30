@@ -25,7 +25,7 @@ concurrency:
 jobs:
   snapshot:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -37,6 +37,11 @@ jobs:
         env:
           NEWS_DEBUG: ${{ inputs.debug }}
         run: node scripts/fetch-news.mjs out
+
+      # 마이 페이지의 관심 종목 뉴스. 실패해도 헤드라인 뉴스 발행은 막지 않는다.
+      - name: Fetch per-ticker stock news (My Page)
+        continue-on-error: true
+        run: node scripts/fetch-stock-news.mjs out
 
       - name: Publish to news branch
         env:
