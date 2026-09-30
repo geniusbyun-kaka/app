@@ -97,7 +97,7 @@ header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:spac
 @keyframes pulse{50%{opacity:.5}}
 
 /* tabs */
-.tabs{display:grid;grid-template-columns:repeat(4,1fr) auto;gap:6px;padding:8px;border:1px solid var(--tab-line);border-radius:16px;margin-bottom:16px}
+.tabs{display:grid;grid-template-columns:repeat(5,1fr) auto;gap:6px;padding:8px;border:1px solid var(--tab-line);border-radius:16px;margin-bottom:16px}
 .tab.more-toggle{padding:14px 16px;font-size:13px;color:var(--ink-3)}
 .tabs-extra{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:6px}
 .tabs-extra[hidden]{display:none}
@@ -249,6 +249,23 @@ tr.hl3 td{background:color-mix(in srgb,var(--up) 5%,transparent)}
 .tag.inc{background:color-mix(in srgb,var(--up) 12%,transparent);color:var(--up)}
 .tag.dec{background:color-mix(in srgb,var(--down) 12%,transparent);color:var(--down)}
 .tag.exit{background:color-mix(in srgb,var(--down) 20%,transparent);color:var(--down)}
+
+/* 마이 페이지 · 관심(별표) 버튼 */
+.fav-btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:4px 10px;font-size:16px;line-height:1.3;color:var(--ink-3);cursor:pointer;flex-shrink:0}
+.fav-btn:hover{border-color:var(--ink-3);color:var(--ink)}
+.fav-btn.on{color:#DA9E00;border-color:color-mix(in srgb,#DA9E00 50%,var(--line));background:color-mix(in srgb,#DA9E00 8%,var(--surface))}
+.fav-btn.sm{padding:2px 8px;font-size:14px}
+.my-news-item{display:block;padding:8px 0;border-bottom:1px dashed var(--line-2)}
+.my-news-item:last-child{border-bottom:0}
+.my-news-item .t{font-size:14px;line-height:1.5}
+.my-news-item .t a{color:var(--ink);text-decoration:none;font-weight:600}
+.my-news-item .t a:hover{color:var(--accent)}
+.my-news-item .orig{font-size:12px;color:var(--ink-3);margin-top:1px}
+.my-news-item .src{font-size:11.5px;color:var(--ink-3);margin-top:2px}
+.my-news-group{margin-top:6px;padding:10px 14px;border:1px solid var(--line-2);border-radius:10px}
+.my-news-group .hd{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.my-news-group .hd .tk{font-family:var(--mono);font-weight:700;color:var(--accent);cursor:pointer}
+.my-news-group .hd .nm{font-size:12.5px;color:var(--ink-3)}
 .bf-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .bf-tools select{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 10px;font-size:14px}
 .bf-sum{font-size:13px;color:var(--ink-2);line-height:1.7}
@@ -399,6 +416,8 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
 @media (max-width:480px){
   .card{padding:14px}
   .kpi .v{font-size:19px}
+  .tabs .tab{font-size:12px;padding:12px 0}
+  .tabs .tab.more-toggle{padding:12px 10px}
 }
 @media (prefers-reduced-motion: reduce){.skeleton{animation:none}}
 </style>
@@ -462,6 +481,7 @@ try { if (localStorage.getItem("sb-hzzmzpsjuovijtananmf-auth-token")) document.g
     <button class="tab" role="tab" aria-selected="false" data-tab="starter" id="tab-starter">초보</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="news" id="tab-news">뉴스</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="stocks" id="tab-stocks">종목</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="my" id="tab-my">My Page</button>
     <button class="tab more-toggle" type="button" id="tab-more" aria-expanded="false">더보기 ▾</button>
     <div class="tabs-extra" id="tabs-extra" hidden>
       <button class="tab" role="tab" aria-selected="false" data-tab="backtest" id="tab-backtest">백테스트</button>
@@ -675,10 +695,13 @@ try { if (localStorage.getItem("sb-hzzmzpsjuovijtananmf-auth-token")) document.g
   </section>
 
 
+  <!-- 마이 페이지: 관심 종목 · 관심 대가 · 뉴스 및 공시 -->
+  <section class="panel" id="panel-my" role="tabpanel" hidden></section>
+
   <!-- 버핏 (버크셔 13F) -->
   <section class="panel" id="panel-buffett" role="tabpanel" hidden>
     <div class="card">
-      <div class="card-head"><h3>버크셔 해서웨이 포트폴리오 · 13F</h3><span class="small faint" id="bf-status">불러오는 중</span></div>
+      <div class="card-head"><h3>버크셔 해서웨이 포트폴리오 · 13F <button class="fav-btn sm" type="button" data-fav-guru="buffett" aria-pressed="false" title="관심 대가로 등록">☆</button></h3><span class="small faint" id="bf-status">불러오는 중</span></div>
       <p class="desc">분기마다 SEC 에 제출하는 13F 보고서 기준입니다. 분기 말 보유분이 45일 뒤에 공개되므로 가장 최근 매매는 다음 보고서에 나옵니다.</p>
       <div class="bf-head" id="bf-head"></div>
     </div>
@@ -1595,7 +1618,7 @@ function renderGuruTab() {
       <span class="gu-cta">추천 종목 보기 →</span>
     </button>`).join("")}</div></div>`;
 }
-const guruHeadHtml = (g) => `<div class="gu-page-head"><button class="btn" type="button" id="gu-page-back">← 대가 목록</button><h2>${g.name} 추천 종목</h2><span class="small faint">${g.org}</span></div>`;
+const guruHeadHtml = (g) => `<div class="gu-page-head"><button class="btn" type="button" id="gu-page-back">← 대가 목록</button><h2>${g.name} 추천 종목</h2><span class="small faint">${g.org}</span>${favStarHtml("guru", g.id, isFavGuru(g.id), true)}</div>`;
 function renderGuruPage(id) {
   const g = GURUS.find((x) => x.id === id); if (!g) { state.guruSel = null; return renderGuruTab(); }
   state.guruSel = id;
@@ -2329,7 +2352,8 @@ function selectTab(name) {
   $$(".tab[data-tab]").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.tab === name)));
   if (EXTRA_TABS.includes(name) && $("#tabs-extra").hidden) toggleMoreTabs(true);
   // 투자 레전드(panel-gurus)는 탭이 아니라 Max 라운지 안에서 보여준다
-  ["intro", "starter", "buffett", "news", "backtest", "stocks", "dividend", "crypto"].forEach((p) => { $(`#panel-${p}`).hidden = p !== name; });
+  ["intro", "starter", "buffett", "news", "backtest", "stocks", "dividend", "crypto", "my"].forEach((p) => { $(`#panel-${p}`).hidden = p !== name; });
+  if (name === "my") renderMyPage();
   if (name === "dividend") ensureStockIndex().then(renderDividend).catch(() => {});
   if (name === "buffett") ensureFilings().catch(() => {});
   if (name === "starter") ensureLessons();
@@ -2479,7 +2503,7 @@ function renderStockDetail() {
   $("#stock-detail").innerHTML = `
     <div class="stock-head">
       <div class="ttl"><h3>${d.name}</h3><div class="sub"><span class="num">${d.symbol}</span> · ${d.sector}${d.kind === "etf" ? " · ETF" : ""}</div></div>
-      <div><button class="btn" type="button" data-compare="${d.symbol}">비교에 추가</button></div>
+      <div style="display:flex;gap:8px;align-items:center">${favStarHtml("stock", d.symbol, isFavStock(d.symbol))}<button class="btn" type="button" data-compare="${d.symbol}">비교에 추가</button></div>
     </div>
     <div class="stock-price">
       <span class="big">${fmt.n(q.price)}<span class="cur" style="font-family:var(--font);font-size:13px;color:var(--ink-3);margin-left:4px">${d.currency}</span></span>
@@ -2719,6 +2743,196 @@ function renderBuffettQuarter() {
 $("#bf-quarter").addEventListener("change", renderBuffettQuarter);
 $("#panel-buffett").addEventListener("click", (e) => { const t = e.target.closest("[data-stock]"); if (t) { selectTab("stocks"); ensureStockIndex().then(() => selectStock(t.dataset.stock)).catch(() => {}); } });
 
+// ───────────────────────── 마이 페이지 (관심 종목 · 관심 대가 · 뉴스) ─────────────────────────
+function favStocks() { return cacheGet("md:favStocks") || []; }
+function favGurus() { return cacheGet("md:favGurus") || []; }
+const isFavStock = (s) => favStocks().includes(s);
+const isFavGuru = (id) => favGurus().includes(id);
+function toggleFav(key, v) { const l = cacheGet(key) || []; const i = l.indexOf(v); if (i >= 0) l.splice(i, 1); else l.push(v); cacheSet(key, l); }
+const favStarHtml = (kind, key, on, sm) => `<button class="fav-btn${sm ? " sm" : ""}${on ? " on" : ""}" type="button" data-fav-${kind}="${key}" aria-pressed="${on}" title="${on ? "관심 목록에서 제거" : "관심 목록에 추가"}">${on ? "★" : "☆"}</button>`;
+// 화면 어디에 있든 별표 버튼의 켜짐/꺼짐을 저장된 상태에 맞춘다
+function updateFavButtons() {
+  $$("[data-fav-stock],[data-fav-guru]").forEach((b) => {
+    const on = b.dataset.favStock ? isFavStock(b.dataset.favStock) : isFavGuru(b.dataset.favGuru);
+    b.classList.toggle("on", on); b.textContent = on ? "★" : "☆"; b.setAttribute("aria-pressed", String(on));
+    b.title = on ? "관심 목록에서 제거" : "관심 목록에 추가";
+  });
+}
+// 별표는 어느 화면(종목 상세 · 버핏 탭 · 대가 상세 · 마이 페이지)에서든 눌릴 수 있어 문서 단위로 받는다
+document.addEventListener("click", (e) => {
+  const fs = e.target.closest("[data-fav-stock]"), fg = e.target.closest("[data-fav-guru]");
+  if (!fs && !fg) return;
+  if (fs) toggleFav("md:favStocks", fs.dataset.favStock);
+  if (fg) toggleFav("md:favGurus", fg.dataset.favGuru);
+  updateFavButtons();
+  if (!$("#panel-my").hidden) renderMyPage();
+});
+// 관심 종목 뉴스 스냅샷 (news 브랜치의 stock-news.json · 매일 오전 6시 갱신)
+let stockNewsPromise = null;
+function ensureStockNews() {
+  if (!stockNewsPromise) stockNewsPromise = fetch(`${NEWS_BASE}stock-news.json?t=${Date.now()}`, { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((n) => (state.stockNews = n || null));
+  return stockNewsPromise;
+}
+const myAlias = (t) => SHARE_CLASS_ALIAS[t] || t;
+const guruEventFile = (id) => (id === "buffett" ? "berkshire.json" : GURUS.find((g) => g.id === id)?.file || null);
+// 관심 종목마다: 비교 대상 대가들(관심 대가 + 버핏)의 최신 13F 에서 보유 여부를 찾고,
+// 보유 중이면 가장 최근 매수 분기의 추정 단가(그 분기 종가 최저·최고의 중앙값)와 현재가를 비교한다
+async function myStockRows(stocks, cmpGurus) {
+  const idx = state.stockIndex?.items || [];
+  const out = [];
+  for (const sym of stocks) {
+    const item = idx.find((x) => x.symbol === sym) || null;
+    const matches = [];
+    for (const g of cmpGurus) {
+      let f; try { f = await ensureGuruFilings(g); } catch { continue; }
+      const h = f.latest.holdings.find((x) => x.ticker && myAlias(x.ticker) === myAlias(sym));
+      if (!h) continue;
+      let rec = null, cur = null, rel = null, grade = -1;
+      const buys = h.cusip ? guruBuys(f, h) : [];
+      if (buys.length) {
+        try {
+          // 단가는 대가가 실제로 든 클래스(예: GOOGL)의 주가 이력으로 계산한다
+          const holdSym = idx.some((x) => x.symbol === h.ticker) ? h.ticker : (item ? sym : null);
+          if (holdSym) {
+            const stock = await loadStock(holdSym);
+            const last = buys[buys.length - 1];
+            const mid = quarterMid(stock, last.period);
+            if (mid != null) {
+              rec = { period: last.period, mid };
+              cur = idx.find((x) => x.symbol === holdSym)?.price ?? stock.quote?.price ?? null;
+              rel = cur != null ? cur / mid - 1 : null;
+              grade = rel == null ? -1 : rel <= 0 ? 2 : rel <= 0.1 ? 1 : 0;
+            }
+          }
+        } catch {}
+      }
+      matches.push({ g, h, rec, cur, rel, grade });
+    }
+    out.push({ sym, item, matches });
+  }
+  return out;
+}
+function myStockTableHtml(rows) {
+  const cls = (v) => (v > 0 ? "pos" : v < 0 ? "neg" : "");
+  const stockCell = (r) => `<span class="tk${r.item ? "" : " plain"}" ${r.item ? `data-stock="${r.sym}"` : ""}>${r.sym}</span><span class="nm">${r.item?.name || ""}</span>`;
+  const trs = rows.flatMap((r) => {
+    const base = `<td class="txt">${stockCell(r)}</td><td>${r.item ? fmt.n(r.item.price) : "–"}</td><td class="${cls(r.item?.changePercent)}">${r.item?.changePercent == null ? "–" : fmt.signed(r.item.changePercent) + "%"}</td>`;
+    const tail = `<td class="txt">${favStarHtml("stock", r.sym, true, true)}</td>`;
+    if (!r.matches.length) return [`<tr>${base}<td class="txt faint" colspan="5">관심 대가 보유 없음</td>${tail}</tr>`];
+    return r.matches.map((m) => {
+      const gname = GURU_SHORT[m.g.id] || m.g.name;
+      const holdNote = m.h.ticker && m.h.ticker !== r.sym ? ` <span class="faint small">(${m.h.ticker} 보유)</span>` : "";
+      return `<tr>${base}
+        <td class="txt">${gname}${holdNote} <span class="faint small">비중 ${fmt.n(m.h.weight * 100, 1)}%</span></td>
+        <td class="txt">${m.rec ? m.rec.period : "–"}</td>
+        <td>${m.rec ? "$" + fmt.n(m.rec.mid) : "–"}</td>
+        <td class="${m.rel == null ? "" : m.rel <= 0 ? "pos" : "neg"}">${m.rel == null ? "–" : fmt.pct(m.rel)}</td>
+        <td class="txt">${m.grade >= 0 ? followTagHtml(m.grade) : m.rec ? '<span class="faint">현재가 없음</span>' : '<span class="faint">최근 매수 이력 없음</span>'}</td>${tail}</tr>`;
+    });
+  });
+  return `<div class="tablewrap"><table><thead><tr><th>종목</th><th>현재가</th><th>전일비</th><th>관심 대가</th><th>마지막 매수</th><th>최근 매수가 (추정)</th><th>최근 매수가 대비</th><th>판단</th><th>관리</th></tr></thead><tbody>${trs.join("")}</tbody></table></div>
+    <p class="small faint" style="margin-top:8px">최근 매수가는 대가가 마지막으로 매수한 분기의 종가 최저·최고 중앙값으로 계산한 추정치입니다. 현재가가 최근 매수가보다 낮으면 <strong>강력 추천</strong>, +10% 이내면 <strong>추천</strong>입니다. 티커를 누르면 종목 차트로 이동합니다.</p>`;
+}
+async function myGuruCardHtml(g) {
+  const headBtn = g.id === "buffett" ? `<button class="btn" type="button" data-mytab="buffett" style="margin-left:auto">상세 보기 →</button>` : "";
+  const head = `<div class="card-head"><h3>${g.name} · ${g.org} ${favStarHtml("guru", g.id, true, true)}</h3>${headBtn}</div>`;
+  let f; try { f = await ensureGuruFilings(g); } catch { return `<div class="card" id="my-guru-${g.id}">${head}<div class="empty">13F 데이터를 불러오지 못했습니다</div></div>`; }
+  const L = f.latest;
+  const buys = L.holdings.filter((h) => h.change === "inc" || h.change === "new").sort((a, b) => b.value - a.value).slice(0, 5);
+  const sells = L.holdings.filter((h) => h.change === "dec").sort((a, b) => b.value - a.value).slice(0, 5);
+  const li = (h) => `<li>${h.ticker || h.name} ${changeHtml(h)} <span class="faint small">비중 ${fmt.n(h.weight * 100, 1)}%</span></li>`;
+  return `<div class="card" id="my-guru-${g.id}">${head}
+    <p class="desc"><strong>${L.period}</strong> 분기 13F (${L.filed} 공시) 기준 · ${L.count}종목 · ${fmtB(L.totalValue)}</p>
+    <div class="two" style="margin-top:10px">
+      <div><div class="eyebrow">이번 분기 매수 · 신규</div><ul style="margin:6px 0 0;padding-left:18px;font-size:13px;line-height:1.9;color:var(--ink-2)">${buys.length ? buys.map(li).join("") : "<li>없음</li>"}</ul></div>
+      <div><div class="eyebrow">이번 분기 매도 · 청산</div><ul style="margin:6px 0 0;padding-left:18px;font-size:13px;line-height:1.9;color:var(--ink-2)">${sells.length ? sells.map(li).join("") : "<li>없음</li>"}${L.exits.length ? `<li>청산: ${L.exits.map((h) => h.ticker || h.name).join(", ")}</li>` : ""}</ul></div>
+    </div></div>`;
+}
+// 뉴스 및 공시: 관심 종목별 최신 기사 1~2개 + 관심 대가의 매수·매도 공시
+async function myNewsHtml(stocks, guruObjs) {
+  const [sn, evs] = await Promise.all([ensureStockNews(), ensureGuruEvents().catch(() => ({ auto: [], manual: [] }))]);
+  const parts = [];
+  const newsItem = (n) => `<div class="my-news-item">
+      <div class="t"><a href="${escHtml(n.url)}" target="_blank" rel="noopener">${escHtml(n.titleKo || n.title)}</a></div>
+      ${n.titleKo && n.title && n.titleKo !== n.title ? `<div class="orig">${escHtml(n.title)}</div>` : ""}
+      <div class="src">${escHtml(n.publisher || "")}${n.published ? ` · ${fmt.time(n.published)}` : ""}</div>
+    </div>`;
+  if (stocks.length) {
+    const groups = stocks.map((sym) => {
+      const items = (sn?.items?.[sym] || sn?.items?.[myAlias(sym)] || []).slice(0, 2);
+      return `<div class="my-news-group"><div class="hd"><span class="tk" data-stock="${sym}">${sym}</span><span class="nm">${state.stockIndex?.items.find((x) => x.symbol === sym)?.name || ""}</span></div>
+        ${items.length ? items.map(newsItem).join("") : `<div class="my-news-item"><div class="src">${sn ? "이 종목의 수집된 기사가 아직 없습니다" : "종목 뉴스 스냅샷이 아직 없습니다. 다음 뉴스 갱신(매일 오전 6시)부터 표시됩니다"}</div></div>`}
+      </div>`;
+    });
+    parts.push(`<div class="eyebrow">관심 종목 뉴스 ${sn?.updated ? `· ${fmt.time(sn.updated)} 수집` : ""}</div>${groups.join("")}`);
+  }
+  if (guruObjs.length) {
+    const groups = guruObjs.map((g) => {
+      const file = guruEventFile(g.id);
+      const short = GURU_SHORT[g.id] || g.name;
+      const rows = [
+        ...evs.auto.filter((e) => e.guru === file).map((e) => ({
+          date: e.to || e.from || e.filed, url: e.url,
+          html: `${e.ticker ? `<strong>${escHtml(e.ticker)}</strong> ` : ""}${e.side === "stake"
+            ? `지분 ${e.percent != null ? fmt.n(e.percent, 1) + "% " : ""}공시 <span class="faint">(${escHtml(e.form)})</span>`
+            : `<strong class="${e.side === "buy" ? "pos" : "neg"}">${e.side === "buy" ? "매수" : "매도"}</strong> ${fmtSh(e.shares)}주${e.priceLow != null ? ` · 단가 $${fmt.n(e.priceLow)}${e.priceHigh > e.priceLow ? "~$" + fmt.n(e.priceHigh) : ""}` : ""} <span class="faint">(${escHtml(e.form)})</span>`}`,
+        })),
+        ...evs.manual.filter((e) => String(e.guru || "").includes(short) || String(e.guru || "").includes(g.name)).map((e) => ({ date: e.date, url: e.url, html: `${e.ticker ? `<strong>${escHtml(String(e.ticker))}</strong> ` : ""}${escHtml(e.title || "")}` })),
+      ].filter((r) => r.date).sort((a, b) => String(b.date).localeCompare(String(a.date))).slice(0, 3);
+      return `<div class="my-news-group"><div class="hd"><span class="nm" style="font-weight:700;color:var(--ink);font-size:14px">${g.name}</span><span class="nm">${g.org} · 포트폴리오 매수·매도 소식</span></div>
+        ${rows.length ? rows.map((r) => `<div class="my-news-item"><div class="t">${r.html}</div><div class="src">${String(r.date).slice(0, 10)}${r.url ? ` · <a href="${escHtml(r.url)}" target="_blank" rel="noopener">공시 보기</a>` : ""}</div></div>`).join("") : `<div class="my-news-item"><div class="src">최근 수집된 공시가 없습니다 (SEC Form 4 · 13D/G · 매주 월요일 갱신)</div></div>`}
+      </div>`;
+    });
+    parts.push(`<div class="eyebrow" style="margin-top:${stocks.length ? "14px" : "0"}">관심 대가 매수·매도 공시</div>${groups.join("")}`);
+  }
+  parts.push(`<p class="small faint" style="margin-top:10px">종목 뉴스는 매일 한국시간 오전 6시에 수집되고, 대가 공시(SEC Form 4 · 13D/G)는 매주 월요일 갱신됩니다.</p>`);
+  return parts.join("");
+}
+async function renderMyPage() {
+  const p = $("#panel-my");
+  const seq = (state.mySeq = (state.mySeq || 0) + 1);
+  const alive = () => state.mySeq === seq && !p.hidden;
+  const stocks = favStocks(), gurus = favGurus();
+  const guruObjs = gurus.map((id) => GURUS.find((g) => g.id === id)).filter(Boolean);
+  const head = `<div class="card"><div class="card-head"><h3>My Page</h3><span class="small faint">관심 종목 ${stocks.length} · 관심 대가 ${gurus.length}</span></div>
+    <p class="desc">종목 탭에서 종목을 연 뒤 <strong>☆</strong>를 누르면 관심 종목으로, 버크셔(버핏) 탭이나 투자 대가 화면에서 <strong>☆</strong>를 누르면 관심 대가로 등록됩니다. 관심 종목은 대가들의 <strong>최근 매수가(추정)</strong>와 자동으로 비교됩니다.</p></div>`;
+  if (!stocks.length && !gurus.length) {
+    p.innerHTML = head + `<div class="card"><div class="empty">아직 등록한 관심 종목·대가가 없습니다.<br>예를 들어 종목 탭에서 GOOG 를 검색해 열고 ☆를 누르고,<br>버크셔(버핏) 탭 제목 옆의 ☆를 눌러 보세요.</div>
+      <div class="form-actions" style="justify-content:center"><button class="btn primary" type="button" data-mytab="stocks">종목 보러 가기</button><button class="btn" type="button" data-mytab="buffett">버크셔(버핏) 보러 가기</button></div></div>`;
+    return;
+  }
+  p.innerHTML = [
+    head,
+    stocks.length ? `<div class="card"><div class="card-head"><h3>관심 종목</h3><span class="small faint">대가들의 최근 매수가와 비교</span></div><div id="my-stocks-body"><div class="empty">13F 와 주가 이력으로 추정 단가를 계산하는 중…</div></div></div>` : "",
+    guruObjs.map((g) => `<div class="card" id="my-guru-${g.id}"><div class="card-head"><h3>${g.name} · ${g.org}</h3></div><div class="empty">13F 데이터를 불러오는 중…</div></div>`).join(""),
+    `<div class="card"><div class="card-head"><h3>뉴스 및 공시</h3><span class="small faint">매일 오전 6시 갱신</span></div><div id="my-news-body"><div class="empty">불러오는 중…</div></div></div>`,
+  ].join("");
+  try { await ensureStockIndex(); } catch {}
+  if (!alive()) return;
+  // 비교 대상 대가: 관심 대가 + 버핏(버크셔)은 기본 포함
+  const cmpGurus = [...new Set(["buffett", ...gurus])].map((id) => GURUS.find((g) => g.id === id)).filter((g) => g?.ready);
+  if (stocks.length) {
+    try {
+      const rows = await myStockRows(stocks, cmpGurus);
+      if (!alive()) return;
+      $("#my-stocks-body").innerHTML = myStockTableHtml(rows);
+    } catch { if ($("#my-stocks-body")) $("#my-stocks-body").innerHTML = `<div class="empty">비교 데이터를 불러오지 못했습니다. 잠시 뒤 다시 시도해 주세요.</div>`; }
+  }
+  for (const g of guruObjs) {
+    const html = await myGuruCardHtml(g);
+    if (!alive()) return;
+    const el = $(`#my-guru-${g.id}`); if (el) el.outerHTML = html;
+  }
+  const newsHtml = await myNewsHtml(stocks, guruObjs);
+  if (!alive()) return;
+  if ($("#my-news-body")) $("#my-news-body").innerHTML = newsHtml;
+}
+// 마이 페이지 안의 바로가기: 티커 → 종목 차트, data-mytab → 해당 탭
+$("#panel-my").addEventListener("click", (e) => {
+  const mt = e.target.closest("[data-mytab]"); if (mt) return selectTab(mt.dataset.mytab);
+  const t = e.target.closest("[data-stock]"); if (t) { selectTab("stocks"); ensureStockIndex().then(() => selectStock(t.dataset.stock)).catch(() => {}); }
+});
+
 // ───────────────────────── 코인 ─────────────────────────
 const COIN_TILE_SYMS = ["BTC-USD", "ETH-USD", "XRP-USD", "SOL-USD", "USDC-USD"];
 function renderCoinTiles() {
@@ -2904,10 +3118,11 @@ initAdmin();
 initAuth();
 updateParamVisibility();
 initCommaInputs();
+updateFavButtons(); // 버핏 탭 등 정적 별표 버튼을 저장된 관심 목록에 맞춘다
 const cachedLatest = cacheGet("md:latest"), cachedIntraday = cacheGet("md:intraday");
 if (cachedLatest) { state.latest = cachedLatest; state.intraday = cachedIntraday; renderQuotes(); }
 try { state.stockRange = localStorage.getItem("md:range") || "1Y"; const ss = localStorage.getItem("md:stock"); if (ss) state.stockSel = ss; } catch {}
-const TABS = ["intro", "starter", "buffett", "news", "backtest", "stocks", "dividend", "crypto"];
+const TABS = ["intro", "starter", "buffett", "news", "backtest", "stocks", "dividend", "crypto", "my"];
 let savedTab = "intro"; try { savedTab = localStorage.getItem("md:tab") || "intro"; } catch {}
 if (!TABS.includes(savedTab)) savedTab = "intro";
 selectTab(savedTab);
