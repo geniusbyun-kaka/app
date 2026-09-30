@@ -97,13 +97,11 @@ header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:spac
 @keyframes pulse{50%{opacity:.5}}
 
 /* tabs */
-.tabs{display:grid;grid-template-columns:repeat(5,1fr) auto;gap:6px;padding:8px;border:1px solid var(--tab-line);border-radius:16px;margin-bottom:16px}
-/* My Page 는 데스크톱에선 탭, 핸드폰에선 구독하기 옆 버튼으로 보여준다 */
-#my-open{display:none;font-weight:600;color:var(--accent);border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr) auto;gap:6px;padding:8px;border:1px solid var(--tab-line);border-radius:16px;margin-bottom:16px}
+/* My Page 는 PC·모바일 모두 구독하기 옆 헤더 버튼. 열려 있는 동안은 눌린 상태로 표시 */
+#my-open{font-weight:600;color:var(--accent);border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+#my-open[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 @media (max-width:640px){
-  #my-open{display:inline-block}
-  #tab-my{display:none}
-  .tabs{grid-template-columns:repeat(4,1fr) auto}
   #refresh,#login{padding:4px 9px;font-size:12px}
 }
 .tab.more-toggle{padding:14px 16px;font-size:13px;color:var(--ink-3)}
@@ -472,7 +470,7 @@ try { if (localStorage.getItem("sb-hzzmzpsjuovijtananmf-auth-token")) document.g
       <span id="status"><span class="dot"></span>데이터 불러오는 중</span>
       <button class="btn" id="refresh" type="button">새로고침</button>
       <button class="btn" id="login" type="button">로그인</button>
-      <button class="btn" id="my-open" type="button">My Page</button>
+      <button class="btn" id="my-open" type="button" aria-pressed="false">My Page</button>
       <button class="btn primary compact" id="sub-open" type="button">구독하기</button>
     </div>
   </header>
@@ -490,7 +488,6 @@ try { if (localStorage.getItem("sb-hzzmzpsjuovijtananmf-auth-token")) document.g
     <button class="tab" role="tab" aria-selected="false" data-tab="starter" id="tab-starter">초보</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="news" id="tab-news">뉴스</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="stocks" id="tab-stocks">종목</button>
-    <button class="tab" role="tab" aria-selected="false" data-tab="my" id="tab-my">My Page</button>
     <button class="tab more-toggle" type="button" id="tab-more" aria-expanded="false">더보기 ▾</button>
     <div class="tabs-extra" id="tabs-extra" hidden>
       <button class="tab" role="tab" aria-selected="false" data-tab="backtest" id="tab-backtest">백테스트</button>
@@ -1012,7 +1009,9 @@ async function verifyAuthCode() {
 async function loadProfile() {
   const u = auth.user;
   if (u) {
-    const { data, error } = await sb.from("profiles").select("plan, is_admin, display_name").eq("id", u.id).maybeSingle();
+    // favorites 열은 schema.sql 최신본 실행 전일 수 있어, 그 열 때문에 실패하면 빼고 다시 읽는다
+    let { data, error } = await sb.from("profiles").select("plan, is_admin, display_name, favorites").eq("id", u.id).maybeSingle();
+    if (error && /favorites/i.test(String(error.message))) ({ data, error } = await sb.from("profiles").select("plan, is_admin, display_name").eq("id", u.id).maybeSingle());
     if (auth.user?.id !== u.id) return;
     auth.profile = data || null;
     auth.profileError = error
@@ -1021,6 +1020,7 @@ async function loadProfile() {
     if (data) sb.from("profiles").update({ last_seen_at: new Date().toISOString() }).eq("id", u.id).then(() => {}, () => {});
   }
   applyAccount();
+  applyCloudFavs();
 }
 // 로그인한 회원의 구독 등급·관리자 여부를 화면에 반영 (로그아웃하면 원래대로)
 function applyAccount() {
@@ -2362,6 +2362,7 @@ function selectTab(name) {
   if (EXTRA_TABS.includes(name) && $("#tabs-extra").hidden) toggleMoreTabs(true);
   // 투자 레전드(panel-gurus)는 탭이 아니라 Max 라운지 안에서 보여준다
   ["intro", "starter", "buffett", "news", "backtest", "stocks", "dividend", "crypto", "my"].forEach((p) => { $(`#panel-${p}`).hidden = p !== name; });
+  $("#my-open").setAttribute("aria-pressed", String(name === "my"));
   if (name === "my") renderMyPage();
   if (name === "dividend") ensureStockIndex().then(renderDividend).catch(() => {});
   if (name === "buffett") ensureFilings().catch(() => {});
@@ -2774,9 +2775,34 @@ document.addEventListener("click", (e) => {
   if (!fs && !fg) return;
   if (fs) toggleFav("md:favStocks", fs.dataset.favStock);
   if (fg) toggleFav("md:favGurus", fg.dataset.favGuru);
+  saveCloudFavs();
   updateFavButtons();
   if (!$("#panel-my").hidden) renderMyPage();
 });
+// ── 관심 목록을 로그인 계정과 동기화 (profiles.favorites · supabase/schema.sql 최신본 필요) ──
+// 클라우드에 저장된 값이 있으면 이 기기에 그대로 내려받아 PC·모바일이 똑같이 보이고,
+// 아직 없으면(열 추가 직후 등) 이 기기의 별표를 올려 시드로 만든다. 이후 별표를 누를 때마다 저장된다.
+let favSynced = false;
+function applyCloudFavs() {
+  if (!auth.user || !auth.profile || !("favorites" in auth.profile)) return; // 열이 없으면 이 브라우저에만 저장
+  const cf = auth.profile.favorites;
+  if (cf && (Array.isArray(cf.stocks) || Array.isArray(cf.gurus))) {
+    cacheSet("md:favStocks", Array.isArray(cf.stocks) ? cf.stocks : []);
+    cacheSet("md:favGurus", Array.isArray(cf.gurus) ? cf.gurus : []);
+    favSynced = true;
+  } else if (favStocks().length || favGurus().length) {
+    favSynced = true;
+    saveCloudFavs();
+  } else favSynced = true;
+  updateFavButtons();
+  if (!$("#panel-my").hidden) renderMyPage();
+  else if (state.stockSel && !$("#panel-stocks").hidden && state.stocks[state.stockSel]) renderStockDetail();
+}
+function saveCloudFavs() {
+  if (!sb || !auth.user || !favSynced) return; // 클라우드 값을 아직 못 받았으면 덮어쓰지 않는다
+  sb.from("profiles").update({ favorites: { stocks: favStocks(), gurus: favGurus() } }).eq("id", auth.user.id)
+    .then(({ error }) => { if (error) console.warn(`관심 목록을 계정에 저장하지 못했습니다 (Supabase 에서 supabase/schema.sql 최신본을 실행했는지 확인): ${error.message}`); });
+}
 // 관심 종목 뉴스 스냅샷 (news 브랜치의 stock-news.json · 매일 오전 6시 갱신)
 let stockNewsPromise = null;
 function ensureStockNews() {
