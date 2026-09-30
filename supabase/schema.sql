@@ -55,3 +55,9 @@ on conflict (id) do nothing;
 
 -- 나를 관리자로 지정하려면: 먼저 앱에서 한 번 로그인한 뒤, 이메일을 바꿔서 아래 한 줄만 실행
 -- update public.profiles set is_admin = true, plan = 'max' where email = '내이메일@example.com';
+
+-- ── 마이 페이지: 관심 종목·관심 대가 (기기 간 동기화) ──────────────────────
+-- My Page 의 별표(관심 종목 티커·관심 대가)를 계정에 저장해 PC·모바일 어디서 로그인해도
+-- 같은 목록이 보입니다. 이 두 줄만 따로 실행해도 되고, 파일 전체를 다시 실행해도 안전합니다.
+alter table public.profiles add column if not exists favorites jsonb;
+grant update (favorites) on public.profiles to authenticated;
