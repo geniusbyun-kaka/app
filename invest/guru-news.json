@@ -1,11 +1,38 @@
 {
- "_사용법": "13F 밖에서 나온 투자 대가들의 매수·매도 뉴스를 직접 등록하는 파일입니다. items 배열에 항목을 추가하면 Max 라운지의 '대가들의 공통 매수 종목' 화면 맨 위 표에 자동으로 표시됩니다. Form 4·13D/G 공시는 매주 자동 수집되므로, 여기에는 공시로 잡히지 않는 뉴스(해외 매수, 인터뷰 발언 등)만 넣으면 됩니다.",
+ "_사용법": "13F 밖에서 나온 투자 대가들의 매수·매도 뉴스를 직접 등록하는 파일입니다. items 배열에 항목을 추가하면 Max 라운지의 '대가들의 공통 매수 종목' 화면과 My Page 뉴스에 표시됩니다. Form 4·13D/G 공시는 매주 자동 수집되므로, 여기에는 공시로 잡히지 않는 뉴스(사모 매입, 해외 매수, 인터뷰 발언 등)만 넣으면 됩니다. side·priceLow·shares 까지 넣으면 My Page 관심 종목의 '최근 매수가'에 실제 단가로 반영됩니다 (Form 4 와 같은 방식).",
  "_형식": {
   "date": "YYYY-MM-DD (뉴스 날짜)",
   "guru": "표시할 이름 (예: 버핏)",
   "ticker": "티커 (선택)",
   "title": "내용 한 줄 (예: 미쓰비시상사 지분 10%로 확대 보도)",
-  "url": "기사 링크 (선택)"
+  "url": "기사 링크 (선택)",
+  "side": "buy 또는 sell (선택 · 최근 매수가 반영용)",
+  "priceLow": "매수 단가 하단 (선택 · 숫자)",
+  "priceHigh": "매수 단가 상단 (선택 · 숫자, 단일가면 priceLow 와 같게)",
+  "shares": "주식수 (선택 · 숫자)"
  },
- "items": []
+ "items": [
+  {
+   "date": "2026-06-01",
+   "guru": "버핏",
+   "ticker": "GOOGL",
+   "side": "buy",
+   "priceLow": 351.81,
+   "priceHigh": 351.81,
+   "shares": 14212217,
+   "title": "버크셔, 알파벳 클래스 A $50억 사모 매입 (주당 $351.81 · 공개시장 아닌 회사 직접 인수)",
+   "url": "https://www.cnbc.com/2026/06/01/berkshire-hathaway-alphabet-investment.html"
+  },
+  {
+   "date": "2026-06-01",
+   "guru": "버핏",
+   "ticker": "GOOG",
+   "side": "buy",
+   "priceLow": 348.2,
+   "priceHigh": 348.2,
+   "shares": 14359563,
+   "title": "버크셔, 알파벳 클래스 C $50억 사모 매입 (주당 $348.20 · 공개시장 아닌 회사 직접 인수)",
+   "url": "https://www.cnbc.com/2026/06/01/berkshire-hathaway-alphabet-investment.html"
+  }
+ ]
 }
