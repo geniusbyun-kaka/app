@@ -1742,11 +1742,43 @@ function guruBuys(f, h) {
   }
   return buys.filter((b) => b.shares > 0);
 }
-// 대가별 정밀 계산: 매수 분기마다 추정 단가(분기 최저가 +5%) × 늘린 주식수 → 추정 평균단가와 최근 매수가
+// ── 최근 매수가 공용 로직 ─────────────────────────────────────────
+// "최근 매수가"를 보여주는 모든 화면(My Page · Max 레전드 픽 따라가기 · 공통 매수 판단 태그)은
+// 반드시 이 두 함수를 거친다. 화면마다 값이 달라지는 일이 없도록 계산을 한 곳에 모았다.
+// 실제 단가가 있는 매수 공시·뉴스: Form 4 자동 수집(events.json) + 수기 등록(guru-news.json)
+function pricedBuyEvents(evs, g, ticker) {
+  if (!ticker) return [];
+  const file = guruEventFile(g.id);
+  const short = GURU_SHORT[g.id] || g.name;
+  return [
+    ...(evs.auto || []).filter((e) => e.guru === file && e.side === "buy" && e.priceLow != null && e.ticker && myAlias(String(e.ticker)) === myAlias(ticker)),
+    ...(evs.manual || []).filter((e) => e.side === "buy" && e.priceLow != null && e.ticker && myAlias(String(e.ticker)) === myAlias(ticker) && (String(e.guru || "").includes(short) || String(e.guru || "").includes(g.name))).map((e) => ({ ...e, manual: true })),
+  ];
+}
+const pricedEvDate = (e) => String(e.to || e.from || e.filed || e.date || "").slice(0, 10);
+// 13F 추정치 rec { period, mid } 위에, 마지막 매수 분기 안이거나 그 뒤의 실제 단가 공시·뉴스를
+// 주식수 가중평균으로 얹는다 (같은 기간이면 추정보다 실제 체결가가 정확하다)
+function applyPricedEvents(rec, events) {
+  const cutoff = rec ? quarterStart(rec.period) : "";
+  const newer = events.filter((e) => pricedEvDate(e) >= cutoff && pricedEvDate(e));
+  if (!newer.length) return rec;
+  let sh = 0, cost = 0, sum = 0, lastDate = "";
+  for (const e of newer) {
+    const mid = e.priceHigh > e.priceLow ? (e.priceLow + e.priceHigh) / 2 : e.priceLow;
+    sum += mid;
+    if (e.shares > 0) { sh += e.shares; cost += mid * e.shares; }
+    if (pricedEvDate(e) > lastDate) lastDate = pricedEvDate(e);
+  }
+  return { period: lastDate, mid: sh > 0 ? cost / sh : sum / newer.length, form4: true, shares: sh || null,
+    evLabel: newer.some((e) => e.manual) ? "매입 공시·뉴스" : "Form 4" };
+}
+// 대가별 정밀 계산: 매수 분기마다 추정 단가(분기 최저가 +5%) × 늘린 주식수 → 추정 평균단가와 최근 매수가.
+// 최근 매수가는 위 공용 로직으로 Form 4·수기 뉴스 실단가가 있으면 그것으로 대체된다.
 // 주가 이력이 없는 종목(우리 종목 스냅샷 밖의 해외 상장 등)은 missing 으로 돌려준다
-async function guruFollowRows(f) {
+async function guruFollowRows(g, f) {
   const idx = state.stockIndex?.items || [];
   const idxPrice = (t) => idx.find((x) => x.symbol === t)?.price ?? null;
+  const evs = await ensureGuruEvents().catch(() => ({ auto: [], manual: [] }));
   const rows = [], missing = [];
   for (const h of f.latest.holdings) {
     // 추천 대상은 투자 대가 탭과 같은 기준만: 최근 분기까지 연속 매수 중(2분기 이상)이거나,
@@ -1760,6 +1792,7 @@ async function guruFollowRows(f) {
     let cost = 0, sh = 0, recent = null;
     for (const b of buys) { const mid = quarterBuyEst(stock, b.period); if (mid == null) continue; cost += mid * b.shares; sh += b.shares; recent = { period: b.period, mid }; }
     if (!sh || !recent) { missing.push(h.ticker); continue; }
+    recent = applyPricedEvents(recent, pricedBuyEvents(evs, g, h.ticker)); // 실단가 공시·뉴스 우선 (My Page 와 동일)
     const cur = idxPrice(h.ticker) ?? stock.quote?.price ?? null;
     const rel = cur != null ? cur / recent.mid - 1 : null;
     // 판단: 최근 매수가 아래면 강력 추천, +10% 이내면 추천, 그 위는 관망
@@ -1790,7 +1823,7 @@ function ensureFollowGrades() {
     for (const g of GURUS.filter((x) => x.ready)) {
       try {
         const f = await ensureGuruFilings(g);
-        const { rows } = await guruFollowRows(f);
+        const { rows } = await guruFollowRows(g, f);
         for (const r of rows) {
           if (!r.h.ticker || r.grade < 0) continue;
           const key = SHARE_CLASS_ALIAS[r.h.ticker] || r.h.ticker;
@@ -1804,8 +1837,8 @@ function ensureFollowGrades() {
   return followGradesPromise;
 }
 function followSectionHtml(g, f, rows, missing) {
-  const table = rows.length ? `<div class="tablewrap"><table><thead><tr><th>종목</th><th>마지막 매수</th><th>매수 분기</th><th>추정 평균단가</th><th>최근 매수가 (추정)</th><th>현재가</th><th>최근 매수가 대비</th><th>판단</th></tr></thead><tbody>${rows.map((r) => `<tr>
-      <td class="txt">${tickerHtml(r.h)}</td><td class="txt">${r.recent.period}</td><td>${r.nBuys}회</td><td>$${fmt.n(r.avg)}</td><td>$${fmt.n(r.recent.mid)}</td><td>${r.cur != null ? "$" + fmt.n(r.cur) : "–"}</td><td class="${r.rel == null ? "" : r.rel <= 0 ? "pos" : "neg"}">${r.rel == null ? "–" : fmt.pct(r.rel)}</td><td class="txt">${followGradeHtml(r, g)}</td>
+  const table = rows.length ? `<div class="tablewrap"><table><thead><tr><th>종목</th><th>마지막 매수</th><th>매수 분기</th><th>추정 평균단가</th><th>최근 매수가</th><th>현재가</th><th>최근 매수가 대비</th><th>판단</th></tr></thead><tbody>${rows.map((r) => `<tr>
+      <td class="txt">${tickerHtml(r.h)}</td><td class="txt">${r.recent.period}${r.recent.evLabel ? ` <span class="tag new">${r.recent.evLabel}</span>` : ""}</td><td>${r.nBuys}회</td><td>$${fmt.n(r.avg)}</td><td>$${fmt.n(r.recent.mid)}${r.recent.evLabel && r.recent.shares ? ` <span class="faint small">${fmtSh(r.recent.shares)}주</span>` : ""}</td><td>${r.cur != null ? "$" + fmt.n(r.cur) : "–"}</td><td class="${r.rel == null ? "" : r.rel <= 0 ? "pos" : "neg"}">${r.rel == null ? "–" : fmt.pct(r.rel)}</td><td class="txt">${followGradeHtml(r, g)}</td>
     </tr>`).join("")}</tbody></table></div>` : `<div class="empty">지금은 연속 매수 중이거나 꾸준히 모으는 종목이 없습니다</div>`;
   const note = missing.length ? `<p class="small faint" style="margin-top:8px">주가 이력이 없어 계산에서 제외: ${missing.join(", ")}</p>` : "";
   return `<div class="card-head"><h3>${g.name} · ${g.org}</h3><span class="small faint">${f.latest.period} 분기 공시까지 반영</span></div>${table}${note}`;
@@ -1816,7 +1849,7 @@ async function renderMaxPrices() {
   const gurus = GURUS.filter((g) => g.ready);
   body.innerHTML = [
     maxBackBtn,
-    `<p class="desc">추천 대상은 투자 대가 탭과 같은 기준입니다: <strong>최근 분기까지 연속 매수 중</strong>이거나 <strong>꾸준히 모으는 종목</strong>(최근 8분기 중 2회 이상 매수, 그 사이 매도 없음)만 올립니다. <strong>추정 평균단가</strong>는 대가가 매수한 분기마다 그 분기 <strong>종가 최저가에서 5% 오른 가격</strong>을 매수 단가로 보고, 그 분기에 늘린 주식수로 가중평균한 값입니다 (대가들은 약세 구간에서 분할 매수하는 경향이 있어 저점 부근 체결로 봅니다). <strong>최근 매수가</strong>는 가장 최근에 매수한 분기의 같은 추정가이고, 따라 사기 판단은 이 값을 기준으로 합니다. 현재가가 <strong>최근 매수가보다 낮으면 강력 추천</strong>, <strong>+10% 이내면 추천</strong>, 그보다 높으면 관망입니다. 티커를 누르면 종목 차트로 이동합니다.</p>`,
+    `<p class="desc">추천 대상은 투자 대가 탭과 같은 기준입니다: <strong>최근 분기까지 연속 매수 중</strong>이거나 <strong>꾸준히 모으는 종목</strong>(최근 8분기 중 2회 이상 매수, 그 사이 매도 없음)만 올립니다. <strong>추정 평균단가</strong>는 대가가 매수한 분기마다 그 분기 <strong>종가 최저가에서 5% 오른 가격</strong>을 매수 단가로 보고, 그 분기에 늘린 주식수로 가중평균한 값입니다 (대가들은 약세 구간에서 분할 매수하는 경향이 있어 저점 부근 체결로 봅니다). <strong>최근 매수가</strong>는 가장 최근에 매수한 분기의 같은 추정가인데, SEC Form 4 · 13D/G 공시나 수기 등록된 매수 뉴스에 <strong>실제 단가</strong>가 있으면(예: 버크셔의 레너 추가 매수, 알파벳 $350 사모 매입) 추정가 대신 그 단가의 주식수 가중평균을 사용하며 태그가 붙습니다 (My Page 와 같은 값). 따라 사기 판단은 이 값을 기준으로 합니다. 현재가가 <strong>최근 매수가보다 낮으면 강력 추천</strong>, <strong>+10% 이내면 추천</strong>, 그보다 높으면 관망입니다. 티커를 누르면 종목 차트로 이동합니다.</p>`,
     gurus.map((g) => `<div class="card" id="mx-follow-${g.id}"><div class="card-head"><h3>${g.name} · ${g.org}</h3></div><div class="empty">분기별 매수와 주가 이력으로 추정 단가를 계산하는 중…</div></div>`).join(""),
     alertsCardHtml(),
     `<p class="small faint">13F는 분기 말 보유분이 45일 뒤에 공개되는 자료이고, 단가는 분기 주가 범위로 계산한 추정치라 실제 체결가와 다를 수 있습니다 (예: 블록딜). 투자 판단과 책임은 본인에게 있습니다.</p>`,
@@ -1828,7 +1861,7 @@ async function renderMaxPrices() {
     if (!card()) return;
     try {
       const f = await ensureGuruFilings(g);
-      const { rows, missing } = await guruFollowRows(f);
+      const { rows, missing } = await guruFollowRows(g, f);
       if (!card()) return;
       card().innerHTML = followSectionHtml(g, f, rows, missing);
     } catch {
@@ -2376,13 +2409,13 @@ $("#max-page").addEventListener("click", (e) => {
   const cm = e.target.closest("[data-cm-i]");
   if (cm) return openCommonDetail(+cm.dataset.cmI);
   const t = e.target.closest("[data-stock]");
-  if (t) { closeMaxPage(); selectTab("stocks"); ensureStockIndex().then(() => selectStock(t.dataset.stock)).catch(() => {}); }
+  if (t) { closeMaxPage(); gotoStock(t.dataset.stock); }
 });
 $("#cm-close").addEventListener("click", closeCommonDetail);
 $("#cm-modal").addEventListener("click", (e) => {
   if (e.target === e.currentTarget) return closeCommonDetail();
   const t = e.target.closest("[data-stock]");
-  if (t) { closeCommonDetail(); closeMaxPage(); selectTab("stocks"); ensureStockIndex().then(() => selectStock(t.dataset.stock)).catch(() => {}); }
+  if (t) { closeCommonDetail(); closeMaxPage(); gotoStock(t.dataset.stock); }
 });
 
 $("#sc-buffett").addEventListener("click", openGuruModal);
@@ -2413,7 +2446,7 @@ document.addEventListener("keydown", (e) => {
 $("#panel-gurus").addEventListener("click", (e) => {
   if (e.target.closest("#gu-page-back")) { state.guruSel = null; return renderGuruTab(); }
   const card = e.target.closest("[data-guru]"); if (card) return renderGuruPage(card.dataset.guru);
-  const t = e.target.closest("[data-stock]"); if (t) { selectTab("stocks"); ensureStockIndex().then(() => selectStock(t.dataset.stock)).catch(() => {}); }
+  const t = e.target.closest("[data-stock]"); if (t) { gotoStock(t.dataset.stock); }
 });
 
 // ───────────────────────── 탭 · 이벤트 ─────────────────────────
@@ -2426,7 +2459,12 @@ function toggleMoreTabs(open) {
   b.setAttribute("aria-expanded", String(open2));
   b.textContent = open2 ? "접기 ▴" : "더보기 ▾";
 }
-function selectTab(name) {
+// 티커 바로가기 (다른 화면 → 종목 탭): 종목을 열고, 검색창이 아니라 종목 상세 카드가 바로 보이게 스크롤
+function gotoStock(sym) {
+  selectTab("stocks");
+  ensureStockIndex().then(() => selectStock(sym)).then(() => { $("#stock-detail")?.scrollIntoView({ behavior: "smooth", block: "start" }); }).catch(() => {});
+}
+function selectTab(name, fromPop) {
   $$(".tab[data-tab]").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.tab === name)));
   if (EXTRA_TABS.includes(name) && $("#tabs-extra").hidden) toggleMoreTabs(true);
   // 투자 레전드(panel-gurus)는 탭이 아니라 Max 라운지 안에서 보여준다
@@ -2442,7 +2480,27 @@ function selectTab(name) {
   if (name === "backtest" && !state.history) { /* 일봉이 오면 initBacktestForm 이 채움 */ }
   if (name === "backtest" && state.lastBacktest) renderBacktest();
   if (name === "stocks") ensureStockIndex().catch(() => {}).then(() => { if (state.cmpLast) renderCompare(); else if (state.history) runCompare(true); });
+  // 브라우저 히스토리에 탭 전환을 기록해 뒤로가기(모바일 제스처·Backspace)가 이전 화면으로 돌아가게 한다.
+  // 로그인 메일 링크의 토큰 해시(#access_token=...)는 건드리지 않는다.
+  if (!fromPop && state.curTab !== name) {
+    const h = location.hash.slice(1);
+    if (!h || h === state.curTab || TABS.includes(h)) {
+      try { (state.curTab ? history.pushState : history.replaceState).call(history, { tab: name }, "", "#" + name); } catch {}
+    }
+  }
+  state.curTab = name;
 }
+window.addEventListener("popstate", (e) => {
+  const t = e.state?.tab || location.hash.slice(1);
+  if (t && t !== state.curTab && TABS.includes(t)) selectTab(t, true);
+});
+// 데스크톱: 입력창 밖에서 Backspace = 뒤로가기 (브라우저 기본 동작이 사라진 지 오래라 직접 지원)
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Backspace") return;
+  const el = e.target;
+  if (el instanceof Element && el.closest("input,textarea,select,[contenteditable='true'],[contenteditable='']")) return;
+  e.preventDefault(); history.back();
+});
 $$(".tab[data-tab]").forEach((t) => t.addEventListener("click", () => selectTab(t.dataset.tab)));
 $("#tab-more").addEventListener("click", () => toggleMoreTabs());
 $("#my-open").addEventListener("click", () => selectTab("my"));
@@ -2821,7 +2879,7 @@ function renderBuffettQuarter() {
   $("#bf-holdings tbody").innerHTML = q.holdings.map((h) => `<tr><td class="txt">${tickerHtml(h)}</td><td>${fmt.n(h.weight * 100, 1)}%</td><td>${fmtB(h.value)}</td><td>${fmtSh(h.shares)}</td><td class="txt">${changeHtml(h)}</td><td>${histHtml(hist8(h))}</td></tr>`).join("");
 }
 $("#bf-quarter").addEventListener("change", renderBuffettQuarter);
-$("#panel-buffett").addEventListener("click", (e) => { const t = e.target.closest("[data-stock]"); if (t) { selectTab("stocks"); ensureStockIndex().then(() => selectStock(t.dataset.stock)).catch(() => {}); } });
+$("#panel-buffett").addEventListener("click", (e) => { const t = e.target.closest("[data-stock]"); if (t) { gotoStock(t.dataset.stock); } });
 
 // ───────────────────────── 마이 페이지 (관심 종목 · 관심 대가 · 뉴스) ─────────────────────────
 function favStocks() { return cacheGet("md:favStocks") || []; }
@@ -2894,14 +2952,9 @@ async function myStockRows(stocks, cmpGurus) {
     for (const g of cmpGurus) {
       let f; try { f = await ensureGuruFilings(g); } catch { continue; }
       const h = f.latest.holdings.find((x) => x.ticker && myAlias(x.ticker) === myAlias(sym));
-      const file = guruEventFile(g.id);
-      // 실제 단가가 있는 매수: Form 4 자동 수집 + 수기 등록 뉴스(guru-news.json 의 side/priceLow).
+      // 실제 단가가 있는 매수 공시·뉴스 — Max 라운지와 동일한 공용 로직 (pricedBuyEvents)
       // 13F 에 아직 안 잡힌 신규 지분도 있을 수 있어 보유 여부와 무관하게 찾는다.
-      const short = GURU_SHORT[g.id] || g.name;
-      const f4 = [
-        ...(evs.auto || []).filter((e) => e.guru === file && e.side === "buy" && e.priceLow != null && e.ticker && myAlias(String(e.ticker)) === myAlias(sym)),
-        ...(evs.manual || []).filter((e) => e.side === "buy" && e.priceLow != null && e.ticker && myAlias(String(e.ticker)) === myAlias(sym) && (String(e.guru || "").includes(short) || String(e.guru || "").includes(g.name))).map((e) => ({ ...e, manual: true })),
-      ];
+      const f4 = pricedBuyEvents(evs, g, sym);
       if (!h && !f4.length) continue;
       let rec = null, cur = null, rel = null, grade = -1;
       const holdSym = h && idx.some((x) => x.symbol === h.ticker) ? h.ticker : (item ? sym : null);
@@ -2915,23 +2968,8 @@ async function myStockRows(stocks, cmpGurus) {
           if (mid != null) rec = { period: last.period, mid };
         } catch {}
       }
-      // 2) 실제 단가가 있는 공시·뉴스가 13F 마지막 매수 분기 안이거나 그 뒤면, 추정가 대신
-      //    그 단가(주식수 가중평균)를 최근 매수가로 쓴다 (예: 버크셔의 알파벳 $350 사모 매입은
-      //    Q2 안의 거래라도 분기 최저가 추정보다 실제 단가가 정확하다)
-      const evDate = (e) => String(e.to || e.from || e.filed || e.date || "").slice(0, 10);
-      const cutoff = rec ? quarterStart(rec.period) : "";
-      const newer = f4.filter((e) => evDate(e) >= cutoff && evDate(e));
-      if (newer.length) {
-        let sh = 0, cost = 0, sum = 0, lastDate = "";
-        for (const e of newer) {
-          const mid = e.priceHigh > e.priceLow ? (e.priceLow + e.priceHigh) / 2 : e.priceLow;
-          sum += mid;
-          if (e.shares > 0) { sh += e.shares; cost += mid * e.shares; }
-          if (evDate(e) > lastDate) lastDate = evDate(e);
-        }
-        rec = { period: lastDate, mid: sh > 0 ? cost / sh : sum / newer.length, form4: true, shares: sh || null,
-          evLabel: newer.some((e) => e.manual) ? "매입 공시·뉴스" : "Form 4" };
-      }
+      // 2) 실단가 공시·뉴스 우선 — Max 라운지와 동일한 공용 로직 (applyPricedEvents)
+      rec = applyPricedEvents(rec, f4);
       if (rec) {
         cur = (holdSym ? idx.find((x) => x.symbol === holdSym)?.price : null) ?? item?.price ?? null;
         rel = cur != null ? cur / rec.mid - 1 : null;
@@ -3062,7 +3100,7 @@ async function renderMyPage() {
 // 마이 페이지 안의 바로가기: 티커 → 종목 차트, data-mytab → 해당 탭
 $("#panel-my").addEventListener("click", (e) => {
   const mt = e.target.closest("[data-mytab]"); if (mt) return selectTab(mt.dataset.mytab);
-  const t = e.target.closest("[data-stock]"); if (t) { selectTab("stocks"); ensureStockIndex().then(() => selectStock(t.dataset.stock)).catch(() => {}); }
+  const t = e.target.closest("[data-stock]"); if (t) { gotoStock(t.dataset.stock); }
 });
 
 // ───────────────────────── 코인 ─────────────────────────
@@ -3113,7 +3151,7 @@ function renderCoinList() {
 }
 $("#coin-search").addEventListener("input", renderCoinList);
 $("#coin-search-btn").addEventListener("click", () => { renderCoinList(); $("#coin-search").blur(); });
-$("#coin-table").addEventListener("click", (e) => { const tr = e.target.closest("[data-coin]"); if (tr) { selectTab("stocks"); ensureStockIndex().then(() => selectStock(tr.dataset.coin)).catch(() => {}); } });
+$("#coin-table").addEventListener("click", (e) => { const tr = e.target.closest("[data-coin]"); if (tr) { gotoStock(tr.dataset.coin); } });
 
 // ───────────────────────── 배당 캘린더 ─────────────────────────
 const FREQ_LABEL = { monthly: "월배당", quarterly: "분기", semiannual: "반기", annual: "연 1회", irregular: "비정기" };
@@ -3242,7 +3280,7 @@ $("#dv-search").addEventListener("input", () => { state.dvLimit = 30; state.dvLi
 $("#dv-search-btn").addEventListener("click", () => { state.dvListOpen = true; renderDividendList(); $("#dv-search").blur(); });
 $("#dv-tax").addEventListener("change", renderDividend);
 $("#dv-cur").addEventListener("change", renderDividend);
-$("#panel-dividend").addEventListener("click", (e) => { const t = e.target.closest("[data-stock]"); if (t) { selectTab("stocks"); selectStock(t.dataset.stock); } });
+$("#panel-dividend").addEventListener("click", (e) => { const t = e.target.closest("[data-stock]"); if (t) gotoStock(t.dataset.stock); });
 $("#dvc-run").addEventListener("click", runDividendCompare);
 
 // ───────────────────────── 시작 ─────────────────────────
@@ -3256,6 +3294,8 @@ if (cachedLatest) { state.latest = cachedLatest; state.intraday = cachedIntraday
 try { state.stockRange = localStorage.getItem("md:range") || "1Y"; const ss = localStorage.getItem("md:stock"); if (ss) state.stockSel = ss; } catch {}
 const TABS = ["intro", "starter", "buffett", "news", "backtest", "stocks", "dividend", "crypto", "my"];
 let savedTab = "intro"; try { savedTab = localStorage.getItem("md:tab") || "intro"; } catch {}
+const hashTab = location.hash.slice(1);
+if (TABS.includes(hashTab)) savedTab = hashTab; // #stocks 처럼 해시로 열면 그 탭부터
 if (!TABS.includes(savedTab)) savedTab = "intro";
 selectTab(savedTab);
 loadAll().then(() => { if (!$("#panel-stocks").hidden && !state.cmpLast) runCompare(true); });
