@@ -1721,12 +1721,13 @@ function renderMaxGurus() {
 }
 // 분기 시작일: 13F 분기말 날짜(3·6·9·12월 말)에서 그 분기의 첫날을 구한다
 function quarterStart(period) { const m = { "03": "01", "06": "04", "09": "07", "12": "10" }[period.slice(5, 7)] || "01"; return `${period.slice(0, 4)}-${m}-01`; }
-// 해당 분기 동안 종가의 최저·최고의 중앙값 = 그 분기 매수 단가 추정치
-function quarterMid(stock, period) {
+// 해당 분기 종가 최저가에서 5% 오른 가격 = 그 분기 매수 단가 추정치
+// (대가들은 약세 구간에서 분할 매수하는 경향이 있어, 중앙값보다 저점 부근 체결로 보는 것이 현실에 가깝다)
+function quarterBuyEst(stock, period) {
   const a = quarterStart(period), { dates, close } = stock.daily;
-  let lo = Infinity, hi = -Infinity;
-  for (let i = 0; i < dates.length; i++) { const d = dates[i]; if (d >= a && d <= period) { const c = close[i]; if (c < lo) lo = c; if (c > hi) hi = c; } }
-  return isFinite(lo) ? (lo + hi) / 2 : null;
+  let lo = Infinity;
+  for (let i = 0; i < dates.length; i++) { const d = dates[i]; if (d >= a && d <= period) { const c = close[i]; if (c < lo) lo = c; } }
+  return isFinite(lo) ? lo * 1.05 : null;
 }
 // 분기별 순매수(주식수 증가분) 목록. 이후 분기에 액면분할이 있으면 이전 매수 수량을 현재 기준으로 환산한다.
 function guruBuys(f, h) {
@@ -1741,7 +1742,7 @@ function guruBuys(f, h) {
   }
   return buys.filter((b) => b.shares > 0);
 }
-// 대가별 정밀 계산: 매수 분기마다 중앙값 단가 × 늘린 주식수 → 추정 평균단가와 최근 매수가
+// 대가별 정밀 계산: 매수 분기마다 추정 단가(분기 최저가 +5%) × 늘린 주식수 → 추정 평균단가와 최근 매수가
 // 주가 이력이 없는 종목(우리 종목 스냅샷 밖의 해외 상장 등)은 missing 으로 돌려준다
 async function guruFollowRows(f) {
   const idx = state.stockIndex?.items || [];
@@ -1757,7 +1758,7 @@ async function guruFollowRows(f) {
     if (!h.ticker) { missing.push(h.name); continue; }
     let stock; try { stock = await loadStock(h.ticker); } catch { missing.push(h.ticker); continue; }
     let cost = 0, sh = 0, recent = null;
-    for (const b of buys) { const mid = quarterMid(stock, b.period); if (mid == null) continue; cost += mid * b.shares; sh += b.shares; recent = { period: b.period, mid }; }
+    for (const b of buys) { const mid = quarterBuyEst(stock, b.period); if (mid == null) continue; cost += mid * b.shares; sh += b.shares; recent = { period: b.period, mid }; }
     if (!sh || !recent) { missing.push(h.ticker); continue; }
     const cur = idxPrice(h.ticker) ?? stock.quote?.price ?? null;
     const rel = cur != null ? cur / recent.mid - 1 : null;
@@ -1815,7 +1816,7 @@ async function renderMaxPrices() {
   const gurus = GURUS.filter((g) => g.ready);
   body.innerHTML = [
     maxBackBtn,
-    `<p class="desc">추천 대상은 투자 대가 탭과 같은 기준입니다: <strong>최근 분기까지 연속 매수 중</strong>이거나 <strong>꾸준히 모으는 종목</strong>(최근 8분기 중 2회 이상 매수, 그 사이 매도 없음)만 올립니다. <strong>추정 평균단가</strong>는 대가가 매수한 분기마다 그 분기 종가의 최저·최고 <strong>중앙값</strong>을 매수 단가로 보고, 그 분기에 늘린 주식수로 가중평균한 값입니다. <strong>최근 매수가</strong>는 가장 최근에 매수한 분기의 중앙값이고, 따라 사기 판단은 이 값을 기준으로 합니다. 현재가가 <strong>최근 매수가보다 낮으면 강력 추천</strong>, <strong>+10% 이내면 추천</strong>, 그보다 높으면 관망입니다. 티커를 누르면 종목 차트로 이동합니다.</p>`,
+    `<p class="desc">추천 대상은 투자 대가 탭과 같은 기준입니다: <strong>최근 분기까지 연속 매수 중</strong>이거나 <strong>꾸준히 모으는 종목</strong>(최근 8분기 중 2회 이상 매수, 그 사이 매도 없음)만 올립니다. <strong>추정 평균단가</strong>는 대가가 매수한 분기마다 그 분기 <strong>종가 최저가에서 5% 오른 가격</strong>을 매수 단가로 보고, 그 분기에 늘린 주식수로 가중평균한 값입니다 (대가들은 약세 구간에서 분할 매수하는 경향이 있어 저점 부근 체결로 봅니다). <strong>최근 매수가</strong>는 가장 최근에 매수한 분기의 같은 추정가이고, 따라 사기 판단은 이 값을 기준으로 합니다. 현재가가 <strong>최근 매수가보다 낮으면 강력 추천</strong>, <strong>+10% 이내면 추천</strong>, 그보다 높으면 관망입니다. 티커를 누르면 종목 차트로 이동합니다.</p>`,
     gurus.map((g) => `<div class="card" id="mx-follow-${g.id}"><div class="card-head"><h3>${g.name} · ${g.org}</h3></div><div class="empty">분기별 매수와 주가 이력으로 추정 단가를 계산하는 중…</div></div>`).join(""),
     alertsCardHtml(),
     `<p class="small faint">13F는 분기 말 보유분이 45일 뒤에 공개되는 자료이고, 단가는 분기 주가 범위로 계산한 추정치라 실제 체결가와 다를 수 있습니다 (예: 블록딜). 투자 판단과 책임은 본인에게 있습니다.</p>`,
@@ -2139,6 +2140,16 @@ function ensureJokerPicks() {
     .catch(local);
   return jokerPicksPromise;
 }
+// 자동 스크리닝은 정량 후보만 만든다. 화면에는 운영진(수기) 검토를 통과해
+// invest/joker-approved.json 에 {week, ticker} 로 등록된 픽만 올린다.
+// (사업 지배구조·경제적 해자 같은 정성 판단은 숫자로 다 걸러지지 않기 때문)
+let jokerApprovedPromise = null;
+function ensureJokerApproved() {
+  if (!jokerApprovedPromise) jokerApprovedPromise = fetch(`joker-approved.json?t=${Date.now()}`, { cache: "no-store" })
+    .then((r) => (r.ok ? r.json() : { approved: [] })).catch(() => ({ approved: [] }));
+  return jokerApprovedPromise;
+}
+const jkIsDemo = (p) => /데모/.test(String(p.source || ""));
 function jkPickHtml(p, isLatest) {
   const oe = p.ownerEarnings * 1e8, cash = p.netCash * 1e8;
   const m = jkMargin(jokerFair(oe, cash, p.shares, JK_SCN[1]), p.price);
@@ -2156,7 +2167,7 @@ async function renderMaxJoker() {
   body.dataset.screen = "joker";
   body.innerHTML = [
     maxBackBtn,
-    `<p class="desc">"워렌 버핏과 찰리 멍거가 2026년 한국 시장에서 투자한다면 어떤 종목을 고를까"를 정해진 산식으로 재현한 화면입니다. 1단계로 <strong>정량 체크리스트 5개</strong>(ROE 10년 평균 15% 이상 · 부채비율 50% 이하 · 영업이익률 변동성 낮음 · 잉여현금흐름 계속 플러스 · 이익의 꾸준한 성장)를 통과한 회사만 남기고, 2단계로 <strong>오너 어닝스(순이익 + 감가상각비 − 유지보수 설비투자) 2단계 DCF</strong>로 적정주가를 계산해 <strong>안전마진 30% 이상</strong>인 종목을 매주 1개 올립니다. 할인율 2%p 차이로 적정주가가 20% 넘게 움직이기 때문에, 숫자 하나가 아니라 <strong>보수적·기본·낙관적 3개 시나리오</strong>를 항상 함께 보여줍니다.</p>`,
+    `<p class="desc">"워렌 버핏과 찰리 멍거가 2026년 한국 시장에서 투자한다면 어떤 종목을 고를까"를 정해진 산식으로 재현한 화면입니다. 1단계로 <strong>정량 체크리스트 5개</strong>(ROE 10년 평균 15% 이상 · 부채비율 50% 이하 · 영업이익률 변동성 낮음 · 잉여현금흐름 계속 플러스 · 이익의 꾸준한 성장)를 통과한 회사만 남기고, 2단계로 <strong>오너 어닝스(순이익 + 감가상각비 − 유지보수 설비투자) 2단계 DCF</strong>로 적정주가를 계산해 <strong>안전마진 30% 이상</strong>인 종목을 후보로 뽑습니다. 다만 숫자만으로는 <strong>경제적 해자</strong>와 <strong>사업 지배구조</strong>를 판단할 수 없어, 정량 후보는 매주 그 두 가지에 대한 <strong>운영진 검토를 통과한 종목만</strong> 이 화면에 올라옵니다. 할인율 2%p 차이로 적정주가가 20% 넘게 움직이기 때문에, 숫자 하나가 아니라 <strong>보수적·기본·낙관적 3개 시나리오</strong>를 항상 함께 보여줍니다.</p>`,
     `<div class="card" id="jk-latest"><div class="empty">이번 주 조커픽을 불러오는 중…</div></div>`,
     `<div class="card" id="jk-history" hidden></div>`,
     `<div class="card">
@@ -2196,11 +2207,20 @@ async function renderMaxJoker() {
     out.hidden = false;
   });
   try {
-    const data = await ensureJokerPicks();
+    const [data, appr] = await Promise.all([ensureJokerPicks(), ensureJokerApproved()]);
     if ($("#max-page").hidden || body.dataset.screen !== "joker") return;
-    const picks = (data.picks || []).slice().sort((a, b) => String(b.week).localeCompare(String(a.week)));
-    if (!picks.length) { $("#jk-latest").innerHTML = `<div class="empty">아직 등록된 조커픽이 없습니다. 매주 월요일에 1종목씩 올라옵니다.</div>`; return; }
-    $("#jk-latest").innerHTML = jkPickHtml(picks[0], true) + (data.note ? `<p class="small faint" style="margin-top:10px">${escHtml(data.note)}</p>` : "");
+    const okSet = new Set((appr.approved || []).map((a) => `${a.week}|${a.ticker}`));
+    const all = (data.picks || []).slice().sort((a, b) => String(b.week).localeCompare(String(a.week)));
+    // 데모 데이터는 화면 예시용이라 검토 없이 보여주고, 실제 스크리닝 결과는 검토 통과분만
+    const picks = all.filter((p) => jkIsDemo(p) || okSet.has(`${p.week}|${p.ticker}`));
+    const pending = all.find((p) => !jkIsDemo(p) && !okSet.has(`${p.week}|${p.ticker}`));
+    const pendingNote = pending
+      ? (adminOn
+        ? `<div class="notice" style="margin:12px 0 0"><strong>검토 대기 (관리자에게만 보임):</strong> ${escHtml(pending.name)} (${escHtml(pending.ticker)}) · ${escHtml(pending.week)} 주 후보. 승인되기 전까지 구독자 화면에는 나오지 않습니다.</div>`
+        : `<p class="small faint" style="margin-top:10px">이번 주 정량 스크리닝 후보는 사업 지배구조·경제적 해자에 대한 최종 검토 중입니다. 검토를 통과한 종목만 이 화면에 올라옵니다.</p>`)
+      : "";
+    if (!picks.length) { $("#jk-latest").innerHTML = `<div class="empty">아직 검토를 통과한 조커픽이 없습니다. 후보는 매주 스크리닝되고, 검토를 통과해야 이곳에 올라옵니다.</div>` + pendingNote; return; }
+    $("#jk-latest").innerHTML = jkPickHtml(picks[0], true) + pendingNote + (data.note ? `<p class="small faint" style="margin-top:10px">${escHtml(data.note)}</p>` : "");
     const past = picks.slice(1);
     if (past.length) {
       const hist = $("#jk-history");
@@ -2812,7 +2832,7 @@ function ensureStockNews() {
 const myAlias = (t) => SHARE_CLASS_ALIAS[t] || t;
 const guruEventFile = (id) => (id === "buffett" ? "berkshire.json" : GURUS.find((g) => g.id === id)?.file || null);
 // 관심 종목마다: 비교 대상 대가들(관심 대가 + 버핏)의 최신 13F 에서 보유 여부를 찾고,
-// 보유 중이면 가장 최근 매수 분기의 추정 단가(그 분기 종가 최저·최고의 중앙값)와 현재가를 비교한다.
+// 보유 중이면 가장 최근 매수 분기의 추정 단가(그 분기 종가 최저가 +5%)와 현재가를 비교한다.
 // 13F 밖 공시(SEC Form 4 · 13D/G, events.json)에 그보다 더 최근의 매수가 단가와 함께 있으면
 // (예: 버크셔의 레너 추가 매수) 그 공시들의 주식수 가중평균 단가를 최근 매수가로 우선 사용한다.
 async function myStockRows(stocks, cmpGurus) {
@@ -2831,13 +2851,13 @@ async function myStockRows(stocks, cmpGurus) {
       if (!h && !f4.length) continue;
       let rec = null, cur = null, rel = null, grade = -1;
       const holdSym = h && idx.some((x) => x.symbol === h.ticker) ? h.ticker : (item ? sym : null);
-      // 1) 13F: 마지막 매수 분기의 중앙값 단가 (대가가 실제로 든 클래스 예: GOOGL 의 주가 이력으로 계산)
+      // 1) 13F: 마지막 매수 분기의 추정 단가(최저가 +5%) (대가가 실제로 든 클래스 예: GOOGL 의 주가 이력으로 계산)
       const buys = h?.cusip ? guruBuys(f, h) : [];
       if (buys.length && holdSym) {
         try {
           const stock = await loadStock(holdSym);
           const last = buys[buys.length - 1];
-          const mid = quarterMid(stock, last.period);
+          const mid = quarterBuyEst(stock, last.period);
           if (mid != null) rec = { period: last.period, mid };
         } catch {}
       }
@@ -2885,7 +2905,7 @@ function myStockTableHtml(rows) {
     });
   });
   return `<div class="tablewrap"><table><thead><tr><th>종목</th><th>현재가</th><th>전일비</th><th>관심 대가</th><th>마지막 매수</th><th>최근 매수가 (추정)</th><th>최근 매수가 대비</th><th>판단</th><th>관리</th></tr></thead><tbody>${trs.join("")}</tbody></table></div>
-    <p class="small faint" style="margin-top:8px">최근 매수가는 대가가 마지막으로 매수한 분기의 종가 최저·최고 중앙값으로 계산한 추정치입니다. 다만 SEC Form 4 · 13D/G 공시에 그보다 <strong>더 최근의 매수가 단가와 함께</strong> 올라오면(예: 버크셔의 레너 추가 매수) 그 공시들의 주식수 가중평균 단가를 최근 매수가로 우선 사용하며 <span class="tag new">Form 4</span> 표시가 붙습니다. 현재가가 최근 매수가보다 낮으면 <strong>강력 추천</strong>, +10% 이내면 <strong>추천</strong>입니다. 티커를 누르면 종목 차트로 이동합니다.</p>`;
+    <p class="small faint" style="margin-top:8px">최근 매수가는 대가가 마지막으로 매수한 분기의 <strong>종가 최저가에서 5% 오른 가격</strong>으로 계산한 추정치입니다. 다만 SEC Form 4 · 13D/G 공시에 그보다 <strong>더 최근의 매수가 단가와 함께</strong> 올라오면(예: 버크셔의 레너 추가 매수) 그 공시들의 주식수 가중평균 단가를 최근 매수가로 우선 사용하며 <span class="tag new">Form 4</span> 표시가 붙습니다. 현재가가 최근 매수가보다 낮으면 <strong>강력 추천</strong>, +10% 이내면 <strong>추천</strong>입니다. 티커를 누르면 종목 차트로 이동합니다.</p>`;
 }
 async function myGuruCardHtml(g) {
   const headBtn = g.id === "buffett" ? `<button class="btn" type="button" data-mytab="buffett" style="margin-left:auto">상세 보기 →</button>` : "";
