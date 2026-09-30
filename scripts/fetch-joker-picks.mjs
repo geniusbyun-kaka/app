@@ -14,7 +14,9 @@
 // GitHub Actions 에서 매주 실행되어 `joker` 브랜치에 올라간다 (invest/index.html 이 읽는다).
 //
 // 결과물 (출력 폴더 기준):
-//   joker-picks.json   프론트가 읽는 주간 픽 (최근 26주)
+//   joker-picks.json     프론트가 읽는 주간 픽 (최근 26주)
+//   joker-verdicts.json  버핏 판정 시리즈: 시총 상위 기업(scripts/kr-topcap.json)을 시총 순서대로
+//                        통과/탈락 판정. 통과 종목만 소개하는 코너가 아니라 탈락 사유도 같이 보여준다
 //   candidates.json    체크리스트 통과 종목 전체와 지표 (디버그·확장용)
 //   meta.json          수집 진행률 (유니버스 대비 10년치 완비 비율 등)
 //   dart/{corp}.json   회사별 연간 재무 캐시. 과거 연도는 다시 받지 않는다
@@ -50,7 +52,7 @@ const TIME_BUDGET_MIN = Number(process.env.TIME_BUDGET_MIN || 240);
 const CONCURRENCY = Number(process.env.CONCURRENCY || 4);
 // 수집이 한도를 정확히 소진하면 통과 종목의 주식수·주가 조회가 굶는다 (5차 실행에서 실제 발생).
 // 그 몫을 남겨두기 위해 수집 단계는 이 상한까지만 호출한다.
-const COLLECT_CAP = MAX_CALLS - Math.min(400, Math.ceil(MAX_CALLS * 0.2));
+const COLLECT_CAP = MAX_CALLS - Math.min(800, Math.ceil(MAX_CALLS * 0.25)); // 가격·판정 시리즈 조회 몫을 남긴다
 const T0 = Date.now();
 if (!KEY) {
   console.error("[joker] DART_API_KEY 가 없습니다. opendart.fss.or.kr 에서 발급받아 리포 시크릿 DART_API_KEY 로 넣어주세요.");
@@ -138,21 +140,23 @@ function unzipEntry(buf, nameRe) {
 }
 
 // ── 상장사 목록: corpCode.xml (stock_code 가 있는 회사만) ──
+// universe 는 스크리닝 대상 (금융·지주 등 제외), byStock 은 판정 시리즈용 전체 (제외 업종은 excluded 표시)
 async function fetchUniverse() {
   const res = await dart("corpCode.xml");
   if (!res) throw new Error("corpCode.xml 을 받지 못했습니다");
   const xml = unzipEntry(Buffer.from(await res.arrayBuffer()), /corpcode\.xml/i).toString("utf8");
   const tag = (s, t) => (s.match(new RegExp(`<${t}>([^<]*)</${t}>`)) || [])[1]?.trim() || "";
-  const out = [];
+  const out = [], byStock = new Map();
   for (const m of xml.matchAll(/<list>([\s\S]*?)<\/list>/g)) {
     const s = m[1];
     const stock = tag(s, "stock_code");
     if (!/^\d{6}$/.test(stock)) continue;
     const name = tag(s, "corp_name");
-    if (EXCLUDE_NAME.test(name)) continue;
-    out.push({ code: tag(s, "corp_code"), stock, name });
+    const corp = { code: tag(s, "corp_code"), stock, name, excluded: EXCLUDE_NAME.test(name) };
+    byStock.set(stock, corp);
+    if (!corp.excluded) out.push(corp);
   }
-  return out;
+  return { universe: out, byStock };
 }
 
 // ── 연간 재무제표 한 해치 → 필요한 숫자만 추출 ──
@@ -302,7 +306,7 @@ const mondayOf = (d) => { const dt = new Date(d); dt.setUTCDate(dt.getUTCDate() 
 
 async function main() {
   await mkdir(path.join(OUT_DIR, "dart"), { recursive: true });
-  const universe = await fetchUniverse();
+  const { universe, byStock } = await fetchUniverse();
   console.log(`[joker] 유니버스 ${universe.length}개 회사 (금융·스팩·리츠·지주 제외) · 대상 연도 ${YEARS[0]}~${LAST_YEAR}`);
 
   // 회사별 캐시를 한 번에 읽어둔다 (조회는 아직 안 함)
@@ -427,6 +431,75 @@ async function main() {
     note: `DART ${LAST_YEAR} 사업보고서 기반 자동 스크리닝 (10년치 수집 완료 ${complete}/${universe.length}개 회사). 유지보수 설비투자는 min(감가상각비, 10년 CAPEX 중앙값) 근사치이며, 금융사·지주사·스팩·리츠는 제외했습니다. 이익 방향(직전 3년 고점 대비)·ROE 추세·최대주주 지분율·거래대금 필터를 통과한 후보만 올라옵니다.`,
     picks: picks.slice(0, 26),
   }, null, 1));
+  // ── 버핏 판정 시리즈: 시총 상위 기업(scripts/kr-topcap.json)을 통과/탈락 판정 ──
+  // 통과 종목만 소개하는 코너가 아니다: 탈락이면 어떤 기준에서 왜 탈락했는지를 그대로 보여준다.
+  const topcapPath = process.env.TOPCAP_FILE || new URL("./kr-topcap.json", import.meta.url).pathname;
+  const topcap = await readJson(topcapPath, null);
+  if (topcap) {
+    const entryByStock = new Map(entries.map((e) => [e.corp.stock, e]));
+    const verdictRow = async (t, market) => {
+      const corp = byStock.get(t.t);
+      const base = { market, name: corp?.name || t.n, ticker: t.t };
+      if (!corp) return { ...base, verdict: "nodata", note: "DART 상장 목록에 없음 (티커 확인 필요)" };
+      if (corp.excluded) return { ...base, verdict: "excluded", note: "금융·지주·리츠 등은 이 산식이 맞지 않아 판정 제외" };
+      const e = entryByStock.get(t.t);
+      const s = e ? screenCorp(e.cache.years) : null;
+      if (!s) return { ...base, verdict: "nodata", note: "10년치 재무 데이터가 아직 안 모였습니다" };
+      // 주식수·현재가 → 시총. 판정 시리즈는 통과 여부와 무관하게 조회한다 (연 단위 캐시)
+      let shares = e.cache.sharesYear === LAST_YEAR ? e.cache.shares : null;
+      if (!shares && !budgetOut) {
+        shares = await fetchShares(e.corp, LAST_YEAR);
+        if (shares === undefined) shares = null;
+        else { e.cache.shares = shares; e.cache.sharesYear = LAST_YEAR; await writeFile(e.cachePath, JSON.stringify(e.cache)); }
+      }
+      const quote = shares ? await fetchPrice(e.corp.stock).catch(() => null) : null;
+      let mh = e.cache.mhYear === LAST_YEAR ? e.cache.mh : undefined;
+      if (mh === undefined && !budgetOut) {
+        mh = await fetchMajorHolder(e.corp, LAST_YEAR);
+        if (mh !== undefined) { e.cache.mh = mh; e.cache.mhYear = LAST_YEAR; await writeFile(e.cachePath, JSON.stringify(e.cache)); }
+      }
+      let divCut = e.cache.divCutYear === LAST_YEAR ? e.cache.divCut : undefined;
+      if (divCut === undefined && !budgetOut) {
+        divCut = await fetchDividendCut(e.corp, LAST_YEAR);
+        if (divCut !== undefined) { e.cache.divCut = divCut; e.cache.divCutYear = LAST_YEAR; await writeFile(e.cachePath, JSON.stringify(e.cache)); }
+      }
+      const m = { ...s.metrics, majorHolder: mh ?? null, avgValueEok: quote?.avgValueEok ?? null, divCut: divCut ?? null };
+      const failKeys = [];
+      if (m.roe10 < CHECK.roe10) failKeys.push("roe10");
+      if (m.debt > CHECK.debt) failKeys.push("debt");
+      if (m.opStd > CHECK.opStd) failKeys.push("opStd");
+      if (m.fcfYears < CHECK.fcfYears) failKeys.push("fcfYears");
+      if (m.epsCagr < CHECK.epsCagr) failKeys.push("epsCagr");
+      if (m.niTrend != null && m.niTrend < NI_DECLINE_MAX) failKeys.push("niTrend");
+      if (m.roeDown) failKeys.push("roeDown");
+      if (m.majorHolder != null && m.majorHolder > MAJOR_MAX) failKeys.push("majorHolder");
+      if (m.avgValueEok != null && m.avgValueEok < MIN_TRADE_EOK) failKeys.push("avgValueEok");
+      return {
+        ...base,
+        price: quote ? Math.round(quote.price) : null,
+        mcapEok: quote && shares ? Math.round((quote.price * shares) / 1e8) : null,
+        verdict: failKeys.length ? "fail" : "pass",
+        failKeys, metrics: m,
+        ownerEarnings: s.ownerEarnings, netCash: s.netCash, shares: shares ?? null,
+      };
+    };
+    const verdicts = { kospi: [], kosdaq: [] };
+    for (const [key, market] of [["kospi", "코스피"], ["kosdaq", "코스닥"]]) {
+      for (const t of topcap[key] || []) verdicts[key].push(await verdictRow(t, market));
+      // 실제 시총(주가×주식수)으로 정렬. 시총을 못 구한 회사(판정 제외·데이터 부족)는 뒤로
+      verdicts[key].sort((a, b) => (b.mcapEok ?? -1) - (a.mcapEok ?? -1));
+      verdicts[key].forEach((r, i) => (r.rank = i + 1));
+    }
+    await writeFile(path.join(OUT_DIR, "joker-verdicts.json"), JSON.stringify({
+      updated: now.toISOString().slice(0, 10),
+      seriesStart: "2026-10-05", // 첫 공개 주의 월요일. 앱이 이 날부터 매주 한 배치(10개)씩 공개한다
+      batchSize: 10,
+      note: "버핏 정량 체크리스트와 밸류 트랩·지배구조·수급 필터로 시총 상위 기업을 판정합니다. 통과는 정량 기준 통과일 뿐 추천이 아니며, 실제 조커픽은 안전마진 계산과 주간 검토를 따로 거칩니다.",
+      kospi: verdicts.kospi, kosdaq: verdicts.kosdaq,
+    }, null, 1));
+    console.log(`[joker] 버핏 판정 시리즈: 코스피 ${verdicts.kospi.length}개 · 코스닥 ${verdicts.kosdaq.length}개 판정 저장`);
+  }
+
   await writeFile(path.join(OUT_DIR, "meta.json"), JSON.stringify({ updated: now.toISOString(), universe: universe.length, complete, coverage: Math.round(cover * 1000) / 1000, calls, budgetOut, timeOut, minutes: Math.round((Date.now() - T0) / 60000), passed, priced: candList.length }, null, 1));
 }
 

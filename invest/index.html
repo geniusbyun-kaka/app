@@ -2162,6 +2162,33 @@ function ensureJokerApproved() {
   return jokerApprovedPromise;
 }
 const jkIsDemo = (p) => /데모/.test(String(p.source || ""));
+// ── 버핏 판정 시리즈: 시총 상위 기업을 코스피↔코스닥 번갈아 매주 10개씩 통과/탈락 판정 ──
+const JK_FAIL_LABEL = { roe10: "ROE 10년 평균", debt: "부채비율", opStd: "이익 변동성", fcfYears: "잉여현금흐름", epsCagr: "이익 성장", niTrend: "이익 방향", roeDown: "ROE 추세", majorHolder: "대주주 지분", avgValueEok: "거래대금" };
+function jkVerdictSeriesHtml(vd) {
+  const size = vd.batchSize || 10;
+  const chunk = (list) => { const out = []; for (let i = 0; i < (list || []).length; i += size) out.push(list.slice(i, i + size)); return out; };
+  const ko = chunk(vd.kospi), kq = chunk(vd.kosdaq);
+  // 공개 순서: 코스피 1~10위 → 코스닥 1~10위 → 코스피 11~20위 → 코스닥 11~20위 → …
+  const order = [];
+  for (let i = 0; i < Math.max(ko.length, kq.length); i++) { if (ko[i]) order.push({ market: "코스피", rows: ko[i] }); if (kq[i]) order.push({ market: "코스닥", rows: kq[i] }); }
+  if (!order.length) return "";
+  const weeks = Math.floor((Date.now() - new Date(vd.seriesStart + "T00:00:00+09:00")) / 6048e5);
+  const visible = Math.min(Math.max(weeks + 1, 1), order.length);
+  const shown = order.slice(0, visible);
+  const vTag = (r) => r.verdict === "pass" ? '<span class="tag inc">버핏 기준 통과</span>'
+    : r.verdict === "fail" ? '<span class="tag exit">탈락</span>'
+    : r.verdict === "excluded" ? '<span class="tag">판정 제외</span>' : '<span class="tag">데이터 부족</span>';
+  const why = (r) => r.verdict === "fail" ? (r.failKeys || []).map((k) => JK_FAIL_LABEL[k] || k).join(" · ")
+    : r.verdict === "pass" ? '<span class="faint">정량 기준 모두 통과</span>' : `<span class="faint">${escHtml(r.note || "")}</span>`;
+  const mcap = (v) => (v == null ? "–" : v >= 1e4 ? `${fmt.n(v / 1e4, 1)}조` : `${fmt.n(v, 0)}억`);
+  return `<div class="card-head"><h3>버핏 판정 시리즈 · 한국 시총 상위</h3><span class="small faint">매주 월요일 한 회차씩 공개 · ${escHtml(vd.updated || "")} 기준</span></div>
+    <p class="desc">통과하는 종목만 소개하는 코너가 아닙니다. 시총이 큰 기업부터 순서대로 <strong>버핏 정량 기준을 통과하는지, 탈락이면 어떤 기준에서 왜 탈락하는지</strong>를 그대로 보여드립니다. 통과가 곧 추천은 아니며, 실제 조커픽은 안전마진 계산과 주간 검토를 따로 거칩니다.</p>
+    ${shown.map((b, bi) => `<div class="eyebrow" style="margin-top:${bi ? 16 : 12}px">${bi + 1}회차 · ${b.market} 시총 ${b.rows[0]?.rank ?? ""}~${b.rows[b.rows.length - 1]?.rank ?? ""}위</div>
+      <div class="tablewrap" style="margin-top:6px"><table><thead><tr><th>순위</th><th>종목</th><th>시총</th><th>판정</th><th>탈락 사유 · 비고</th></tr></thead><tbody>
+      ${b.rows.map((r) => `<tr><td>${r.rank ?? "–"}</td><td class="txt"><strong>${escHtml(r.name)}</strong> <span class="tk plain">${escHtml(r.ticker)}</span></td><td>${mcap(r.mcapEok)}</td><td class="txt">${vTag(r)}</td><td class="txt" style="white-space:normal">${why(r)}</td></tr>`).join("")}
+      </tbody></table></div>`).join("")}
+    ${visible < order.length ? `<p class="small faint" style="margin-top:10px">다음 회차(${order[visible].market} ${order[visible].rows[0]?.rank ?? ""}위부터)는 다음 주 월요일에 공개됩니다.</p>` : ""}`;
+}
 function jkPickHtml(p, isLatest) {
   const oe = p.ownerEarnings * 1e8, cash = p.netCash * 1e8;
   const m = jkMargin(jokerFair(oe, cash, p.shares, JK_SCN[1]), p.price);
@@ -2182,6 +2209,7 @@ async function renderMaxJoker() {
     `<p class="desc">"워렌 버핏과 찰리 멍거가 2026년 한국 시장에서 투자한다면 어떤 종목을 고를까"를 정해진 산식으로 재현한 화면입니다. 1단계로 <strong>정량 체크리스트</strong>(ROE 10년 평균 15% 이상 · 부채비율 50% 이하 · 영업이익률 변동성 낮음 · 잉여현금흐름 계속 플러스 · 이익의 꾸준한 성장)를 통과한 회사만 남기고, 여기에 <strong>밸류 트랩·지배구조 필터</strong>(최근 이익 방향이 꺾인 회사 · ROE 3년 연속 하락 · 최대주주 지분 50% 초과 · 일 거래대금 5억원 미만 제외)를 더해 거른 뒤, 2단계로 <strong>오너 어닝스(순이익 + 감가상각비 − 유지보수 설비투자) 2단계 DCF</strong>로 적정주가를 계산해 <strong>안전마진 30% 이상</strong>인 종목을 후보로 뽑습니다. 다만 숫자만으로는 <strong>경제적 해자</strong>와 <strong>사업 지배구조</strong>를 판단할 수 없어, 정량 후보는 매주 그 두 가지에 대한 <strong>운영진 검토를 통과한 종목만</strong> 이 화면에 올라옵니다. 할인율 2%p 차이로 적정주가가 20% 넘게 움직이기 때문에, 숫자 하나가 아니라 <strong>보수적·기본·낙관적 3개 시나리오</strong>를 항상 함께 보여줍니다.</p>`,
     `<div class="card" id="jk-latest"><div class="empty">이번 주 조커픽을 불러오는 중…</div></div>`,
     `<div class="card" id="jk-history" hidden></div>`,
+    `<div class="card" id="jk-verdicts" hidden></div>`,
     `<div class="card">
       <div class="card-head"><h3>버핏 계산기 · 직접 입력</h3><span class="small faint">DART 사업보고서 숫자로 적정주가 계산</span></div>
       <p class="desc">DART(dart.fss.or.kr)에서 종목의 <strong>사업보고서(연간)</strong> 재무제표 숫자를 옮겨 적으면 같은 산식으로 계산합니다. 유지보수 설비투자를 따로 알기 어려우면 감가상각비와 비슷하다고 보고 두 칸을 비워 두세요 (그러면 오너 어닝스 ≈ 순이익).</p>
@@ -2211,6 +2239,15 @@ async function renderMaxJoker() {
     `<p class="small faint">이 화면은 특정 종목의 매수·매도를 권유하는 투자자문이 아니라, 공시된 재무제표에 위에 적힌 산식을 그대로 적용해 보여주는 <strong>계산 도구</strong>입니다. 오너 어닝스·성장률·유지보수 설비투자는 추정치이며, 가정이 조금만 달라져도 결과가 크게 바뀝니다. 투자 판단과 책임은 본인에게 있습니다.</p>`,
   ].join("");
   initCommaInputs(body);
+  // 버핏 판정 시리즈는 별도 파일이라 픽 로딩과 독립적으로 채운다 (실패해도 픽 화면은 유지)
+  fetch(`${JOKER_BASE}joker-verdicts.json?t=${Date.now()}`, { cache: "no-store" })
+    .then((r) => (r.ok ? r.json() : null)).catch(() => null)
+    .then((vd) => {
+      if (!vd || $("#max-page").hidden || body.dataset.screen !== "joker") return;
+      const el = $("#jk-verdicts"); if (!el) return;
+      const html = jkVerdictSeriesHtml(vd);
+      if (html) { el.innerHTML = html; el.hidden = false; }
+    });
   $("#jk-pdf", body)?.addEventListener("change", (e) => {
     const f = e.target.files?.[0];
     if (!f) return;
