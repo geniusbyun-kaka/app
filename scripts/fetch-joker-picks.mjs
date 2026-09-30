@@ -40,6 +40,11 @@ const MIN_COVER = Number(process.env.MIN_COVER || 0.7);
 // 잡이 통째로 취소되고 그 실행의 캐시가 유실된다. 시간이 다 되면 수집을 멈추고
 // 그때까지 모은 캐시를 발행하도록, 타임아웃보다 넉넉히 짧은 예산을 둔다.
 const TIME_BUDGET_MIN = Number(process.env.TIME_BUDGET_MIN || 240);
+// DART 응답이 느린 날에도 처리량을 지키기 위한 동시 요청 수 (공식 한도인 분당 1,000건보다 한참 낮다)
+const CONCURRENCY = Number(process.env.CONCURRENCY || 4);
+// 수집이 한도를 정확히 소진하면 통과 종목의 주식수·주가 조회가 굶는다 (5차 실행에서 실제 발생).
+// 그 몫을 남겨두기 위해 수집 단계는 이 상한까지만 호출한다.
+const COLLECT_CAP = MAX_CALLS - Math.min(400, Math.ceil(MAX_CALLS * 0.2));
 const T0 = Date.now();
 if (!KEY) {
   console.error("[joker] DART_API_KEY 가 없습니다. opendart.fss.or.kr 에서 발급받아 리포 시크릿 DART_API_KEY 로 넣어주세요.");
@@ -169,14 +174,17 @@ function extractYear(list) {
   if (ni == null || eq == null) return null; // 최소한 순이익·자본이 없으면 못 쓴다
   return { rev, op, ni, eq, liab, cfo, capex, dep, cash, borrow };
 }
-async function fetchYear(corp, year) {
-  for (const fs of ["CFS", "OFS"]) { // 연결 우선, 없으면 별도
+// prefer 가 "OFS" 면 별도재무제표부터 조회한다 (연결이 없는 회사로 확인된 경우 호출 절약).
+// 반환: undefined = 한도 소진, null = 데이터 없음, { data, fs } = 성공(어느 재무제표였는지 포함)
+async function fetchYear(corp, year, prefer) {
+  const order = prefer === "OFS" ? ["OFS", "CFS"] : ["CFS", "OFS"];
+  for (const fs of order) {
     const j = await dartJson("fnlttSinglAcntAll.json", { corp_code: corp.code, bsns_year: String(year), reprt_code: "11011", fs_div: fs });
     if (j == null) return undefined; // 한도 소진 — 캐시에 기록하지 않는다
     if (j.status === "013" || !j.list?.length) continue;
     if (j.status !== "000") { console.warn(`[joker] ${corp.name} ${year} ${fs}: status ${j.status} ${j.message || ""}`); continue; }
     const y = extractYear(j.list);
-    if (y) return y;
+    if (y) return { data: y, fs };
   }
   return null; // 조회했지만 데이터 없음 (다시 받지 않는다)
 }
@@ -251,61 +259,89 @@ async function main() {
   const universe = await fetchUniverse();
   console.log(`[joker] 유니버스 ${universe.length}개 회사 (금융·스팩·리츠·지주 제외) · 대상 연도 ${YEARS[0]}~${LAST_YEAR}`);
 
-  // 1) 회사별 10년치 재무 수집 (캐시 우선, 이번 실행 한도 안에서 빈 곳만 채운다)
-  let complete = 0;
-  const screened = [];
+  // 회사별 캐시를 한 번에 읽어둔다 (조회는 아직 안 함)
+  const entries = [];
   for (const corp of universe) {
     const cachePath = path.join(OUT_DIR, "dart", `${corp.code}.json`);
-    const cache = await readJson(cachePath, { code: corp.code, stock: corp.stock, name: corp.name, years: {} });
-    let dirty = false;
-    for (const y of YEARS) {
-      if (cache.years[y] !== undefined || budgetOut) continue;
-      const got = await fetchYear(corp, y);
-      if (got === undefined) break; // 한도 소진
-      cache.years[y] = got;
-      dirty = true;
-      // 최신 연도가 없으면 (신규 상장 등) 과거 연도는 조회해 봐야 10년을 못 채운다 — 호출 아끼기
-      if (y === LAST_YEAR && got === null) { for (const yy of YEARS) if (cache.years[yy] === undefined) { cache.years[yy] = null; } break; }
+    entries.push({ corp, cachePath, cache: await readJson(cachePath, { code: corp.code, stock: corp.stock, name: corp.name, years: {} }) });
+  }
+
+  // 통과 종목의 주식수·현재가 → 후보 등록. 이미 등록한 티커는 건너뛴다.
+  // 수집 전과 후에 각각 부르므로, 수집이 어떤 이유(한도·시간·네트워크)로 끝나도
+  // 기존 캐시로 통과한 종목의 픽 후보는 항상 확보되어 있다 (5차 실행에서 굶었던 문제의 근본 해결).
+  const candidates = new Map();
+  const priceCandidates = async () => {
+    for (const e of entries) {
+      if (candidates.has(e.corp.stock) || candidates.size >= MAX_PRICE_LOOKUPS) continue;
+      const s = screenCorp(e.cache.years);
+      if (!s?.pass) continue;
+      let shares = e.cache.sharesYear === LAST_YEAR ? e.cache.shares : null;
+      if (!shares && !budgetOut) {
+        shares = await fetchShares(e.corp, LAST_YEAR);
+        if (shares === undefined) shares = null;
+        else { e.cache.shares = shares; e.cache.sharesYear = LAST_YEAR; await writeFile(e.cachePath, JSON.stringify(e.cache)); }
+      }
+      if (!shares) continue;
+      const quote = await fetchPrice(e.corp.stock).catch(() => null);
+      if (!quote) continue;
+      const fair = jokerFair(s.ownerEarnings, s.netCash, shares, BASE);
+      const margin = fair != null && fair > 0 ? (fair - quote.price) / fair : null;
+      if (margin == null) continue;
+      candidates.set(e.corp.stock, {
+        name: e.corp.name, ticker: e.corp.stock, market: quote.market, price: Math.round(quote.price), shares,
+        netCash: s.netCash, ownerEarnings: s.ownerEarnings, metrics: s.metrics,
+        fair: Math.round(fair), margin: Math.round(margin * 1000) / 1000,
+        source: `DART ${LAST_YEAR} 사업보고서 (연결)`,
+      });
     }
-    if (dirty) await writeFile(cachePath, JSON.stringify(cache));
-    if (YEARS.every((y) => cache.years[y] !== undefined)) complete++;
-    const s = screenCorp(cache.years);
-    if (s?.pass) screened.push({ ...corp, ...s, sharesCached: cache.shares, sharesYear: cache.sharesYear, cachePath, cache });
+  };
+
+  // 1) 수집 전에 먼저, 지금 캐시로 통과한 종목의 가격부터 확보한다
+  await priceCandidates();
+  if (candidates.size) console.log(`[joker] 기존 캐시 기준 픽 후보 ${candidates.size}개 가격 확보`);
+
+  // 2) 회사별 10년치 재무 수집 (이번 실행 한도 안에서 빈 곳만 채운다).
+  // DART 가 요청당 응답을 느리게 줄 때가 있어(한 건에 수 초) 워커 여러 개로 동시에 받는다.
+  const processCorp = async (e) => {
+    let dirty = false;
+    // 최신 연도부터 조회: 최신이 없으면(신규 상장 등) 과거 조회를 건너뛰고,
+    // 연결재무제표가 없는 회사로 확인되면 다음 연도부터 별도를 먼저 조회해 호출을 아낀다
+    for (const y of [...YEARS].reverse()) {
+      if (e.cache.years[y] !== undefined || budgetOut || calls >= COLLECT_CAP) continue;
+      const got = await fetchYear(e.corp, y, e.cache.fs);
+      if (got === undefined) break; // 한도 소진
+      e.cache.years[y] = got ? got.data : null;
+      if (got && got.fs === "OFS" && e.cache.fs !== "OFS") e.cache.fs = "OFS";
+      dirty = true;
+      if (y === LAST_YEAR && got === null) { for (const yy of YEARS) if (e.cache.years[yy] === undefined) { e.cache.years[yy] = null; } break; }
+    }
+    if (dirty) await writeFile(e.cachePath, JSON.stringify(e.cache));
+  };
+  let ci = 0;
+  await Promise.all(Array.from({ length: CONCURRENCY }, async () => {
+    while (ci < entries.length && !budgetOut && calls < COLLECT_CAP) await processCorp(entries[ci++]);
+  }));
+
+  // 3) 수집으로 새로 통과한 종목도 남은 한도 안에서 가격을 확보한다
+  await priceCandidates();
+
+  let complete = 0, passed = 0;
+  for (const e of entries) {
+    if (YEARS.every((y) => e.cache.years[y] !== undefined)) complete++;
+    if (screenCorp(e.cache.years)?.pass) passed++;
   }
   const cover = complete / Math.max(universe.length, 1);
-  console.log(`[joker] 10년치 수집 완료 ${complete}/${universe.length} (${(cover * 100).toFixed(1)}%) · 이번 실행 DART 호출 ${calls}건 · 체크리스트 통과 ${screened.length}개`);
+  console.log(`[joker] 10년치 수집 완료 ${complete}/${universe.length} (${(cover * 100).toFixed(1)}%) · 이번 실행 DART 호출 ${calls}건 · 체크리스트 통과 ${passed}개`);
 
-  // 2) 통과 종목의 주식수·현재가 → 안전마진
-  const candidates = [];
-  for (const c of screened.slice(0, MAX_PRICE_LOOKUPS)) {
-    let shares = c.sharesYear === LAST_YEAR ? c.sharesCached : null;
-    if (!shares && !budgetOut) {
-      shares = await fetchShares(c, LAST_YEAR);
-      if (shares === undefined) shares = null;
-      else { c.cache.shares = shares; c.cache.sharesYear = LAST_YEAR; await writeFile(c.cachePath, JSON.stringify(c.cache)); }
-    }
-    if (!shares) continue;
-    const quote = await fetchPrice(c.stock).catch(() => null);
-    if (!quote) continue;
-    const fair = jokerFair(c.ownerEarnings, c.netCash, shares, BASE);
-    const margin = fair != null && fair > 0 ? (fair - quote.price) / fair : null;
-    if (margin == null) continue;
-    candidates.push({
-      name: c.name, ticker: c.stock, market: quote.market, price: Math.round(quote.price), shares,
-      netCash: c.netCash, ownerEarnings: c.ownerEarnings, metrics: c.metrics,
-      fair: Math.round(fair), margin: Math.round(margin * 1000) / 1000,
-      source: `DART ${LAST_YEAR} 사업보고서 (연결)`,
-    });
-  }
-  candidates.sort((a, b) => b.margin - a.margin);
-  await writeFile(path.join(OUT_DIR, "candidates.json"), JSON.stringify({ updated: now.toISOString(), lastYear: LAST_YEAR, coverage: cover, candidates }, null, 1));
+  const candList = [...candidates.values()].sort((a, b) => b.margin - a.margin);
+  await writeFile(path.join(OUT_DIR, "candidates.json"), JSON.stringify({ updated: now.toISOString(), lastYear: LAST_YEAR, coverage: cover, candidates: candList }, null, 1));
 
   // 3) 주간 픽 갱신 (수집률이 낮은 초기에는 픽을 뽑지 않고 진행률만 기록)
   const picksFile = path.join(OUT_DIR, "joker-picks.json");
   const prev = await readJson(picksFile, { picks: [] });
   const picks = (prev.picks || []).filter((p) => p.week !== mondayOf(now)); // 같은 주에 다시 돌리면 교체 (멱등)
   const recentTickers = new Set(picks.slice(0, NO_REPEAT_WEEKS).map((p) => p.ticker));
-  const top = candidates.find((c) => c.margin >= MARGIN_MIN && !recentTickers.has(c.ticker));
+  const top = candList.find((c) => c.margin >= MARGIN_MIN && !recentTickers.has(c.ticker));
   if (cover >= MIN_COVER && top) {
     const { fair, margin, ...pick } = top;
     picks.unshift({ week: mondayOf(now), ...pick });
@@ -320,7 +356,7 @@ async function main() {
     note: `DART ${LAST_YEAR} 사업보고서 기반 자동 스크리닝 (10년치 수집 완료 ${complete}/${universe.length}개 회사). 유지보수 설비투자는 min(감가상각비, 10년 CAPEX 중앙값) 근사치이며, 금융사·지주사·스팩·리츠는 제외했습니다.`,
     picks: picks.slice(0, 26),
   }, null, 1));
-  await writeFile(path.join(OUT_DIR, "meta.json"), JSON.stringify({ updated: now.toISOString(), universe: universe.length, complete, coverage: Math.round(cover * 1000) / 1000, calls, budgetOut, timeOut, minutes: Math.round((Date.now() - T0) / 60000), passed: screened.length, priced: candidates.length }, null, 1));
+  await writeFile(path.join(OUT_DIR, "meta.json"), JSON.stringify({ updated: now.toISOString(), universe: universe.length, complete, coverage: Math.round(cover * 1000) / 1000, calls, budgetOut, timeOut, minutes: Math.round((Date.now() - T0) / 60000), passed, priced: candList.length }, null, 1));
 }
 
 main().catch((err) => { console.error("[joker] 실패:", err); process.exit(1); });
