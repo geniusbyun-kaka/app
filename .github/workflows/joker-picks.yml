@@ -1,7 +1,9 @@
 name: Joker picks (Buffett-style KR screen)
 
-# 매주 월요일 DART 사업보고서 재무제표로 한국 상장사를 버핏식 기준으로 스크리닝해
-# 이번 주 조커픽을 `joker` 브랜치에 저장합니다 (invest/index.html 의 Max 라운지가 읽습니다).
+# 매주 토요일 오전(한국시간 9시) DART 사업보고서 재무제표로 한국 상장사를 버핏식 기준으로
+# 스크리닝해 조커픽 후보를 `joker` 브랜치에 저장합니다 (invest/index.html 의 Max 라운지가 읽습니다).
+# 후보는 바로 공개되지 않고, 주말 동안 사업 지배구조·경제적 해자 검토를 거쳐
+# invest/joker-approved.json 에 등록된 픽만 월요일부터 구독자 화면에 나옵니다.
 #
 # 필요한 시크릿: DART_API_KEY — opendart.fss.or.kr 에서 무료 발급 (하루 20,000건 한도).
 # 첫 실행은 회사별 10년치 재무를 처음 받느라 캐시가 다 안 찹니다. Actions 탭에서
@@ -9,7 +11,7 @@ name: Joker picks (Buffett-style KR screen)
 # 넘긴 실행부터 주간 픽이 뽑히기 시작합니다. 이후에는 새 사업보고서 분만 받아 빠릅니다.
 on:
   schedule:
-    - cron: "0 4 * * 1"
+    - cron: "0 0 * * 6"
   workflow_dispatch:
 
 permissions:
