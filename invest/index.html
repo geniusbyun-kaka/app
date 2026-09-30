@@ -2895,8 +2895,13 @@ async function myStockRows(stocks, cmpGurus) {
       let f; try { f = await ensureGuruFilings(g); } catch { continue; }
       const h = f.latest.holdings.find((x) => x.ticker && myAlias(x.ticker) === myAlias(sym));
       const file = guruEventFile(g.id);
-      // Form 4 매수 공시 (단가가 있는 것만). 13F 에 아직 안 잡힌 신규 지분도 있을 수 있어 보유 여부와 무관하게 찾는다
-      const f4 = (evs.auto || []).filter((e) => e.guru === file && e.side === "buy" && e.priceLow != null && e.ticker && myAlias(String(e.ticker)) === myAlias(sym));
+      // 실제 단가가 있는 매수: Form 4 자동 수집 + 수기 등록 뉴스(guru-news.json 의 side/priceLow).
+      // 13F 에 아직 안 잡힌 신규 지분도 있을 수 있어 보유 여부와 무관하게 찾는다.
+      const short = GURU_SHORT[g.id] || g.name;
+      const f4 = [
+        ...(evs.auto || []).filter((e) => e.guru === file && e.side === "buy" && e.priceLow != null && e.ticker && myAlias(String(e.ticker)) === myAlias(sym)),
+        ...(evs.manual || []).filter((e) => e.side === "buy" && e.priceLow != null && e.ticker && myAlias(String(e.ticker)) === myAlias(sym) && (String(e.guru || "").includes(short) || String(e.guru || "").includes(g.name))).map((e) => ({ ...e, manual: true })),
+      ];
       if (!h && !f4.length) continue;
       let rec = null, cur = null, rel = null, grade = -1;
       const holdSym = h && idx.some((x) => x.symbol === h.ticker) ? h.ticker : (item ? sym : null);
@@ -2910,9 +2915,12 @@ async function myStockRows(stocks, cmpGurus) {
           if (mid != null) rec = { period: last.period, mid };
         } catch {}
       }
-      // 2) Form 4 공시가 13F 마지막 매수 분기보다 최근이면 그 단가(주식수 가중평균)로 덮어쓴다
-      const evDate = (e) => String(e.to || e.from || e.filed || "").slice(0, 10);
-      const newer = f4.filter((e) => evDate(e) > (rec ? rec.period : ""));
+      // 2) 실제 단가가 있는 공시·뉴스가 13F 마지막 매수 분기 안이거나 그 뒤면, 추정가 대신
+      //    그 단가(주식수 가중평균)를 최근 매수가로 쓴다 (예: 버크셔의 알파벳 $350 사모 매입은
+      //    Q2 안의 거래라도 분기 최저가 추정보다 실제 단가가 정확하다)
+      const evDate = (e) => String(e.to || e.from || e.filed || e.date || "").slice(0, 10);
+      const cutoff = rec ? quarterStart(rec.period) : "";
+      const newer = f4.filter((e) => evDate(e) >= cutoff && evDate(e));
       if (newer.length) {
         let sh = 0, cost = 0, sum = 0, lastDate = "";
         for (const e of newer) {
@@ -2921,7 +2929,8 @@ async function myStockRows(stocks, cmpGurus) {
           if (e.shares > 0) { sh += e.shares; cost += mid * e.shares; }
           if (evDate(e) > lastDate) lastDate = evDate(e);
         }
-        rec = { period: lastDate, mid: sh > 0 ? cost / sh : sum / newer.length, form4: true, shares: sh || null };
+        rec = { period: lastDate, mid: sh > 0 ? cost / sh : sum / newer.length, form4: true, shares: sh || null,
+          evLabel: newer.some((e) => e.manual) ? "매입 공시·뉴스" : "Form 4" };
       }
       if (rec) {
         cur = (holdSym ? idx.find((x) => x.symbol === holdSym)?.price : null) ?? item?.price ?? null;
@@ -2947,14 +2956,14 @@ function myStockTableHtml(rows) {
       const weightNote = m.h ? `<span class="faint small">비중 ${fmt.n(m.h.weight * 100, 1)}%</span>` : `<span class="faint small">13F 반영 전 신규 지분</span>`;
       return `<tr>${base}
         <td class="txt">${gname}${holdNote} ${weightNote}</td>
-        <td class="txt">${m.rec ? m.rec.period + (m.rec.form4 ? ' <span class="tag new">Form 4</span>' : "") : "–"}</td>
+        <td class="txt">${m.rec ? m.rec.period + (m.rec.form4 ? ` <span class="tag new">${m.rec.evLabel || "Form 4"}</span>` : "") : "–"}</td>
         <td>${m.rec ? "$" + fmt.n(m.rec.mid) + (m.rec.form4 && m.rec.shares ? ` <span class="faint small">${fmtSh(m.rec.shares)}주</span>` : "") : "–"}</td>
         <td class="${m.rel == null ? "" : m.rel <= 0 ? "pos" : "neg"}">${m.rel == null ? "–" : fmt.pct(m.rel)}</td>
         <td class="txt">${m.grade >= 0 ? followTagHtml(m.grade) : m.rec ? '<span class="faint">현재가 없음</span>' : '<span class="faint">최근 매수 이력 없음</span>'}</td>${tail}</tr>`;
     });
   });
   return `<div class="tablewrap"><table><thead><tr><th>종목</th><th>현재가</th><th>전일비</th><th>관심 대가</th><th>마지막 매수</th><th>최근 매수가 (추정)</th><th>최근 매수가 대비</th><th>판단</th><th>관리</th></tr></thead><tbody>${trs.join("")}</tbody></table></div>
-    <p class="small faint" style="margin-top:8px">최근 매수가는 대가가 마지막으로 매수한 분기의 <strong>종가 최저가에서 5% 오른 가격</strong>으로 계산한 추정치입니다. 다만 SEC Form 4 · 13D/G 공시에 그보다 <strong>더 최근의 매수가 단가와 함께</strong> 올라오면(예: 버크셔의 레너 추가 매수) 그 공시들의 주식수 가중평균 단가를 최근 매수가로 우선 사용하며 <span class="tag new">Form 4</span> 표시가 붙습니다. 현재가가 최근 매수가보다 낮으면 <strong>강력 추천</strong>, +10% 이내면 <strong>추천</strong>입니다. 티커를 누르면 종목 차트로 이동합니다.</p>`;
+    <p class="small faint" style="margin-top:8px">최근 매수가는 대가가 마지막으로 매수한 분기의 <strong>종가 최저가에서 5% 오른 가격</strong>으로 계산한 추정치입니다. 다만 SEC Form 4 · 13D/G 공시나 수기 등록된 매수 뉴스에 <strong>실제 단가</strong>가 있으면(마지막 13F 매수 분기 안의 거래 포함 · 예: 버크셔의 레너 추가 매수, 알파벳 $350 사모 매입) 추정가 대신 그 공시들의 주식수 가중평균 단가를 최근 매수가로 사용하며 <span class="tag new">Form 4</span> 또는 <span class="tag new">매입 공시·뉴스</span> 표시가 붙습니다. 현재가가 최근 매수가보다 낮으면 <strong>강력 추천</strong>, +10% 이내면 <strong>추천</strong>입니다. 티커를 누르면 종목 차트로 이동합니다.</p>`;
 }
 async function myGuruCardHtml(g) {
   const headBtn = g.id === "buffett" ? `<button class="btn" type="button" data-mytab="buffett" style="margin-left:auto">상세 보기 →</button>` : "";
