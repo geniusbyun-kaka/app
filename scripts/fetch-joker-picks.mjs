@@ -3,8 +3,14 @@
 // DART OpenAPI 에서 상장사들의 연간 사업보고서 재무제표 10년치를 받아
 //   1) 정량 체크리스트 5개 (ROE 10년 평균 15%+, 부채비율 50% 이하,
 //      영업이익률 변동성 5%p 이하, FCF 플러스 9/10년 이상, 순이익 CAGR 7%+)
-//   2) 오너 어닝스 2단계 DCF 기본 시나리오에서 안전마진 30% 이상
-// 을 통과한 종목 중 안전마진이 가장 큰 1개를 그 주의 조커픽으로 선정한다.
+//   2) 밸류 트랩 필터: 최근 순이익이 직전 3년 고점 대비 15% 넘게 줄었거나(이익 방향 꺾임),
+//      ROE 가 최근 3년 연속 하락 중이면 제외 — 10년 평균이 좋아도 방향이 나쁘면 시장은 안 산다
+//   3) 지배구조·수급 필터: 최대주주(특수관계인 포함) 지분율 50% 초과, 또는 5일 평균
+//      거래대금 5억원 미만이면 제외 — 저평가를 교정해 줄 매수 주체가 없는 품절주 차단
+//   4) 오너 어닝스 2단계 DCF 기본 시나리오에서 안전마진 30% 이상
+// 을 통과한 종목 중 안전마진이 가장 큰 1개를 그 주의 조커픽 "후보"로 선정한다.
+// (후보는 바로 공개되지 않고 invest/joker-approved.json 에 등록되어야 화면에 나온다.)
+// 배당 삭감(전년 대비 주당 배당금 감소)은 제외 사유는 아니지만 플래그로 기록해 주간 검토에서 본다.
 // GitHub Actions 에서 매주 실행되어 `joker` 브랜치에 올라간다 (invest/index.html 이 읽는다).
 //
 // 결과물 (출력 폴더 기준):
@@ -60,6 +66,9 @@ const YEARS = Array.from({ length: 10 }, (_, i) => LAST_YEAR - 9 + i);
 const BASE = { g: 0.08, r: 0.1, tg: 0.02 };
 const CHECK = { roe10: 15, debt: 50, opStd: 5, fcfYears: 9, epsCagr: 7 };
 const MARGIN_MIN = 0.3; // 안전마진 30% 이상만 픽 후보
+const NI_DECLINE_MAX = -15; // 최근 순이익이 직전 3년 고점 대비 이보다 더 줄었으면 제외 (%)
+const MAJOR_MAX = 50; // 최대주주(특수관계인 포함) 지분율 상한 (%)
+const MIN_TRADE_EOK = 5; // 5일 평균 거래대금 하한 (억원)
 const NO_REPEAT_WEEKS = 12; // 최근 12주 안에 뽑힌 종목은 다시 뽑지 않는다
 const MAX_PRICE_LOOKUPS = 120; // 주가·주식수 조회 상한 (통과 종목이 비정상적으로 많을 때 안전장치)
 
@@ -210,6 +219,12 @@ function screenCorp(years) {
   if (ys.some((v) => !v)) return null; // 10년치가 다 있어야 판정
   if (ys.some((v) => !(v.eq > 0) || !(v.rev > 0) || v.op == null || v.cfo == null || v.capex == null)) return null;
   const last = ys[ys.length - 1], firstNi = ys[0].ni, lastNi = last.ni;
+  const roeSeries = ys.map((v) => (v.ni / v.eq) * 100);
+  // 밸류 트랩 필터: 10년 평균이 좋아도 최근 방향이 꺾였으면 시장은 평균을 안 쳐준다
+  const peak3 = Math.max(ys[ys.length - 4].ni, ys[ys.length - 3].ni, ys[ys.length - 2].ni); // 직전 3년(최근 연도 제외) 순이익 고점
+  const niTrend = peak3 > 0 ? (lastNi / peak3 - 1) * 100 : null; // 최근 순이익의 고점 대비 %
+  const roe3 = roeSeries.slice(-3);
+  const roeDown = roe3[0] > roe3[1] && roe3[1] > roe3[2]; // ROE 3년 연속 하락
   const metrics = {
     roe10: (ys.reduce((s, v) => s + v.ni / v.eq, 0) / ys.length) * 100,
     debt: ((last.liab ?? 0) / last.eq) * 100,
@@ -218,14 +233,16 @@ function screenCorp(years) {
     epsCagr: firstNi > 0 && lastNi > 0 ? ((lastNi / firstNi) ** (1 / (ys.length - 1)) - 1) * 100 : -999,
   };
   const pass = metrics.roe10 >= CHECK.roe10 && metrics.debt <= CHECK.debt && metrics.opStd <= CHECK.opStd
-    && metrics.fcfYears >= CHECK.fcfYears && metrics.epsCagr >= CHECK.epsCagr;
+    && metrics.fcfYears >= CHECK.fcfYears && metrics.epsCagr >= CHECK.epsCagr
+    && (niTrend == null || niTrend >= NI_DECLINE_MAX) && !roeDown;
   // 오너 어닝스: 순이익 + 감가상각 − min(감가상각, 10년 CAPEX 중앙값)
   const dep = last.dep ?? 0;
   const oe = lastNi + dep - Math.min(dep, median(ys.map((v) => v.capex)) ?? dep);
   const round = (v, d = 1) => (v == null ? null : Math.round(v * 10 ** d) / 10 ** d);
   return {
     pass,
-    metrics: { roe10: round(metrics.roe10), debt: round(metrics.debt), opStd: round(metrics.opStd), fcfYears: metrics.fcfYears, epsCagr: round(metrics.epsCagr) },
+    metrics: { roe10: round(metrics.roe10), debt: round(metrics.debt), opStd: round(metrics.opStd), fcfYears: metrics.fcfYears, epsCagr: round(metrics.epsCagr),
+      niTrend: round(niTrend), roeDown, roe3: roe3.map((v) => round(v)) },
     ownerEarnings: Math.round(oe / 1e8), // 억원
     netCash: Math.round(((last.cash ?? 0) - (last.borrow ?? 0)) / 1e8), // 억원
   };
@@ -239,16 +256,45 @@ function jokerFair(oeEok, netCashEok, shares, { g, r, tg }) {
   return (pv1 + pv2 + netCashEok * 1e8) / shares;
 }
 
-// ── 현재가: 야후 (KRX 는 .KS 코스피 / .KQ 코스닥) ──
+// ── 현재가 + 5일 평균 거래대금: 야후 (KRX 는 .KS 코스피 / .KQ 코스닥) ──
 async function fetchPrice(stock) {
   for (const [suffix, market] of [[".KS", "코스피"], [".KQ", "코스닥"]]) {
     try {
       const { rows } = await yahooChart(stock + suffix, { range: "5d", interval: "1d" });
       const c = rows.at(-1)?.c;
-      if (c > 0) return { price: c, market };
+      if (c > 0) {
+        const vals = rows.map((r) => (r.c || 0) * (r.v || 0)).filter((v) => v > 0);
+        const avgValueEok = vals.length ? Math.round((vals.reduce((s, v) => s + v, 0) / vals.length / 1e8) * 10) / 10 : null;
+        return { price: c, market, avgValueEok };
+      }
     } catch {}
   }
   return null;
+}
+
+// ── 최대주주(특수관계인 포함) 기말 지분율 % — 없거나 못 읽으면 null (제외하지 않고 검토에서 본다) ──
+async function fetchMajorHolder(corp, year) {
+  const j = await dartJson("hyslrSttus.json", { corp_code: corp.code, bsns_year: String(year), reprt_code: "11011" });
+  if (j == null) return undefined; // 한도 소진
+  if (j.status !== "000" || !j.list?.length) return null;
+  const total = j.list.find((x) => /^계$|합\s*계/.test(String(x.nm || "").trim()));
+  let rt = num(total?.trmend_posesn_stock_qota_rt) ?? num(total?.bsis_posesn_stock_qota_rt);
+  if (rt == null) { // 합계 행이 없으면 행별 기말 지분율 합
+    for (const x of j.list) { const v = num(x.trmend_posesn_stock_qota_rt); if (v != null) rt = (rt ?? 0) + v; }
+  }
+  return rt != null && rt > 0 && rt <= 100 ? Math.round(rt * 10) / 10 : null;
+}
+
+// ── 주당 현금배당금(보통주) 당기·전기 → 배당 삭감 플래그. 못 읽으면 null ──
+async function fetchDividendCut(corp, year) {
+  const j = await dartJson("alotMatter.json", { corp_code: corp.code, bsns_year: String(year), reprt_code: "11011" });
+  if (j == null) return undefined; // 한도 소진
+  if (j.status !== "000" || !j.list?.length) return null;
+  const row = j.list.find((x) => /주당\s*현금배당금/.test(x.se || "") && (!x.stock_knd || /보통/.test(x.stock_knd)));
+  if (!row) return null;
+  const cur = num(row.thstrm), prev = num(row.frmtrm);
+  if (cur == null || prev == null) return null;
+  return prev > 0 && cur < prev;
 }
 
 const readJson = async (p, fb) => { try { return JSON.parse(await readFile(p, "utf8")); } catch { return fb; } };
@@ -270,9 +316,10 @@ async function main() {
   // 수집 전과 후에 각각 부르므로, 수집이 어떤 이유(한도·시간·네트워크)로 끝나도
   // 기존 캐시로 통과한 종목의 픽 후보는 항상 확보되어 있다 (5차 실행에서 굶었던 문제의 근본 해결).
   const candidates = new Map();
+  const rejected = new Set(); // 지배구조·수급 필터로 떨어진 종목 (다음 루프에서 다시 조회하지 않게)
   const priceCandidates = async () => {
     for (const e of entries) {
-      if (candidates.has(e.corp.stock) || candidates.size >= MAX_PRICE_LOOKUPS) continue;
+      if (candidates.has(e.corp.stock) || rejected.has(e.corp.stock) || candidates.size >= MAX_PRICE_LOOKUPS) continue;
       const s = screenCorp(e.cache.years);
       if (!s?.pass) continue;
       let shares = e.cache.sharesYear === LAST_YEAR ? e.cache.shares : null;
@@ -284,12 +331,36 @@ async function main() {
       if (!shares) continue;
       const quote = await fetchPrice(e.corp.stock).catch(() => null);
       if (!quote) continue;
+      // 수급 필터: 거래대금이 너무 작으면 저평가를 교정해 줄 매수 주체가 없다 (품절주의 저주)
+      if (quote.avgValueEok != null && quote.avgValueEok < MIN_TRADE_EOK) {
+        rejected.add(e.corp.stock);
+        console.log(`[joker] ${e.corp.name} 제외 — 5일 평균 거래대금 ${quote.avgValueEok}억원 < ${MIN_TRADE_EOK}억원`);
+        continue;
+      }
+      // 지배구조 필터: 대주주 지분이 절반을 넘으면 유통주식이 적고, 현금이 소액주주에게 환류될 신뢰도 낮다
+      let mh = e.cache.mhYear === LAST_YEAR ? e.cache.mh : undefined;
+      if (mh === undefined && !budgetOut) {
+        mh = await fetchMajorHolder(e.corp, LAST_YEAR);
+        if (mh !== undefined) { e.cache.mh = mh; e.cache.mhYear = LAST_YEAR; await writeFile(e.cachePath, JSON.stringify(e.cache)); }
+      }
+      if (mh != null && mh > MAJOR_MAX) {
+        rejected.add(e.corp.stock);
+        console.log(`[joker] ${e.corp.name} 제외 — 최대주주 지분율 ${mh}% > ${MAJOR_MAX}%`);
+        continue;
+      }
+      // 배당 삭감은 제외 사유가 아니라 플래그: 주간 검토에서 매도 신호로 참고한다
+      let divCut = e.cache.divCutYear === LAST_YEAR ? e.cache.divCut : undefined;
+      if (divCut === undefined && !budgetOut) {
+        divCut = await fetchDividendCut(e.corp, LAST_YEAR);
+        if (divCut !== undefined) { e.cache.divCut = divCut; e.cache.divCutYear = LAST_YEAR; await writeFile(e.cachePath, JSON.stringify(e.cache)); }
+      }
       const fair = jokerFair(s.ownerEarnings, s.netCash, shares, BASE);
       const margin = fair != null && fair > 0 ? (fair - quote.price) / fair : null;
       if (margin == null) continue;
       candidates.set(e.corp.stock, {
         name: e.corp.name, ticker: e.corp.stock, market: quote.market, price: Math.round(quote.price), shares,
-        netCash: s.netCash, ownerEarnings: s.ownerEarnings, metrics: s.metrics,
+        netCash: s.netCash, ownerEarnings: s.ownerEarnings,
+        metrics: { ...s.metrics, majorHolder: mh ?? null, avgValueEok: quote.avgValueEok ?? null, divCut: divCut ?? null },
         fair: Math.round(fair), margin: Math.round(margin * 1000) / 1000,
         source: `DART ${LAST_YEAR} 사업보고서 (연결)`,
       });
@@ -353,7 +424,7 @@ async function main() {
   }
   await writeFile(picksFile, JSON.stringify({
     updated: now.toISOString().slice(0, 10),
-    note: `DART ${LAST_YEAR} 사업보고서 기반 자동 스크리닝 (10년치 수집 완료 ${complete}/${universe.length}개 회사). 유지보수 설비투자는 min(감가상각비, 10년 CAPEX 중앙값) 근사치이며, 금융사·지주사·스팩·리츠는 제외했습니다.`,
+    note: `DART ${LAST_YEAR} 사업보고서 기반 자동 스크리닝 (10년치 수집 완료 ${complete}/${universe.length}개 회사). 유지보수 설비투자는 min(감가상각비, 10년 CAPEX 중앙값) 근사치이며, 금융사·지주사·스팩·리츠는 제외했습니다. 이익 방향(직전 3년 고점 대비)·ROE 추세·최대주주 지분율·거래대금 필터를 통과한 후보만 올라옵니다.`,
     picks: picks.slice(0, 26),
   }, null, 1));
   await writeFile(path.join(OUT_DIR, "meta.json"), JSON.stringify({ updated: now.toISOString(), universe: universe.length, complete, coverage: Math.round(cover * 1000) / 1000, calls, budgetOut, timeOut, minutes: Math.round((Date.now() - T0) / 60000), passed, priced: candList.length }, null, 1));
