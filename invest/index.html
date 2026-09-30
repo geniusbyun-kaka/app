@@ -98,6 +98,14 @@ header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:spac
 
 /* tabs */
 .tabs{display:grid;grid-template-columns:repeat(5,1fr) auto;gap:6px;padding:8px;border:1px solid var(--tab-line);border-radius:16px;margin-bottom:16px}
+/* My Page 는 데스크톱에선 탭, 핸드폰에선 구독하기 옆 버튼으로 보여준다 */
+#my-open{display:none;font-weight:600;color:var(--accent);border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+@media (max-width:640px){
+  #my-open{display:inline-block}
+  #tab-my{display:none}
+  .tabs{grid-template-columns:repeat(4,1fr) auto}
+  #refresh,#login{padding:4px 9px;font-size:12px}
+}
 .tab.more-toggle{padding:14px 16px;font-size:13px;color:var(--ink-3)}
 .tabs-extra{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:6px}
 .tabs-extra[hidden]{display:none}
@@ -464,6 +472,7 @@ try { if (localStorage.getItem("sb-hzzmzpsjuovijtananmf-auth-token")) document.g
       <span id="status"><span class="dot"></span>데이터 불러오는 중</span>
       <button class="btn" id="refresh" type="button">새로고침</button>
       <button class="btn" id="login" type="button">로그인</button>
+      <button class="btn" id="my-open" type="button">My Page</button>
       <button class="btn primary compact" id="sub-open" type="button">구독하기</button>
     </div>
   </header>
@@ -2366,6 +2375,7 @@ function selectTab(name) {
 }
 $$(".tab[data-tab]").forEach((t) => t.addEventListener("click", () => selectTab(t.dataset.tab)));
 $("#tab-more").addEventListener("click", () => toggleMoreTabs());
+$("#my-open").addEventListener("click", () => selectTab("my"));
 $("#refresh").addEventListener("click", loadAll);
 $("#bt-asset2-add").addEventListener("click", () => { $("#bt-asset2-wrap").hidden = false; $("#bt-asset2-add-wrap").hidden = true; $("#bt-asset2").focus(); });
 $("#bt-asset2-remove").addEventListener("click", () => { $("#bt-asset2-wrap").hidden = true; $("#bt-asset2-add-wrap").hidden = false; $("#bt-asset2").value = ""; });
@@ -2776,9 +2786,12 @@ function ensureStockNews() {
 const myAlias = (t) => SHARE_CLASS_ALIAS[t] || t;
 const guruEventFile = (id) => (id === "buffett" ? "berkshire.json" : GURUS.find((g) => g.id === id)?.file || null);
 // 관심 종목마다: 비교 대상 대가들(관심 대가 + 버핏)의 최신 13F 에서 보유 여부를 찾고,
-// 보유 중이면 가장 최근 매수 분기의 추정 단가(그 분기 종가 최저·최고의 중앙값)와 현재가를 비교한다
+// 보유 중이면 가장 최근 매수 분기의 추정 단가(그 분기 종가 최저·최고의 중앙값)와 현재가를 비교한다.
+// 13F 밖 공시(SEC Form 4 · 13D/G, events.json)에 그보다 더 최근의 매수가 단가와 함께 있으면
+// (예: 버크셔의 레너 추가 매수) 그 공시들의 주식수 가중평균 단가를 최근 매수가로 우선 사용한다.
 async function myStockRows(stocks, cmpGurus) {
   const idx = state.stockIndex?.items || [];
+  const evs = await ensureGuruEvents().catch(() => ({ auto: [], manual: [] }));
   const out = [];
   for (const sym of stocks) {
     const item = idx.find((x) => x.symbol === sym) || null;
@@ -2786,25 +2799,39 @@ async function myStockRows(stocks, cmpGurus) {
     for (const g of cmpGurus) {
       let f; try { f = await ensureGuruFilings(g); } catch { continue; }
       const h = f.latest.holdings.find((x) => x.ticker && myAlias(x.ticker) === myAlias(sym));
-      if (!h) continue;
+      const file = guruEventFile(g.id);
+      // Form 4 매수 공시 (단가가 있는 것만). 13F 에 아직 안 잡힌 신규 지분도 있을 수 있어 보유 여부와 무관하게 찾는다
+      const f4 = (evs.auto || []).filter((e) => e.guru === file && e.side === "buy" && e.priceLow != null && e.ticker && myAlias(String(e.ticker)) === myAlias(sym));
+      if (!h && !f4.length) continue;
       let rec = null, cur = null, rel = null, grade = -1;
-      const buys = h.cusip ? guruBuys(f, h) : [];
-      if (buys.length) {
+      const holdSym = h && idx.some((x) => x.symbol === h.ticker) ? h.ticker : (item ? sym : null);
+      // 1) 13F: 마지막 매수 분기의 중앙값 단가 (대가가 실제로 든 클래스 예: GOOGL 의 주가 이력으로 계산)
+      const buys = h?.cusip ? guruBuys(f, h) : [];
+      if (buys.length && holdSym) {
         try {
-          // 단가는 대가가 실제로 든 클래스(예: GOOGL)의 주가 이력으로 계산한다
-          const holdSym = idx.some((x) => x.symbol === h.ticker) ? h.ticker : (item ? sym : null);
-          if (holdSym) {
-            const stock = await loadStock(holdSym);
-            const last = buys[buys.length - 1];
-            const mid = quarterMid(stock, last.period);
-            if (mid != null) {
-              rec = { period: last.period, mid };
-              cur = idx.find((x) => x.symbol === holdSym)?.price ?? stock.quote?.price ?? null;
-              rel = cur != null ? cur / mid - 1 : null;
-              grade = rel == null ? -1 : rel <= 0 ? 2 : rel <= 0.1 ? 1 : 0;
-            }
-          }
+          const stock = await loadStock(holdSym);
+          const last = buys[buys.length - 1];
+          const mid = quarterMid(stock, last.period);
+          if (mid != null) rec = { period: last.period, mid };
         } catch {}
+      }
+      // 2) Form 4 공시가 13F 마지막 매수 분기보다 최근이면 그 단가(주식수 가중평균)로 덮어쓴다
+      const evDate = (e) => String(e.to || e.from || e.filed || "").slice(0, 10);
+      const newer = f4.filter((e) => evDate(e) > (rec ? rec.period : ""));
+      if (newer.length) {
+        let sh = 0, cost = 0, sum = 0, lastDate = "";
+        for (const e of newer) {
+          const mid = e.priceHigh > e.priceLow ? (e.priceLow + e.priceHigh) / 2 : e.priceLow;
+          sum += mid;
+          if (e.shares > 0) { sh += e.shares; cost += mid * e.shares; }
+          if (evDate(e) > lastDate) lastDate = evDate(e);
+        }
+        rec = { period: lastDate, mid: sh > 0 ? cost / sh : sum / newer.length, form4: true, shares: sh || null };
+      }
+      if (rec) {
+        cur = (holdSym ? idx.find((x) => x.symbol === holdSym)?.price : null) ?? item?.price ?? null;
+        rel = cur != null ? cur / rec.mid - 1 : null;
+        grade = rel == null ? -1 : rel <= 0 ? 2 : rel <= 0.1 ? 1 : 0;
       }
       matches.push({ g, h, rec, cur, rel, grade });
     }
@@ -2821,17 +2848,18 @@ function myStockTableHtml(rows) {
     if (!r.matches.length) return [`<tr>${base}<td class="txt faint" colspan="5">관심 대가 보유 없음</td>${tail}</tr>`];
     return r.matches.map((m) => {
       const gname = GURU_SHORT[m.g.id] || m.g.name;
-      const holdNote = m.h.ticker && m.h.ticker !== r.sym ? ` <span class="faint small">(${m.h.ticker} 보유)</span>` : "";
+      const holdNote = m.h?.ticker && m.h.ticker !== r.sym ? ` <span class="faint small">(${m.h.ticker} 보유)</span>` : "";
+      const weightNote = m.h ? `<span class="faint small">비중 ${fmt.n(m.h.weight * 100, 1)}%</span>` : `<span class="faint small">13F 반영 전 신규 지분</span>`;
       return `<tr>${base}
-        <td class="txt">${gname}${holdNote} <span class="faint small">비중 ${fmt.n(m.h.weight * 100, 1)}%</span></td>
-        <td class="txt">${m.rec ? m.rec.period : "–"}</td>
-        <td>${m.rec ? "$" + fmt.n(m.rec.mid) : "–"}</td>
+        <td class="txt">${gname}${holdNote} ${weightNote}</td>
+        <td class="txt">${m.rec ? m.rec.period + (m.rec.form4 ? ' <span class="tag new">Form 4</span>' : "") : "–"}</td>
+        <td>${m.rec ? "$" + fmt.n(m.rec.mid) + (m.rec.form4 && m.rec.shares ? ` <span class="faint small">${fmtSh(m.rec.shares)}주</span>` : "") : "–"}</td>
         <td class="${m.rel == null ? "" : m.rel <= 0 ? "pos" : "neg"}">${m.rel == null ? "–" : fmt.pct(m.rel)}</td>
         <td class="txt">${m.grade >= 0 ? followTagHtml(m.grade) : m.rec ? '<span class="faint">현재가 없음</span>' : '<span class="faint">최근 매수 이력 없음</span>'}</td>${tail}</tr>`;
     });
   });
   return `<div class="tablewrap"><table><thead><tr><th>종목</th><th>현재가</th><th>전일비</th><th>관심 대가</th><th>마지막 매수</th><th>최근 매수가 (추정)</th><th>최근 매수가 대비</th><th>판단</th><th>관리</th></tr></thead><tbody>${trs.join("")}</tbody></table></div>
-    <p class="small faint" style="margin-top:8px">최근 매수가는 대가가 마지막으로 매수한 분기의 종가 최저·최고 중앙값으로 계산한 추정치입니다. 현재가가 최근 매수가보다 낮으면 <strong>강력 추천</strong>, +10% 이내면 <strong>추천</strong>입니다. 티커를 누르면 종목 차트로 이동합니다.</p>`;
+    <p class="small faint" style="margin-top:8px">최근 매수가는 대가가 마지막으로 매수한 분기의 종가 최저·최고 중앙값으로 계산한 추정치입니다. 다만 SEC Form 4 · 13D/G 공시에 그보다 <strong>더 최근의 매수가 단가와 함께</strong> 올라오면(예: 버크셔의 레너 추가 매수) 그 공시들의 주식수 가중평균 단가를 최근 매수가로 우선 사용하며 <span class="tag new">Form 4</span> 표시가 붙습니다. 현재가가 최근 매수가보다 낮으면 <strong>강력 추천</strong>, +10% 이내면 <strong>추천</strong>입니다. 티커를 누르면 종목 차트로 이동합니다.</p>`;
 }
 async function myGuruCardHtml(g) {
   const headBtn = g.id === "buffett" ? `<button class="btn" type="button" data-mytab="buffett" style="margin-left:auto">상세 보기 →</button>` : "";
