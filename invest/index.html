@@ -497,7 +497,7 @@ try { if (localStorage.getItem("sb-hzzmzpsjuovijtananmf-auth-token")) document.g
     <button class="tab more-toggle" type="button" id="tab-more" aria-expanded="false">더보기 ▾</button>
     <div class="tabs-extra" id="tabs-extra" hidden>
       <button class="tab" role="tab" aria-selected="false" data-tab="backtest" id="tab-backtest">백테스트</button>
-      <button class="tab" role="tab" aria-selected="false" data-tab="buffett" id="tab-buffett">버크셔해서웨이(버핏)</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="buffett" id="tab-buffett">레전드 포트폴리오</button>
       <button class="tab" role="tab" aria-selected="false" data-tab="crypto" id="tab-crypto">코인</button>
       <button class="tab" role="tab" aria-selected="false" data-tab="dividend" id="tab-dividend">배당</button>
     </div>
@@ -1795,6 +1795,10 @@ function applyPricedEvents(rec, events) {
 // 대가별 정밀 계산: 매수 분기마다 추정 단가(분기 최저가 +5%) × 늘린 주식수 → 추정 평균단가와 최근 매수가.
 // 최근 매수가는 위 공용 로직으로 Form 4·수기 뉴스 실단가가 있으면 그것으로 대체된다.
 // 주가 이력이 없는 종목(우리 종목 스냅샷 밖의 해외 상장 등)은 missing 으로 돌려준다
+// 레전드 픽 따라가기: 분기말 보유 평가액이 이보다 작은 꼬마 포지션은 추천에서 뺀다.
+// 기준은 버크셔 목록의 막내인 메이시스(2026-06-30 기준 $173M)가 걸리지 않는 $150M.
+// 퍼스트 이글처럼 수백 종목을 들고 있는 기관의 0.1% 미만 잔챙이 포지션이 표를 덮는 것을 막는다.
+const FOLLOW_MIN_VALUE = 150e6;
 async function guruFollowRows(g, f) {
   const idx = state.stockIndex?.items || [];
   const idxPrice = (t) => idx.find((x) => x.symbol === t)?.price ?? null;
@@ -1805,6 +1809,7 @@ async function guruFollowRows(g, f) {
     // 꾸준히 모으는 종목(최근 8분기 중 2회 이상 매수, 그 사이 매도 없음). 그 외(OXY·NVR 처럼
     // 한참 전에 사고 만 종목)는 따라 살 대상이 아니므로 표에서 뺀다.
     if (!(h.streak >= 2 || (h.buys8 >= 2 && !h.sold8))) continue;
+    if (h.value < FOLLOW_MIN_VALUE) continue; // 보유 평가액이 기준점 미만이면 연속 매수라도 뺀다
     const buys = h.cusip ? guruBuys(f, h) : [];
     if (!buys.length) continue; // 데이터 범위 안에서 매수한 적이 없으면 따라갈 단가도 없다
     if (!h.ticker) { missing.push(h.name); continue; }
@@ -1822,11 +1827,10 @@ async function guruFollowRows(g, f) {
   rows.sort((a, b) => b.grade - a.grade || (a.rel ?? 9) - (b.rel ?? 9) || b.h.weight - a.h.weight);
   return { rows, missing };
 }
-function followGradeHtml(r, g) {
+// 판단 칸은 태그만 짧게: 근거(최근 매수가 대비 몇 %)는 바로 옆 칸에 이미 있어 긴 설명을 붙이면 표가 옆으로 넘친다
+function followGradeHtml(r) {
   if (r.rel == null) return '<span class="faint">현재가 없음</span>';
-  if (r.grade === 2) return `<span class="tag inc">강력 추천</span> <span class="small faint">${g.filer} 최근 매수가보다 쌉니다</span>`;
-  if (r.grade === 1) return `<span class="tag new">추천</span> <span class="small faint">최근 매수가 +10% 이내</span>`;
-  return `<span class="faint">관망 · 최근 매수가보다 ${fmt.n(r.rel * 100, 1)}% 높음</span>`;
+  return followTagHtml(r.grade);
 }
 function followTagHtml(grade) {
   if (grade === 2) return '<span class="tag inc">강력 추천</span>';
@@ -1858,7 +1862,7 @@ function ensureFollowGrades() {
 }
 function followSectionHtml(g, f, rows, missing) {
   const table = rows.length ? `<div class="tablewrap"><table><thead><tr><th>종목</th><th>마지막 매수</th><th>매수 분기</th><th>추정 평균단가</th><th>최근 매수가</th><th>현재가</th><th>최근 매수가 대비</th><th>판단</th></tr></thead><tbody>${rows.map((r) => `<tr>
-      <td class="txt">${tickerHtml(r.h)}</td><td class="txt">${r.recent.period}${r.recent.evLabel ? ` <span class="tag new">${r.recent.evLabel}</span>` : ""}</td><td>${r.nBuys}회</td><td>$${fmt.n(r.avg)}</td><td>$${fmt.n(r.recent.mid)}${r.recent.evLabel && r.recent.shares ? ` <span class="faint small">${fmtSh(r.recent.shares)}주</span>` : ""}</td><td>${r.cur != null ? "$" + fmt.n(r.cur) : "–"}</td><td class="${r.rel == null ? "" : r.rel <= 0 ? "pos" : "neg"}">${r.rel == null ? "–" : fmt.pct(r.rel)}</td><td class="txt">${followGradeHtml(r, g)}</td>
+      <td class="txt">${tickerHtml(r.h)}</td><td class="txt">${r.recent.period}${r.recent.evLabel ? ` <span class="tag new">${r.recent.evLabel}</span>` : ""}</td><td>${r.nBuys}회</td><td>$${fmt.n(r.avg)}</td><td>$${fmt.n(r.recent.mid)}${r.recent.evLabel && r.recent.shares ? ` <span class="faint small">${fmtSh(r.recent.shares)}주</span>` : ""}</td><td>${r.cur != null ? "$" + fmt.n(r.cur) : "–"}</td><td class="${r.rel == null ? "" : r.rel <= 0 ? "pos" : "neg"}">${r.rel == null ? "–" : fmt.pct(r.rel)}</td><td class="txt">${followGradeHtml(r)}</td>
     </tr>`).join("")}</tbody></table></div>` : `<div class="empty">지금은 연속 매수 중이거나 꾸준히 모으는 종목이 없습니다</div>`;
   const note = missing.length ? `<p class="small faint" style="margin-top:8px">주가 이력이 없어 계산에서 제외: ${missing.join(", ")}</p>` : "";
   return `<div class="card-head"><h3>${g.name} · ${g.org}</h3><span class="small faint">${f.latest.period} 분기 공시까지 반영</span></div>${table}${note}`;
@@ -1869,7 +1873,7 @@ async function renderMaxPrices() {
   const gurus = GURUS.filter((g) => g.ready);
   body.innerHTML = [
     maxBackBtn,
-    `<p class="desc">추천 대상은 투자 대가 탭과 같은 기준입니다: <strong>최근 분기까지 연속 매수 중</strong>이거나 <strong>꾸준히 모으는 종목</strong>(최근 8분기 중 2회 이상 매수, 그 사이 매도 없음)만 올립니다. <strong>추정 평균단가</strong>는 대가가 매수한 분기마다 그 분기 <strong>종가 최저가에서 5% 오른 가격</strong>을 매수 단가로 보고, 그 분기에 늘린 주식수로 가중평균한 값입니다 (대가들은 약세 구간에서 분할 매수하는 경향이 있어 저점 부근 체결로 봅니다). <strong>최근 매수가</strong>는 가장 최근에 매수한 분기의 같은 추정가인데, SEC Form 4 · 13D/G 공시나 수기 등록된 매수 뉴스에 <strong>실제 단가</strong>가 있으면(예: 버크셔의 레너 추가 매수, 알파벳 $350 사모 매입) 추정가 대신 그 단가의 주식수 가중평균을 사용하며 태그가 붙습니다 (My Page 와 같은 값). 따라 사기 판단은 이 값을 기준으로 합니다. 현재가가 <strong>최근 매수가보다 낮으면 강력 추천</strong>, <strong>+10% 이내면 추천</strong>, 그보다 높으면 관망입니다. 티커를 누르면 종목 차트로 이동합니다.</p>`,
+    `<p class="desc">추천 대상은 투자 대가 탭과 같은 기준입니다: <strong>최근 분기까지 연속 매수 중</strong>이거나 <strong>꾸준히 모으는 종목</strong>(최근 8분기 중 2회 이상 매수, 그 사이 매도 없음)만 올립니다. 여기에 더해 <strong>분기말 보유 평가액 $150M 미만</strong>의 소형 포지션은 연속 매수 중이라도 뺍니다 (수백 종목을 들고 있는 기관의 잔챙이 포지션까지 다 올라오면 정작 의미 있는 픽이 묻히기 때문입니다). <strong>추정 평균단가</strong>는 대가가 매수한 분기마다 그 분기 <strong>종가 최저가에서 5% 오른 가격</strong>을 매수 단가로 보고, 그 분기에 늘린 주식수로 가중평균한 값입니다 (대가들은 약세 구간에서 분할 매수하는 경향이 있어 저점 부근 체결로 봅니다). <strong>최근 매수가</strong>는 가장 최근에 매수한 분기의 같은 추정가인데, SEC Form 4 · 13D/G 공시나 수기 등록된 매수 뉴스에 <strong>실제 단가</strong>가 있으면(예: 버크셔의 레너 추가 매수, 알파벳 $350 사모 매입) 추정가 대신 그 단가의 주식수 가중평균을 사용하며 태그가 붙습니다 (My Page 와 같은 값). 따라 사기 판단은 이 값을 기준으로 합니다. 현재가가 <strong>최근 매수가보다 낮으면 강력 추천</strong>, <strong>+10% 이내면 추천</strong>, 그보다 높으면 관망입니다. 티커를 누르면 종목 차트로 이동합니다.</p>`,
     gurus.map((g) => `<div class="card" id="mx-follow-${g.id}"><div class="card-head"><h3>${g.name} · ${g.org}</h3></div><div class="empty">분기별 매수와 주가 이력으로 추정 단가를 계산하는 중…</div></div>`).join(""),
     alertsCardHtml(),
     `<p class="small faint">13F는 분기 말 보유분이 45일 뒤에 공개되는 자료이고, 단가는 분기 주가 범위로 계산한 추정치라 실제 체결가와 다를 수 있습니다 (예: 블록딜). 투자 판단과 책임은 본인에게 있습니다.</p>`,
