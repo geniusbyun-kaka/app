@@ -1,14 +1,21 @@
 #!/usr/bin/env node
 // 조커픽: "버핏·멍거가 한국 시장에서 고른다면" 주간 자동 스크리닝.
 // DART OpenAPI 에서 상장사들의 연간 사업보고서 재무제표 10년치를 받아
-//   1) 정량 체크리스트 5개 (ROE 10년 평균 15%+, 부채비율 50% 이하,
-//      영업이익률 변동성 5%p 이하, FCF 플러스 9/10년 이상, 순이익 CAGR 7%+)
+//   1) 정량 체크리스트 (펀더멘털): ROE 10년 평균 15%+, 부채 2단 구조(부채비율 85% 이하
+//      1차 안전판 + 이자보상배율 5배 이상 실질 검증), 영업이익률 변동성 5%p 이하,
+//      FCF 플러스 9/10년 이상, 순이익 CAGR 7%+
 //   2) 밸류 트랩 필터: 최근 순이익이 직전 3년 고점 대비 15% 넘게 줄었거나(이익 방향 꺾임),
 //      ROE 가 최근 3년 연속 하락 중이면 제외 — 10년 평균이 좋아도 방향이 나쁘면 시장은 안 산다
 //   3) 지배구조·수급 필터: 최대주주(특수관계인 포함) 지분율 50% 초과, 또는 5일 평균
 //      거래대금 5억원 미만이면 제외 — 저평가를 교정해 줄 매수 주체가 없는 품절주 차단
-//   4) 오너 어닝스 2단계 DCF 기본 시나리오에서 안전마진 30% 이상
-// 을 통과한 종목 중 안전마진이 가장 큰 1개를 그 주의 조커픽 "후보"로 선정한다.
+//   4) 밸류에이션 문지기 (펀더멘털과 독립 판정): 3년 평균 FCF 수익률(3년 평균 FCF ÷ 시가총액)이
+//      국고채 10년물 금리의 2배 이상. 버핏의 1986년 오너 어닝스 정의를 실무 대용치(FCF)로 옮긴
+//      기준으로, 금리가 오르면 커트라인이 자동으로 빡빡해진다 ("금리는 중력").
+//      EV/EBIT ≤ 10배는 버핏의 실제 매수 패턴("세전이익 10배") 참고 지표로 병기만 한다.
+//      싼 가격은 나쁜 사업의 면죄부가 아니므로 밸류에이션 통과가 펀더멘털 탈락을 상쇄하지 않는다.
+//   5) 오너 어닝스 2단계 DCF 기본 시나리오에서 안전마진 30% 이상
+// 조커픽 "후보"는 펀더멘털 통과 AND 밸류에이션 통과 AND 안전마진 30%+ 를 모두 요구하고,
+// 그중 안전마진이 가장 큰 1개를 선정한다.
 // (후보는 바로 공개되지 않고 invest/joker-approved.json 에 등록되어야 화면에 나온다.)
 // 배당 삭감(전년 대비 주당 배당금 감소)은 제외 사유는 아니지만 플래그로 기록해 주간 검토에서 본다.
 // GitHub Actions 에서 매주 실행되어 `joker` 브랜치에 올라간다 (invest/index.html 이 읽는다).
@@ -66,7 +73,11 @@ const YEARS = Array.from({ length: 10 }, (_, i) => LAST_YEAR - 9 + i);
 
 // 프론트(JK_SCN)와 같은 기본 시나리오: 성장 8% · 할인 10% · 영구 2%
 const BASE = { g: 0.08, r: 0.1, tg: 0.02 };
-const CHECK = { roe10: 15, debt: 50, opStd: 5, fcfYears: 9, epsCagr: 7 };
+// 부채비율 85% 는 1차 안전판 (분자에 매입채무 등 이자 없는 부채까지 들어가는 구조적 왜곡 때문에
+// 산업별 적정 수준이 다르다). 실질 상환능력은 이자보상배율(영업이익 ÷ 이자비용) 5배로 판정한다.
+const CHECK = { roe10: 15, debt: 85, intCov: 5, opStd: 5, fcfYears: 9, epsCagr: 7 };
+const VAL_KTB_MULT = 2; // 밸류에이션 커트라인 = 국고채 10년물 × 2 (2배가 안전마진)
+let KTB10Y = Number(process.env.KTB10Y || 4.3); // 국고채 10년물 % · scripts/kr-topcap.json 의 ktb10y 로 갱신
 const MARGIN_MIN = 0.3; // 안전마진 30% 이상만 픽 후보
 const NI_DECLINE_MAX = -15; // 최근 순이익이 직전 3년 고점 대비 이보다 더 줄었으면 제외 (%)
 const MAJOR_MAX = 50; // 최대주주(특수관계인 포함) 지분율 상한 (%)
@@ -184,8 +195,10 @@ function extractYear(list) {
   const cash = (first(byId(["ifrs-full_CashAndCashEquivalents", "ifrs_CashAndCashEquivalents"], BS)) ?? first(byNm(/^현금및현금성자산/, BS)) ?? 0)
     + (sumAbs(byNm(/단기금융상품/, BS)) ?? 0);
   const borrow = sumAbs(byNm(/차입금|^사채$|사채\(/, BS)) ?? 0;
+  // 이자비용 (이자보상배율용). 손익계산서에 따로 안 적는 회사는 null 로 남아 판정에서 빠진다
+  const intExp = sumAbs(byNm(/이자비용/, isIS));
   if (ni == null || eq == null) return null; // 최소한 순이익·자본이 없으면 못 쓴다
-  return { rev, op, ni, eq, liab, cfo, capex, dep, cash, borrow };
+  return { rev, op, ni, eq, liab, cfo, capex, dep, cash, borrow, intExp };
 }
 // prefer 가 "OFS" 면 별도재무제표부터 조회한다 (연결이 없는 회사로 확인된 경우 호출 절약).
 // 반환: undefined = 한도 소진, null = 데이터 없음, { data, fs } = 성공(어느 재무제표였는지 포함)
@@ -232,24 +245,43 @@ function screenCorp(years) {
   const metrics = {
     roe10: (ys.reduce((s, v) => s + v.ni / v.eq, 0) / ys.length) * 100,
     debt: ((last.liab ?? 0) / last.eq) * 100,
+    // 이자보상배율 = 최근 연도 영업이익 ÷ 이자비용. 이자비용 미보고면 null (판정에서 빠짐)
+    intCov: last.intExp > 0 && last.op != null ? last.op / last.intExp : null,
     opStd: std(ys.map((v) => (v.op / v.rev) * 100)),
     fcfYears: ys.filter((v) => v.cfo - v.capex > 0).length,
     epsCagr: firstNi > 0 && lastNi > 0 ? ((lastNi / firstNi) ** (1 / (ys.length - 1)) - 1) * 100 : -999,
   };
-  const pass = metrics.roe10 >= CHECK.roe10 && metrics.debt <= CHECK.debt && metrics.opStd <= CHECK.opStd
+  const pass = metrics.roe10 >= CHECK.roe10 && metrics.debt <= CHECK.debt
+    && (metrics.intCov == null || metrics.intCov >= CHECK.intCov)
+    && metrics.opStd <= CHECK.opStd
     && metrics.fcfYears >= CHECK.fcfYears && metrics.epsCagr >= CHECK.epsCagr
     && (niTrend == null || niTrend >= NI_DECLINE_MAX) && !roeDown;
   // 오너 어닝스: 순이익 + 감가상각 − min(감가상각, 10년 CAPEX 중앙값)
   const dep = last.dep ?? 0;
   const oe = lastNi + dep - Math.min(dep, median(ys.map((v) => v.capex)) ?? dep);
   const round = (v, d = 1) => (v == null ? null : Math.round(v * 10 ** d) / 10 ** d);
+  const fcf3 = ys.slice(-3).reduce((s, v) => s + (v.cfo - v.capex), 0) / 3; // 밸류에이션용 3년 평균 FCF
   return {
     pass,
-    metrics: { roe10: round(metrics.roe10), debt: round(metrics.debt), opStd: round(metrics.opStd), fcfYears: metrics.fcfYears, epsCagr: round(metrics.epsCagr),
+    metrics: { roe10: round(metrics.roe10), debt: round(metrics.debt), intCov: round(metrics.intCov), opStd: round(metrics.opStd), fcfYears: metrics.fcfYears, epsCagr: round(metrics.epsCagr),
       niTrend: round(niTrend), roeDown, roe3: roe3.map((v) => round(v)) },
     ownerEarnings: Math.round(oe / 1e8), // 억원
     netCash: Math.round(((last.cash ?? 0) - (last.borrow ?? 0)) / 1e8), // 억원
+    fcf3Eok: Math.round(fcf3 / 1e8), // 억원 · 3년 평균 FCF
+    opLastEok: last.op != null ? Math.round(last.op / 1e8) : null, // 억원 · EV/EBIT 참고용
   };
+}
+// ── 밸류에이션 문지기 (펀더멘털과 독립 판정) ──
+// "이 회사를 통째로 사면 연 몇 %를 버는 셈인지, 그게 국채의 2배는 되는지"
+// FCF 수익률 = 3년 평균 FCF ÷ 시가총액 · 커트라인 = 국고채 10년물 × 2 (금리는 중력)
+// EV/EBIT 는 버핏의 "세전이익 10배" 매수 패턴 참고 지표 (판정에는 안 쓴다)
+function valuationOf(s, mcapEok) {
+  if (!(mcapEok > 0)) return null;
+  const fcfYield = (s.fcf3Eok / mcapEok) * 100;
+  const cut = KTB10Y * VAL_KTB_MULT;
+  const evEbit = s.opLastEok > 0 ? (mcapEok - s.netCash) / s.opLastEok : null;
+  const r1 = (v) => (v == null ? null : Math.round(v * 10) / 10);
+  return { fcfYield: r1(fcfYield), cut: r1(cut), ktb10y: KTB10Y, evEbit: r1(evEbit), pass: fcfYield >= cut };
 }
 function jokerFair(oeEok, netCashEok, shares, { g, r, tg }) {
   const oe = oeEok * 1e8;
@@ -306,6 +338,11 @@ const mondayOf = (d) => { const dt = new Date(d); dt.setUTCDate(dt.getUTCDate() 
 
 async function main() {
   await mkdir(path.join(OUT_DIR, "dart"), { recursive: true });
+  // 판정 시리즈 대상 목록 + 국고채 10년물 금리 설정 (밸류에이션 커트라인). 분기 점검 때 함께 갱신한다
+  const topcapPath = process.env.TOPCAP_FILE || new URL("./kr-topcap.json", import.meta.url).pathname;
+  const topcap = await readJson(topcapPath, null);
+  if (!process.env.KTB10Y && topcap?.ktb10y > 0) KTB10Y = Number(topcap.ktb10y);
+  console.log(`[joker] 밸류에이션 커트라인: 3년 평균 FCF 수익률 ≥ ${(KTB10Y * VAL_KTB_MULT).toFixed(1)}% (국고채 10년물 ${KTB10Y}% × ${VAL_KTB_MULT})`);
   const { universe, byStock } = await fetchUniverse();
   console.log(`[joker] 유니버스 ${universe.length}개 회사 (금융·스팩·리츠·지주 제외) · 대상 연도 ${YEARS[0]}~${LAST_YEAR}`);
 
@@ -324,8 +361,20 @@ async function main() {
   const priceCandidates = async () => {
     for (const e of entries) {
       if (candidates.has(e.corp.stock) || rejected.has(e.corp.stock) || candidates.size >= MAX_PRICE_LOOKUPS) continue;
-      const s = screenCorp(e.cache.years);
+      let s = screenCorp(e.cache.years);
       if (!s?.pass) continue;
+      // 이자보상배율 도입 전 캐시는 intExp 가 없다. 후보는 여기서 바로 최신 연도를 다시 받아
+      // 채우고 재판정한다 (첫 실행부터 intCov 가 판정에 반영되게)
+      if (e.cache.years[LAST_YEAR] && e.cache.years[LAST_YEAR].intExp === undefined && !budgetOut) {
+        const got = await fetchYear(e.corp, LAST_YEAR, e.cache.fs);
+        if (got) e.cache.years[LAST_YEAR] = got.data;
+        else if (got === null) e.cache.years[LAST_YEAR].intExp = null;
+        if (got !== undefined) {
+          await writeFile(e.cachePath, JSON.stringify(e.cache));
+          s = screenCorp(e.cache.years);
+          if (!s?.pass) { rejected.add(e.corp.stock); continue; } // 재판정에서 이자보상배율 미달로 탈락
+        }
+      }
       let shares = e.cache.sharesYear === LAST_YEAR ? e.cache.shares : null;
       if (!shares && !budgetOut) {
         shares = await fetchShares(e.corp, LAST_YEAR);
@@ -361,10 +410,12 @@ async function main() {
       const fair = jokerFair(s.ownerEarnings, s.netCash, shares, BASE);
       const margin = fair != null && fair > 0 ? (fair - quote.price) / fair : null;
       if (margin == null) continue;
+      const valuation = valuationOf(s, Math.round((quote.price * shares) / 1e8)); // 펀더멘털과 독립 판정
       candidates.set(e.corp.stock, {
         name: e.corp.name, ticker: e.corp.stock, market: quote.market, price: Math.round(quote.price), shares,
         netCash: s.netCash, ownerEarnings: s.ownerEarnings,
         metrics: { ...s.metrics, majorHolder: mh ?? null, avgValueEok: quote.avgValueEok ?? null, divCut: divCut ?? null },
+        valuation,
         fair: Math.round(fair), margin: Math.round(margin * 1000) / 1000,
         source: `DART ${LAST_YEAR} 사업보고서 (연결)`,
       });
@@ -379,6 +430,12 @@ async function main() {
   // DART 가 요청당 응답을 느리게 줄 때가 있어(한 건에 수 초) 워커 여러 개로 동시에 받는다.
   const processCorp = async (e) => {
     let dirty = false;
+    // 이자보상배율 도입으로 intExp 가 없는 예전 캐시는 최신 연도만 다시 받아 채운다 (회사당 1회)
+    if (e.cache.years[LAST_YEAR] && e.cache.years[LAST_YEAR].intExp === undefined && !budgetOut && calls < COLLECT_CAP) {
+      const got = await fetchYear(e.corp, LAST_YEAR, e.cache.fs);
+      if (got) { e.cache.years[LAST_YEAR] = got.data; dirty = true; }
+      else if (got === null) { e.cache.years[LAST_YEAR].intExp = null; dirty = true; } // 못 받으면 null 로 마킹해 반복 방지
+    }
     // 최신 연도부터 조회: 최신이 없으면(신규 상장 등) 과거 조회를 건너뛰고,
     // 연결재무제표가 없는 회사로 확인되면 다음 연도부터 별도를 먼저 조회해 호출을 아낀다
     for (const y of [...YEARS].reverse()) {
@@ -416,7 +473,8 @@ async function main() {
   const prev = await readJson(picksFile, { picks: [] });
   const picks = (prev.picks || []).filter((p) => p.week !== mondayOf(now)); // 같은 주에 다시 돌리면 교체 (멱등)
   const recentTickers = new Set(picks.slice(0, NO_REPEAT_WEEKS).map((p) => p.ticker));
-  const top = candList.find((c) => c.margin >= MARGIN_MIN && !recentTickers.has(c.ticker));
+  // 픽은 펀더멘털 통과(candidates 는 이미 통과분만) AND 밸류에이션 통과 AND 안전마진 30%+
+  const top = candList.find((c) => c.margin >= MARGIN_MIN && c.valuation?.pass && !recentTickers.has(c.ticker));
   if (cover >= MIN_COVER && top) {
     const { fair, margin, ...pick } = top;
     picks.unshift({ week: mondayOf(now), ...pick });
@@ -428,13 +486,11 @@ async function main() {
   }
   await writeFile(picksFile, JSON.stringify({
     updated: now.toISOString().slice(0, 10),
-    note: `DART ${LAST_YEAR} 사업보고서 기반 자동 스크리닝 (10년치 수집 완료 ${complete}/${universe.length}개 회사). 유지보수 설비투자는 min(감가상각비, 10년 CAPEX 중앙값) 근사치이며, 금융사·지주사·스팩·리츠는 제외했습니다. 이익 방향(직전 3년 고점 대비)·ROE 추세·최대주주 지분율·거래대금 필터를 통과한 후보만 올라옵니다.`,
+    note: `DART ${LAST_YEAR} 사업보고서 기반 자동 스크리닝 (10년치 수집 완료 ${complete}/${universe.length}개 회사). 유지보수 설비투자는 min(감가상각비, 10년 CAPEX 중앙값) 근사치이며, 금융사·지주사·스팩·리츠는 제외했습니다. 이익 방향(직전 3년 고점 대비)·ROE 추세·최대주주 지분율·거래대금 필터와 밸류에이션 문지기(3년 평균 FCF 수익률 ≥ 국고채 10년물 × 2)를 모두 통과한 후보만 올라옵니다.`,
     picks: picks.slice(0, 26),
   }, null, 1));
   // ── 버핏 판정 시리즈: 시총 상위 기업(scripts/kr-topcap.json)을 통과/탈락 판정 ──
   // 통과 종목만 소개하는 코너가 아니다: 탈락이면 어떤 기준에서 왜 탈락했는지를 그대로 보여준다.
-  const topcapPath = process.env.TOPCAP_FILE || new URL("./kr-topcap.json", import.meta.url).pathname;
-  const topcap = await readJson(topcapPath, null);
   if (topcap) {
     const entryByStock = new Map(entries.map((e) => [e.corp.stock, e]));
     const verdictRow = async (t, market) => {
@@ -467,6 +523,7 @@ async function main() {
       const failKeys = [];
       if (m.roe10 < CHECK.roe10) failKeys.push("roe10");
       if (m.debt > CHECK.debt) failKeys.push("debt");
+      if (m.intCov != null && m.intCov < CHECK.intCov) failKeys.push("intCov");
       if (m.opStd > CHECK.opStd) failKeys.push("opStd");
       if (m.fcfYears < CHECK.fcfYears) failKeys.push("fcfYears");
       if (m.epsCagr < CHECK.epsCagr) failKeys.push("epsCagr");
@@ -474,12 +531,14 @@ async function main() {
       if (m.roeDown) failKeys.push("roeDown");
       if (m.majorHolder != null && m.majorHolder > MAJOR_MAX) failKeys.push("majorHolder");
       if (m.avgValueEok != null && m.avgValueEok < MIN_TRADE_EOK) failKeys.push("avgValueEok");
+      const mcapEok = quote && shares ? Math.round((quote.price * shares) / 1e8) : null;
       return {
         ...base,
         price: quote ? Math.round(quote.price) : null,
-        mcapEok: quote && shares ? Math.round((quote.price * shares) / 1e8) : null,
+        mcapEok,
         verdict: failKeys.length ? "fail" : "pass",
         failKeys, metrics: m,
+        valuation: valuationOf(s, mcapEok), // 펀더멘털과 독립 표기 (상쇄 금지)
         ownerEarnings: s.ownerEarnings, netCash: s.netCash, shares: shares ?? null,
       };
     };
