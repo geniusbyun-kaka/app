@@ -25,6 +25,7 @@
   --shadow:0 1px 2px rgba(20,30,40,.06), 0 6px 20px -12px rgba(20,30,40,.18);
   --tab-line:rgba(20,30,40,.18); --tab-bg:rgba(20,30,40,.035); --tab-press:rgba(20,30,40,.08);
   --radius:10px; --font:"IBM Plex Sans KR","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --mt-green:#1E6B52; --mt-blue:#1F4E8C; --mt-red:#9E2B35;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
@@ -34,6 +35,7 @@
     --nq:#4FA3C4; --fx:#E1934A; --strat:#A48BE6; --c4:#5FC08A; --bench:#8A969E; --grid:#232D33;
     --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 20px -12px rgba(0,0,0,.6);
     --tab-line:rgba(255,255,255,.18); --tab-bg:rgba(255,255,255,.035); --tab-press:rgba(255,255,255,.08);
+    --mt-green:#56BD92; --mt-blue:#7AA5E8; --mt-red:#E4838D;
   }
 }
 :root[data-theme="dark"]{
@@ -43,6 +45,7 @@
   --nq:#4FA3C4; --fx:#E1934A; --strat:#A48BE6; --c4:#5FC08A; --bench:#8A969E; --grid:#232D33;
   --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 20px -12px rgba(0,0,0,.6);
   --tab-line:rgba(255,255,255,.18); --tab-bg:rgba(255,255,255,.035); --tab-press:rgba(255,255,255,.08);
+  --mt-green:#56BD92; --mt-blue:#7AA5E8; --mt-red:#E4838D;
 }
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
@@ -61,6 +64,9 @@ a{color:var(--accent)}
 .muted{color:var(--ink-2)} .faint{color:var(--ink-3)}
 .desc{font-size:13.5px;color:var(--ink-2);line-height:1.65;max-width:720px}
 .small{font-size:12.5px}
+/* 소개 탭 강조 문구: 로고의 세 산 색(초록·파랑·빨강)을 순서대로 입혀 모바일에서도 bold 가 또렷이 보이게 */
+#panel-intro strong{font-weight:700}
+.mt-g{color:var(--mt-green)} .mt-b{color:var(--mt-blue)} .mt-r{color:var(--mt-red)}
 
 /* header */
 header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 20px;padding-bottom:14px;border-bottom:1px solid var(--line);margin-bottom:16px}
@@ -704,11 +710,12 @@ try { if (localStorage.getItem("sb-hzzmzpsjuovijtananmf-auth-token")) document.g
   <!-- 마이 페이지: 관심 종목 · 관심 대가 · 뉴스 및 공시 -->
   <section class="panel" id="panel-my" role="tabpanel" hidden></section>
 
-  <!-- 버핏 (버크셔 13F) -->
+  <!-- 포트폴리오 (버크셔 + 다른 레전드 기관들의 13F · 같은 화면 구성을 공유) -->
   <section class="panel" id="panel-buffett" role="tabpanel" hidden>
     <div class="card">
-      <div class="card-head"><h3>버크셔 해서웨이 포트폴리오 · 13F <button class="fav-btn sm" type="button" data-fav-guru="buffett" aria-pressed="false" title="관심 대가로 등록">☆</button></h3><span class="small faint" id="bf-status">불러오는 중</span></div>
-      <p class="desc">분기마다 SEC 에 제출하는 13F 보고서 기준입니다. 분기 말 보유분이 45일 뒤에 공개되므로 가장 최근 매매는 다음 보고서에 나옵니다.</p>
+      <div class="card-head"><h3 id="bf-title">버크셔 해서웨이 포트폴리오 · 13F</h3><span class="small faint" id="bf-status">불러오는 중</span></div>
+      <p class="desc" id="bf-desc">분기마다 SEC 에 제출하는 13F 보고서 기준입니다. 분기 말 보유분이 45일 뒤에 공개되므로 가장 최근 매매는 다음 보고서에 나옵니다.</p>
+      <div class="chips dv-cats" id="bf-gurus" style="margin-top:12px" aria-label="레전드 선택"></div>
       <div class="bf-head" id="bf-head"></div>
     </div>
     <!-- 관리자 전용 분석 (연속 매수·꾸준한 매수). ?admin=암호 로 열람 -->
@@ -902,7 +909,7 @@ async function initAdmin() {
   } catch { adminByHash = false; }
   adminOn = adminByHash || adminByProfile;
   applyAdmin();
-  if (state.filings) renderBuffett(); // 먼저 그려졌으면 관리자 상태 반영해 다시
+  if (currentPortFilings()) renderBuffett(); // 먼저 그려졌으면 관리자 상태 반영해 다시
 }
 
 // ───────────────────────── 로그인 (Supabase) ─────────────────────────
@@ -1029,7 +1036,7 @@ function applyAccount() {
   guruPlan = p && p.plan !== "free" ? p.plan : local;
   adminByProfile = !!p?.is_admin;
   const was = adminOn; adminOn = adminByHash || adminByProfile;
-  if (was !== adminOn) { applyAdmin(); if (state.filings) renderBuffett(); }
+  if (was !== adminOn) { applyAdmin(); if (currentPortFilings()) renderBuffett(); }
   renderAuthUI();
 }
 function initAuth() {
@@ -1679,8 +1686,21 @@ function guruPicksHtml(g, f) {
   ].join("");
 }
 // ───────────────────────── Max 라운지 (Max 구독자 전용 별도 창) ─────────────────────────
-function openMaxPage() { $("#max-page").hidden = false; document.body.style.overflow = "hidden"; renderMaxHome(); $("#max-page").scrollTop = 0; }
+// 라운지 열기·화면 전환을 브라우저 히스토리에 기록해, 모바일 뒤로가기(제스처·버튼)가
+// 앱을 벗어나는 대신 라운지의 이전 화면 → 라운지 홈 → 앱 순서로 돌아가게 한다.
+function maxPush(screen) { try { history.pushState({ tab: state.curTab, max: screen, d: (history.state?.max ? history.state.d || 1 : 0) + 1 }, ""); } catch {} }
+function maxShow(k, fromPop) {
+  const fn = { home: renderMaxHome, gurus: renderMaxGurus, prices: renderMaxPrices, common: renderMaxCommon, portfolio: renderMaxPortfolio, lev: renderMaxLev, joker: renderMaxJoker }[k] || renderMaxHome;
+  restoreGuruPanel(); // innerHTML 덮어쓰기에 투자 레전드 패널이 지워지지 않게 먼저 제자리로
+  fn();
+  if (!fromPop) maxPush(k);
+}
+function openMaxPage(fromPop) { $("#max-page").hidden = false; document.body.style.overflow = "hidden"; renderMaxHome(); $("#max-page").scrollTop = 0; if (!fromPop) maxPush("home"); }
 function closeMaxPage() { restoreGuruPanel(); $("#max-page").hidden = true; document.body.style.overflow = ""; }
+// 닫기 버튼·Escape: 라운지가 쌓은 히스토리를 한 번에 되돌린다 (popstate 가 closeMaxPage 를 부른다)
+function exitMaxPage() { const d = history.state?.max ? history.state.d || 1 : 0; if (d) history.go(-d); else closeMaxPage(); }
+// 라운지 화면의 ← 버튼: 히스토리를 되돌려 뒤로가기와 같은 길을 쓴다
+function maxBack() { if (history.state?.max && history.state.max !== "home") history.back(); else renderMaxHome(); }
 const maxBackBtn = `<button class="btn gu-back" type="button" id="max-back">← Max 라운지</button>`;
 // 배지는 제목 아래 줄에 통일: Pro 는 파란(강조색), Max 는 같은 톤의 은은한 빨강
 const mfPro = `<span class="plan"><span class="tag new">Pro 구독</span></span>`;
@@ -1890,18 +1910,19 @@ function ensureGuruEvents() {
 }
 function guruEventsCardHtml(evs) {
   const gname = (file) => file === "berkshire.json" ? "버핏" : GURU_SHORT[GURUS.find((g) => g.file === file)?.id] || "";
+  // 표를 가볍게: 종목은 티커만, 거래일은 날짜 칸과 겹치니 생략, 출처 링크는 내용 끝에 붙인다
   const rows = [
     ...evs.auto.map((e) => ({
-      date: e.to || e.from || e.filed, guru: gname(e.guru), ticker: e.ticker, name: e.issuer || "", url: e.url,
+      date: e.to || e.from || e.filed, guru: gname(e.guru), ticker: e.ticker, url: e.url,
       html: e.side === "stake"
-        ? `지분 ${e.percent != null ? `<strong>${fmt.n(e.percent, 1)}%</strong> ` : ""}공시 <span class="faint">(${escHtml(e.form)}, ${String(e.filed).slice(5)} 공시)</span>`
-        : `<strong class="${e.side === "buy" ? "pos" : "neg"}">${e.side === "buy" ? "매수" : "매도"}</strong> ${fmtSh(e.shares)}주${e.priceLow != null ? ` · 단가 $${fmt.n(e.priceLow)}${e.priceHigh > e.priceLow ? "~$" + fmt.n(e.priceHigh) : ""}` : ""}${e.from ? ` · 거래일 ${String(e.from).slice(5)}${e.to && e.to !== e.from ? "~" + String(e.to).slice(5) : ""}` : ""} <span class="faint">(${escHtml(e.form)}, ${String(e.filed).slice(5)} 공시)</span>`,
+        ? `지분 ${e.percent != null ? `<strong>${fmt.n(e.percent, 1)}%</strong> ` : ""}공시 <span class="faint">(${escHtml(e.form)})</span>`
+        : `<strong class="${e.side === "buy" ? "pos" : "neg"}">${e.side === "buy" ? "매수" : "매도"}</strong> ${fmtSh(e.shares)}주${e.priceLow != null ? ` · $${fmt.n(e.priceLow)}${e.priceHigh > e.priceLow ? "~$" + fmt.n(e.priceHigh) : ""}` : ""} <span class="faint">(${escHtml(e.form)})</span>`,
     })),
-    ...evs.manual.map((e) => ({ date: e.date, guru: escHtml(e.guru || ""), ticker: e.ticker ? escHtml(String(e.ticker)) : null, name: "", url: e.url, html: `${escHtml(e.title || "")} <span class="faint">(수기 등록)</span>` })),
+    ...evs.manual.map((e) => ({ date: e.date, guru: escHtml(e.guru || ""), ticker: e.ticker ? escHtml(String(e.ticker)) : null, url: e.url, html: `${escHtml(e.title || "")} <span class="faint">(수기)</span>` })),
   ].filter((r) => r.date).sort((a, b) => String(b.date).localeCompare(String(a.date))).slice(0, 15);
   const inIdx = (t) => !!state.stockIndex?.items.some((x) => x.symbol === t);
   return `<div class="card"><div class="card-head"><h3>13F 밖 최근 매수·매도 소식</h3><span class="small faint">SEC Form 4 · 13D/G 자동 수집 (매주 월요일 갱신) + 수기 등록</span></div>
-    ${rows.length ? `<div class="tablewrap"><table><thead><tr><th>날짜</th><th>대가</th><th>종목</th><th>내용</th><th>출처</th></tr></thead><tbody>${rows.map((r) => `<tr><td class="txt">${String(r.date).slice(0, 10)}</td><td class="txt">${r.guru}</td><td class="txt">${r.ticker ? `<span class="tk ${inIdx(r.ticker) ? "" : "plain"}" ${inIdx(r.ticker) ? `data-stock="${r.ticker}"` : ""}>${r.ticker}</span> ` : ""}<span class="nm">${escHtml(r.name)}</span></td><td class="txt" style="white-space:normal">${r.html}</td><td class="txt">${r.url ? `<a href="${escHtml(r.url)}" target="_blank" rel="noopener">보기</a>` : "–"}</td></tr>`).join("")}</tbody></table></div>` : `<div class="empty">최근 수집된 공시가 없습니다. 13F 스냅샷 워크플로가 실행되면(매주 월요일) 자동으로 채워집니다.</div>`}
+    ${rows.length ? `<div class="tablewrap"><table><thead><tr><th>날짜</th><th>대가</th><th>종목</th><th>내용</th></tr></thead><tbody>${rows.map((r) => `<tr><td class="txt">${String(r.date).slice(2, 10)}</td><td class="txt">${r.guru}</td><td class="txt">${r.ticker ? `<span class="tk ${inIdx(r.ticker) ? "" : "plain"}" ${inIdx(r.ticker) ? `data-stock="${r.ticker}"` : ""}>${r.ticker}</span>` : "–"}</td><td class="txt" style="white-space:normal;min-width:180px">${r.html}${r.url ? ` · <a href="${escHtml(r.url)}" target="_blank" rel="noopener">공시 보기</a>` : ""}</td></tr>`).join("")}</tbody></table></div>` : `<div class="empty">최근 수집된 공시가 없습니다. 13F 스냅샷 워크플로가 실행되면(매주 월요일) 자동으로 채워집니다.</div>`}
     <p class="small faint" style="margin-top:8px">Form 4 는 지분 10% 이상 보유자가 매매 후 이틀 안에 날짜·주식수·단가까지 신고하는 공시라 13F 보다 훨씬 빠릅니다 (버크셔의 레너 매수가 이렇게 공개됐습니다). 13D/G 는 5% 지분 공시입니다. <a href="https://github.com/geniusbyun-kaka/app/edit/claude/baby-sleep-tracking-app-23p7s7/invest/guru-news.json" target="_blank" rel="noopener">뉴스 수기 등록 (관리자 전용)</a></p></div>`;
 }
 async function renderMaxCommon() {
@@ -1945,11 +1966,14 @@ async function renderMaxCommon() {
   };
   // ── 이번 분기 공통 매수 추천 종목: 대가당 $10M 이상 매수만 놓고, 근거가 많은 순으로 5종목 ──
   const reco = all.filter((e) => (e.qualified = e.holders.filter((x) => x.buyVal >= RECO_MIN_BUY)).length);
+  // reasons 는 순위 매기기(정렬·강력 추천 판단)에만 쓰고, 표의 근거 칸에는 시총 TOP 50 만 보여준다
+  // (함께 매수한 인원·버핏/애크먼 여부는 매수 대가 칸에 이미 드러나는 정보라 중복 표기하지 않는다)
   reco.forEach((e) => {
     e.reasons = [];
     if (e.qualified.length >= 2) e.reasons.push(`${e.qualified.length}명이 함께 매수`);
     if (e.qualified.some((x) => x.g.id === "buffett" || x.g.id === "ackman")) e.reasons.push("버핏·애크먼의 매수");
-    if ([...e.tickers].some((t) => TOP50_US.has(SHARE_CLASS_ALIAS[t] || t))) e.reasons.push("미국 시총 TOP 50");
+    e.top50 = [...e.tickers].some((t) => TOP50_US.has(SHARE_CLASS_ALIAS[t] || t));
+    if (e.top50) e.reasons.push("미국 시총 TOP 50");
     e.buySum = e.qualified.reduce((s, x) => s + x.buyVal, 0);
   });
   reco.sort((a, b) => b.reasons.length - a.reasons.length || b.qualified.length - a.qualified.length || b.buySum - a.buySum);
@@ -1959,7 +1983,7 @@ async function renderMaxCommon() {
       <td class="txt">${tickerCell(e, false)}</td>
       <td class="txt">${e.reasons.length ? '<span class="tag inc">강력 추천</span>' : '<span class="tag new">추천</span>'}</td>
       <td class="txt">${e.qualified.map((x) => `${GURU_SHORT[x.g.id] || x.g.name} (${fmtB(x.buyVal)})`).join(", ")}</td>
-      <td class="txt">${e.reasons.length ? e.reasons.join(" · ") : "$10M 이상 매수"}</td>
+      <td class="txt">${e.top50 ? "미국 시총 TOP 50" : "–"}</td>
       <td>${e.price != null ? "$" + fmt.n(e.price) : "–"}</td>
     </tr>`).join("")}</tbody></table></div>` : '<div class="empty">이번 분기에 $10M 이상 매수한 종목이 없습니다</div>'}</div>`;
   // 표는 이름만 간단히. 비중·보유/축소 상태는 인원수를 눌러 상세 창에서 본다.
@@ -2382,20 +2406,15 @@ function alertsCardHtml() {
     </div>`;
 }
 function refreshAlertsCard() { const c = $("#max-alerts-card"); if (c) c.outerHTML = alertsCardHtml(); }
-$("#max-close").addEventListener("click", closeMaxPage);
+$("#max-close").addEventListener("click", exitMaxPage);
 $("#max-page").addEventListener("click", (e) => {
-  if (e.target.closest("#max-back")) return renderMaxHome();
+  if (e.target.closest("#max-back")) return maxBack();
   const feat = e.target.closest("[data-maxfeat]");
   if (feat) {
     const k = feat.dataset.maxfeat;
     // Pro 는 Pro 표시가 있는 기능(공통 매수·레전드 연속 매수)만. 나머지는 Max 전용이라 구독 창을 띄운다
     if (!["common", "gurus"].includes(k) && guruPlan !== "max") return openGuruModal();
-    if (k === "gurus") return renderMaxGurus();
-    if (k === "prices") return renderMaxPrices();
-    if (k === "common") return renderMaxCommon();
-    if (k === "portfolio") return renderMaxPortfolio();
-    if (k === "lev") return renderMaxLev();
-    if (k === "joker") return renderMaxJoker();
+    return maxShow(k);
   }
   if (e.target.closest("#jk-run")) return runJokerCalc();
   if (e.target.closest("#jk-demo-report")) return runJokerReportDemo();
@@ -2450,7 +2469,7 @@ document.addEventListener("keydown", (e) => {
   if (!$("#auth-modal").hidden) closeAuth();
   else if (!$("#cm-modal").hidden) closeCommonDetail();
   else if (!$("#gu-modal").hidden) closeGuruModal();
-  else if (!$("#max-page").hidden) closeMaxPage();
+  else if (!$("#max-page").hidden) exitMaxPage();
 });
 // 투자 대가 탭: 카드 → 전체 화면 상세, 뒤로 가기, 티커 → 종목 차트
 $("#panel-gurus").addEventListener("click", (e) => {
@@ -2482,7 +2501,7 @@ function selectTab(name, fromPop) {
   $("#my-open").setAttribute("aria-pressed", String(name === "my"));
   if (name === "my") renderMyPage();
   if (name === "dividend") ensureStockIndex().then(renderDividend).catch(() => {});
-  if (name === "buffett") ensureFilings().catch(() => {});
+  if (name === "buffett") ensurePortfolio().catch(() => {});
   if (name === "starter") ensureLessons();
   if (name === "news") ensureNews();
   if (name === "crypto") { renderCoinTiles(); renderKimchi(); ensureStockIndex().then(renderCoinList).catch(() => {}); }
@@ -2501,6 +2520,15 @@ function selectTab(name, fromPop) {
   state.curTab = name;
 }
 window.addEventListener("popstate", (e) => {
+  // Max 라운지 히스토리: 라운지 화면 상태면 그 화면을 보여주고, 아니면 열려 있는 라운지를 닫는다
+  const m = e.state?.max;
+  if (m) {
+    if ($("#max-page").hidden) { $("#max-page").hidden = false; document.body.style.overflow = "hidden"; }
+    maxShow(m, true);
+    $("#max-page").scrollTop = 0;
+    return;
+  }
+  if (!$("#max-page").hidden) closeMaxPage();
   const t = e.state?.tab || location.hash.slice(1);
   if (t && t !== state.curTab && TABS.includes(t)) selectTab(t, true);
 });
@@ -2524,7 +2552,7 @@ $("#bt-currency").addEventListener("change", onCurrencyChange);
 $("#bt-asset").addEventListener("change", () => { if (state.history) refreshSeriesInfo(); });
 $("#bt-div").addEventListener("change", () => { if (state.history) refreshSeriesInfo(); });
 $$(".chip[data-years]").forEach((c) => c.addEventListener("click", () => setYears(+c.dataset.years)));
-const rerenderAll = () => { renderQuotes(); if (state.lastBacktest) renderBacktest(); if (state.stockSel) renderStockDetail(); if (state.cmpLast) renderCompare(); if (state.filings) renderBuffett(); if (state.dvcLast) runDividendCompare(); };
+const rerenderAll = () => { renderQuotes(); if (state.lastBacktest) renderBacktest(); if (state.stockSel) renderStockDetail(); if (state.cmpLast) renderCompare(); if (currentPortFilings()) renderBuffett(); if (state.dvcLast) runDividendCompare(); };
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", rerenderAll);
 new MutationObserver(rerenderAll).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 // 종목 탭 이벤트
@@ -2540,6 +2568,8 @@ $("#stock-table").addEventListener("click", (e) => { const tr = e.target.closest
 $("#stock-detail").addEventListener("click", (e) => {
   const r = e.target.closest("[data-range]"); if (r) { state.stockRange = r.dataset.range; try { localStorage.setItem("md:range", state.stockRange); } catch {} renderStockDetail(); }
   const c = e.target.closest("[data-compare]"); if (c) { addToCompare(c.dataset.compare); }
+  if (e.target.closest("#sd-legends-btn")) return toggleStockLegends();
+  const po = e.target.closest("[data-port-open]"); if (po) return openGuruPortfolio(po.dataset.portOpen);
 });
 // 비교 탭 이벤트
 $("#cmp-run").addEventListener("click", () => runCompare(false));
@@ -2638,6 +2668,45 @@ function sliceRange(d, range) {
   let i0 = dates.findIndex((x) => x >= s); if (i0 < 0) i0 = 0; if (i0 > 0 && range !== "MAX" && range !== "YTD") i0--; // 기준점: 기간 시작 직전 종가
   return { kind: "daily", dates: dates.slice(i0), values: close.slice(i0), prev: null };
 }
+// ── 종목 상세: 이 종목을 들고 있는 레전드 배지 (누르면 목록, 레전드를 누르면 그 포트폴리오 탭으로) ──
+let allGuruFilingsPromise = null;
+function ensureAllGuruFilings() {
+  if (!allGuruFilingsPromise) allGuruFilingsPromise = Promise.all(GURUS.filter((g) => g.ready).map((g) => ensureGuruFilings(g).catch(() => null)));
+  return allGuruFilingsPromise;
+}
+function legendHoldersOf(sym) {
+  const key = SHARE_CLASS_ALIAS[sym] || sym;
+  const out = [];
+  for (const g of GURUS.filter((x) => x.ready)) {
+    const f = g.file ? guruFilings[g.id] : state.filings;
+    const h = f?.latest.holdings.find((x) => x.ticker && (SHARE_CLASS_ALIAS[x.ticker] || x.ticker) === key);
+    if (h) out.push({ g, h });
+  }
+  return out.sort((a, b) => b.h.weight - a.h.weight);
+}
+function fillStockLegends(sym) {
+  ensureAllGuruFilings().then(() => {
+    if (state.stockSel !== sym) return;
+    const el = $("#sd-legends"); if (!el) return;
+    const n = legendHoldersOf(sym).length;
+    if (n) el.innerHTML = `<button class="chip" type="button" id="sd-legends-btn" aria-expanded="false">레전드 ${n}명 보유</button>`;
+  });
+}
+function toggleStockLegends() {
+  const panel = $("#sd-legends-panel"), btn = $("#sd-legends-btn");
+  if (!panel || !btn) return;
+  if (!panel.hidden) { panel.hidden = true; btn.setAttribute("aria-expanded", "false"); return; }
+  const list = legendHoldersOf(state.stockSel);
+  panel.innerHTML = `<div style="margin:10px 0;border:1px solid var(--line);border-radius:10px;padding:8px 10px">
+    <div class="tablewrap"><table><thead><tr><th>레전드</th><th>비중</th><th>이번 분기</th><th>포트폴리오</th></tr></thead><tbody>${list.map(({ g, h }) => `<tr>
+      <td class="txt">${g.name}<span class="nm">${g.org}</span></td>
+      <td>${fmt.n(h.weight * 100, 1)}%</td>
+      <td class="txt">${changeHtml(h)}</td>
+      <td class="txt"><button class="chip" type="button" data-port-open="${g.id}">보기 →</button></td>
+    </tr>`).join("")}</tbody></table></div>
+    <p class="small faint" style="margin:6px 0 0">각 레전드의 최신 13F 분기 말 보유 기준이며, 비중은 그 레전드 포트폴리오 안에서의 비중입니다.</p></div>`;
+  panel.hidden = false; btn.setAttribute("aria-expanded", "true");
+}
 function renderStockDetail() {
   const d = state.stocks[state.stockSel]; if (!d) return;
   const range = RANGES.includes(state.stockRange) ? state.stockRange : "1Y";
@@ -2651,8 +2720,9 @@ function renderStockDetail() {
   $("#stock-detail").innerHTML = `
     <div class="stock-head">
       <div class="ttl"><h3>${d.name}</h3><div class="sub"><span class="num">${d.symbol}</span> · ${d.sector}${d.kind === "etf" ? " · ETF" : ""}</div></div>
-      <div style="display:flex;gap:8px;align-items:center">${favStarHtml("stock", d.symbol, isFavStock(d.symbol))}<button class="btn" type="button" data-compare="${d.symbol}">비교에 추가</button></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${favStarHtml("stock", d.symbol, isFavStock(d.symbol))}<button class="btn" type="button" data-compare="${d.symbol}">비교에 추가</button><span id="sd-legends"></span></div>
     </div>
+    <div id="sd-legends-panel" hidden></div>
     <div class="stock-price">
       <span class="big">${fmt.n(q.price)}<span class="cur" style="font-family:var(--font);font-size:13px;color:var(--ink-3);margin-left:4px">${d.currency}</span></span>
       <span class="chg ${dir}">${arrow} ${fmt.n(Math.abs(chg))} (${fmt.signed(chgPct * 100)}%) <span style="font-weight:400;font-family:var(--font)">${rangeLabel}</span></span>
@@ -2664,6 +2734,7 @@ function renderStockDetail() {
       ${stat("시가", fmt.n(q.open))}${stat("고가", fmt.n(q.dayHigh))}${stat("저가", fmt.n(q.dayLow))}${stat("전일 종가", fmt.n(q.previousClose))}
       ${stat("52주 고가", fmt.n(q.fiftyTwoWeekHigh))}${stat("52주 저가", fmt.n(q.fiftyTwoWeekLow))}${stat("거래량", q.volume == null ? "–" : fmt.n(q.volume, 0))}${stat("데이터 시작", d.daily.from)}
     </div>`;
+  fillStockLegends(d.symbol);
   const color = dir === "down" ? css("--down") : css("--up");
   if (sl.kind === "intraday") {
     const timeFmt = new Intl.DateTimeFormat("ko-KR", { timeZone: sl.tz, hour: "2-digit", minute: "2-digit", hour12: false });
@@ -2853,8 +2924,45 @@ function changeHtml(h) {
 }
 const fmtB = (v) => v >= 1e9 ? `$${fmt.n(v / 1e9, 1)}B` : `$${fmt.n(v / 1e6, 0)}M`;
 const fmtSh = (v) => v >= 1e6 ? `${fmt.n(v / 1e6, 1)}M` : fmt.n(v, 0);
+// ── 포트폴리오 탭: 버크셔 화면 구성을 그대로 다른 레전드 기관에도 쓴다 (탭 안에서 레전드 선택) ──
+try { state.portGuru = localStorage.getItem("md:portGuru") || "buffett"; } catch { state.portGuru = "buffett"; }
+function portGuru() { return GURUS.find((g) => g.id === state.portGuru && g.ready) || GURUS[0]; }
+function currentPortFilings() { const g = portGuru(); return g.file ? guruFilings[g.id] : state.filings; }
+function ensurePortfolio() {
+  const g = portGuru();
+  return ensureGuruFilings(g).then((f) => { if (portGuru().id === g.id) renderBuffett(); return f; });
+}
+// 다른 화면(종목 상세의 레전드 보유 목록 등)에서 특정 레전드의 포트폴리오로 바로 이동
+function openGuruPortfolio(id) {
+  if (GURUS.some((g) => g.id === id && g.ready)) {
+    state.portGuru = id;
+    try { localStorage.setItem("md:portGuru", id); } catch {}
+    state.bfQuarter = null;
+  }
+  selectTab("buffett");
+  renderBuffett();
+  ensurePortfolio().catch(() => { if (portGuru().id === id) $("#bf-status").textContent = "13F 데이터를 불러오지 못했습니다"; });
+  window.scrollTo(0, 0);
+}
+// 제목·설명·레전드 선택 칩 등 데이터와 무관한 틀
+function renderPortFrame() {
+  const g = portGuru();
+  $("#bf-title").innerHTML = `${g.org} 포트폴리오 · 13F <button class="fav-btn sm" type="button" data-fav-guru="${g.id}" aria-pressed="false" title="관심 대가로 등록">☆</button>`;
+  $("#bf-desc").textContent = `${g.name}의 ${g.org}가 분기마다 SEC 에 제출하는 13F 보고서 기준입니다. 분기 말 보유분이 45일 뒤에 공개되므로 가장 최근 매매는 다음 보고서에 나옵니다.`;
+  $("#bf-gurus").innerHTML = GURUS.filter((x) => x.ready).map((x) => `<button class="chip" type="button" data-port-guru="${x.id}" aria-pressed="${x.id === g.id}">${GURU_SHORT[x.id] || x.name}</button>`).join("");
+  updateFavButtons();
+}
 function renderBuffett() {
-  const f = state.filings; if (!f) return;
+  renderPortFrame();
+  const f = currentPortFilings();
+  if (!f) { // 선택한 레전드의 13F 를 아직 못 받았으면 이전 레전드의 숫자가 남지 않게 비우고 로딩 표시
+    $("#bf-status").textContent = "불러오는 중";
+    $("#bf-head").innerHTML = ""; $("#bf-sum").innerHTML = "";
+    $("#bf-streak tbody").innerHTML = ""; $("#bf-often tbody").innerHTML = ""; $("#bf-holdings tbody").innerHTML = "";
+    const sel = $("#bf-quarter"); sel.innerHTML = ""; sel.dataset.guru = "";
+    makeChart("chart-bf", { type: "line", data: { datasets: [] }, options: baseOptions([], {}) });
+    return;
+  }
   const L = f.latest, qs = f.quarters;
   $("#bf-status").textContent = `${L.period} 분기 · ${L.filed} 공시 · 스냅샷 ${fmt.ago(f.updated)}`;
   const streaks = L.holdings.filter((h) => h.streak >= 2).sort((a, b) => b.streak - a.streak || b.weight - a.weight);
@@ -2871,7 +2979,11 @@ function renderBuffett() {
   $("#bf-often tbody").innerHTML = !adminOn ? "" : often.length ? often.map((h) => `<tr><td class="txt">${tickerHtml(h)}</td><td>${h.buys8}회</td><td>${histHtml(h.hist)}</td><td class="txt">${h.lastBuy || "–"}</td><td>${fmtSh(h.shares)}</td><td>${fmt.n(h.weight * 100, 1)}%</td></tr>`).join("") : `<tr><td class="txt faint" colspan="6">해당 종목 없음</td></tr>`;
   applyAdmin();
   const sel = $("#bf-quarter");
-  if (!sel.options.length) { sel.innerHTML = [...qs].reverse().map((q) => `<option value="${q.period}">${q.period}${q.amended ? " (정정 반영)" : ""}</option>`).join(""); sel.value = state.bfQuarter || L.period; }
+  if (sel.dataset.guru !== portGuru().id) {
+    sel.dataset.guru = portGuru().id;
+    sel.innerHTML = [...qs].reverse().map((q) => `<option value="${q.period}">${q.period}${q.amended ? " (정정 반영)" : ""}</option>`).join("");
+    sel.value = state.bfQuarter && qs.some((q) => q.period === state.bfQuarter) ? state.bfQuarter : L.period;
+  }
   renderBuffettQuarter();
   const labels = qs.map((q) => q.period.slice(0, 7));
   const opts = baseOptions(labels, { yFmt: (v) => `$${fmt.n(v / 1e9, 0)}B`, tooltipLabel: (it) => `평가액 ${fmtB(it.parsed.y)}` });
@@ -2879,7 +2991,7 @@ function renderBuffett() {
   makeChart("chart-bf", { type: "line", data: { datasets: [{ label: "평가액", data: qs.map((q, i) => ({ x: i, y: q.totalValue })), borderColor: css("--accent"), backgroundColor: css("--accent") + "22", fill: true }] }, options: opts });
 }
 function renderBuffettQuarter() {
-  const f = state.filings; if (!f) return;
+  const f = currentPortFilings(); if (!f) return;
   const period = $("#bf-quarter").value || f.latest.period; state.bfQuarter = period;
   const q = f.quarters.find((x) => x.period === period) || f.latest;
   const idx = f.quarters.indexOf(q);
@@ -2889,7 +3001,11 @@ function renderBuffettQuarter() {
   $("#bf-holdings tbody").innerHTML = q.holdings.map((h) => `<tr><td class="txt">${tickerHtml(h)}</td><td>${fmt.n(h.weight * 100, 1)}%</td><td>${fmtB(h.value)}</td><td>${fmtSh(h.shares)}</td><td class="txt">${changeHtml(h)}</td><td>${histHtml(hist8(h))}</td></tr>`).join("");
 }
 $("#bf-quarter").addEventListener("change", renderBuffettQuarter);
-$("#panel-buffett").addEventListener("click", (e) => { const t = e.target.closest("[data-stock]"); if (t) { gotoStock(t.dataset.stock); } });
+$("#panel-buffett").addEventListener("click", (e) => {
+  const pg = e.target.closest("[data-port-guru]");
+  if (pg) { if (pg.dataset.portGuru !== state.portGuru) openGuruPortfolio(pg.dataset.portGuru); return; }
+  const t = e.target.closest("[data-stock]"); if (t) { gotoStock(t.dataset.stock); }
+});
 
 // ───────────────────────── 마이 페이지 (관심 종목 · 관심 대가 · 뉴스) ─────────────────────────
 function favStocks() { return cacheGet("md:favStocks") || []; }
@@ -3299,6 +3415,7 @@ initAuth();
 updateParamVisibility();
 initCommaInputs();
 updateFavButtons(); // 버핏 탭 등 정적 별표 버튼을 저장된 관심 목록에 맞춘다
+$$("#panel-intro strong").forEach((el, i) => el.classList.add(["mt-g", "mt-b", "mt-r"][i % 3])); // 소개 글 강조에 로고 산 색을 순서대로
 const cachedLatest = cacheGet("md:latest"), cachedIntraday = cacheGet("md:intraday");
 if (cachedLatest) { state.latest = cachedLatest; state.intraday = cachedIntraday; renderQuotes(); }
 try { state.stockRange = localStorage.getItem("md:range") || "1Y"; const ss = localStorage.getItem("md:stock"); if (ss) state.stockSel = ss; } catch {}
