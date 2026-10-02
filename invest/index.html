@@ -2151,7 +2151,8 @@ const JK_CHECKS = [
   { k: "fcfYears", label: "잉여현금흐름 플러스", rule: "최근 10년 중 9년 이상", fmt: (v) => `${v}년`, pass: (v) => v >= 9 },
   { k: "epsCagr", label: "순이익 10년 연평균 성장", rule: "7% 이상", fmt: (v) => `${fmt.n(v, 1)}%`, pass: (v) => v >= 7 },
   // 밸류 트랩·지배구조·수급 필터 (신규 데이터라 옛 픽에는 값이 없을 수 있음 → opt)
-  { k: "niTrend", label: "이익 방향 (직전 3년 고점 대비 최근 순이익)", rule: "-15% 이내", fmt: (v) => `${fmt.signed(v, 1)}%`, pass: (v) => v >= -15, opt: true },
+  // 꺾임 = 고점 대비 -15% 초과 감소 그리고 전년 대비로도 감소 중 (사이클 저점 회복 국면은 꺾임이 아님)
+  { k: "niBroken", label: "이익 방향 (직전 3년 고점 · 전년 대비)", rule: "꺾임 아님", fmt: (v) => (v ? "꺾임 (하락 지속)" : "유지·회복"), pass: (v) => !v, opt: true },
   { k: "roeDown", label: "ROE 추세 (최근 3년)", rule: "연속 하락 아님", fmt: (v) => (v ? "3년 연속 하락" : "유지·상승"), pass: (v) => !v, opt: true },
   { k: "majorHolder", label: "최대주주 지분율 (특수관계인 포함)", rule: "50% 이하", fmt: (v) => `${fmt.n(v, 1)}%`, pass: (v) => v <= 50, opt: true },
   { k: "avgValueEok", label: "일 거래대금 (5일 평균)", rule: "5억원 이상", fmt: (v) => `${fmt.n(v, 1)}억원`, pass: (v) => v >= 5, opt: true },
@@ -2262,25 +2263,24 @@ function jkVerdictSeriesHtml(vd) {
       </tbody></table></div>`).join("")}
     ${visible < order.length ? `<p class="small faint" style="margin-top:10px">다음 회차(${order[visible].market} ${order[visible].rows[0]?.rank ?? ""}위부터)는 다음 주 월요일에 공개됩니다.</p>` : ""}`;
 }
+// 적정주가·안전마진 숫자는 화면에 보여주지 않는다 (서비스가 가격을 단정하는 리스크 — David 결정 2026-10-02).
+// 내부 선정 로직(DCF 안전마진 30%)은 그대로 쓰되, 화면은 체크리스트·밸류에이션 문지기만 보여준다.
 function jkPickHtml(p, isLatest) {
-  const oe = p.ownerEarnings * 1e8, cash = p.netCash * 1e8;
-  const m = jkMargin(jokerFair(oe, cash, p.shares, JK_SCN[1]), p.price);
   const passAll = jkPassAll(p.metrics);
+  const ok = passAll && (p.valuation ? p.valuation.pass : true);
   return `<div class="card-head"><h3>${isLatest ? "이번 주 조커픽 · " : ""}${escHtml(p.name)} <span class="tk plain">${escHtml(p.ticker)}</span></h3><span class="small faint">${escHtml(p.week)} 주 선정 · ${escHtml(p.market || "")} · ${escHtml(p.source || "")}</span></div>
     ${p.moat ? `<p class="desc"><strong>왜 이 종목인가:</strong> ${escHtml(p.moat)}</p>` : ""}
-    <div class="jk-verdict">${jkVerdictTag(m, passAll)}<span>기본 시나리오 적정주가 <strong>${jkPrice(jokerFair(oe, cash, p.shares, JK_SCN[1]))}</strong> vs 선정 시 주가 <strong>${fmt.krw(p.price)}</strong> → 안전마진 <strong class="${m != null && m > 0 ? "pos" : "neg"}">${m != null ? fmt.n(m * 100, 1) + "%" : "–"}</strong>${passAll ? " · 정량 체크리스트 모두 통과" : ""}</span></div>
+    <div class="jk-verdict">${ok ? '<span class="tag inc">정량 기준 통과</span>' : '<span class="tag">체크 참고</span>'}<span>선정 시 주가 <strong>${fmt.krw(p.price)}</strong> · 오너 어닝스 <strong>${fmt.n(p.ownerEarnings, 0)}억원</strong> · 순현금 <strong>${fmt.n(p.netCash, 0)}억원</strong>${passAll ? " · 펀더멘털 체크리스트 모두 통과" : ""}</span></div>
     <div class="eyebrow" style="margin-top:16px">버핏 체크리스트 (펀더멘털)</div>
     ${jkChecklistHtml(p.metrics)}
-    ${jkValuationHtml(p.valuation)}
-    <div class="eyebrow" style="margin-top:16px">적정주가 3개 시나리오 · 오너 어닝스 ${fmt.n(p.ownerEarnings, 0)}억원 · 순현금 ${fmt.n(p.netCash, 0)}억원 기준</div>
-    ${jkScenarioKpis(oe, cash, p.shares, p.price)}`;
+    ${jkValuationHtml(p.valuation)}`;
 }
 async function renderMaxJoker() {
   const body = $("#max-body");
   body.dataset.screen = "joker";
   body.innerHTML = [
     maxBackBtn,
-    `<p class="desc"><strong>자체 발굴 트랙</strong>입니다: "워렌 버핏과 찰리 멍거가 2026년 한국 시장에서 투자한다면 어떤 종목을 고를까"를 정해진 산식으로 재현합니다 (레전드의 실제 매수를 따라가는 추종 트랙은 Max 라운지의 매수 가격 따라가기 화면에 따로 있습니다). 1단계로 <strong>정량 체크리스트</strong>(ROE 10년 평균 15% 이상 · 부채비율 85% 이하 + 이자보상배율 5배 이상의 2단 구조 · 영업이익률 변동성 낮음 · 잉여현금흐름 계속 플러스 · 이익의 꾸준한 성장)를 통과한 회사만 남기고, 여기에 <strong>밸류 트랩·지배구조 필터</strong>(최근 이익 방향이 꺾인 회사 · ROE 3년 연속 하락 · 최대주주 지분 50% 초과 · 일 거래대금 5억원 미만 제외)와 <strong>밸류에이션 문지기</strong>(3년 평균 FCF 수익률이 국고채 10년물 금리의 2배 이상 · 펀더멘털과 독립 판정이며 서로 상쇄하지 않음)를 더해 거른 뒤, 2단계로 <strong>오너 어닝스(순이익 + 감가상각비 − 유지보수 설비투자) 2단계 DCF</strong>로 적정주가를 계산해 <strong>안전마진 30% 이상</strong>인 종목을 후보로 뽑습니다. 다만 숫자만으로는 <strong>경제적 해자</strong>와 <strong>사업 지배구조</strong>를 판단할 수 없어, 정량 후보는 매주 그 두 가지에 대한 <strong>운영진 검토를 통과한 종목만</strong> 이 화면에 올라옵니다. 할인율 2%p 차이로 적정주가가 20% 넘게 움직이기 때문에, 숫자 하나가 아니라 <strong>보수적·기본·낙관적 3개 시나리오</strong>를 항상 함께 보여줍니다.</p>`,
+    `<p class="desc"><strong>자체 발굴 트랙</strong>입니다: "워렌 버핏과 찰리 멍거가 2026년 한국 시장에서 투자한다면 어떤 종목을 고를까"를 정해진 산식으로 재현합니다 (레전드의 실제 매수를 따라가는 추종 트랙은 Max 라운지의 매수 가격 따라가기 화면에 따로 있습니다). 1단계로 <strong>정량 체크리스트</strong>(ROE 10년 평균 15% 이상 · 부채비율 85% 이하 + 이자보상배율 5배 이상의 2단 구조 · 영업이익률 변동성 낮음 · 잉여현금흐름 계속 플러스 · 이익의 꾸준한 성장)를 통과한 회사만 남기고, 여기에 <strong>밸류 트랩·지배구조 필터</strong>(최근 이익 방향이 꺾인 회사 · ROE 3년 연속 하락 · 최대주주 지분 50% 초과 · 일 거래대금 5억원 미만 제외)와 <strong>밸류에이션 문지기</strong>(3년 평균 FCF 수익률이 국고채 10년물 금리의 2배 이상 · 펀더멘털과 독립 판정이며 서로 상쇄하지 않음)를 더해 거른 뒤, 2단계로 <strong>오너 어닝스(순이익 + 감가상각비 − 유지보수 설비투자) 2단계 DCF</strong>로 적정주가를 계산해 <strong>안전마진 30% 이상</strong>인 종목을 후보로 뽑습니다. 다만 숫자만으로는 <strong>경제적 해자</strong>와 <strong>사업 지배구조</strong>를 판단할 수 없어, 정량 후보는 매주 그 두 가지에 대한 <strong>운영진 검토를 통과한 종목만</strong> 이 화면에 올라옵니다.</p>`,
     `<div class="card" id="jk-latest"><div class="empty">이번 주 조커픽을 불러오는 중…</div></div>`,
     `<div class="card" id="jk-history" hidden></div>`,
     `<div class="card" id="jk-verdicts" hidden></div>`,
@@ -2348,9 +2348,8 @@ async function renderMaxJoker() {
     if (past.length) {
       const hist = $("#jk-history");
       hist.innerHTML = `<div class="card-head"><h3>지난 조커픽</h3><span class="small faint">매주 1종목 · 선정 당시 기준</span></div>
-        <div class="tablewrap"><table><thead><tr><th>주차</th><th>종목</th><th>기본 적정주가</th><th>선정 시 주가</th><th>안전마진</th><th>판정</th></tr></thead><tbody>${past.map((p) => {
-          const m = jkMargin(jokerFair(p.ownerEarnings * 1e8, p.netCash * 1e8, p.shares, JK_SCN[1]), p.price);
-          return `<tr><td class="txt">${escHtml(p.week)}</td><td class="txt"><strong>${escHtml(p.name)}</strong> <span class="tk plain">${escHtml(p.ticker)}</span></td><td>${jkPrice(jokerFair(p.ownerEarnings * 1e8, p.netCash * 1e8, p.shares, JK_SCN[1]))}</td><td>${fmt.krw(p.price)}</td><td class="${m != null && m > 0 ? "pos" : "neg"}">${m != null ? fmt.n(m * 100, 1) + "%" : "–"}</td><td class="txt">${jkVerdictTag(m, jkPassAll(p.metrics))}</td></tr>`;
+        <div class="tablewrap"><table><thead><tr><th>주차</th><th>종목</th><th>선정 시 주가</th><th>판정</th></tr></thead><tbody>${past.map((p) => {
+          return `<tr><td class="txt">${escHtml(p.week)}</td><td class="txt"><strong>${escHtml(p.name)}</strong> <span class="tk plain">${escHtml(p.ticker)}</span></td><td>${fmt.krw(p.price)}</td><td class="txt">${jkPassAll(p.metrics) ? '<span class="tag inc">정량 기준 통과</span>' : '<span class="tag">체크 참고</span>'}</td></tr>`;
         }).join("")}</tbody></table></div>`;
       hist.hidden = false;
     }

@@ -4,8 +4,9 @@
 //   1) 정량 체크리스트 (펀더멘털): ROE 10년 평균 15%+, 부채 2단 구조(부채비율 85% 이하
 //      1차 안전판 + 이자보상배율 5배 이상 실질 검증), 영업이익률 변동성 5%p 이하,
 //      FCF 플러스 9/10년 이상, 순이익 CAGR 7%+
-//   2) 밸류 트랩 필터: 최근 순이익이 직전 3년 고점 대비 15% 넘게 줄었거나(이익 방향 꺾임),
-//      ROE 가 최근 3년 연속 하락 중이면 제외 — 10년 평균이 좋아도 방향이 나쁘면 시장은 안 산다
+//   2) 밸류 트랩 필터: 최근 순이익이 직전 3년 고점 대비 15% 넘게 줄었고 전년 대비로도
+//      감소 중이면(이익 방향 꺾임 · 회복 국면은 제외 안 함), 또는 ROE 가 최근 3년 연속
+//      하락 중이면 제외 — 10년 평균이 좋아도 방향이 나쁘면 시장은 안 산다
 //   3) 지배구조·수급 필터: 최대주주(특수관계인 포함) 지분율 50% 초과, 또는 5일 평균
 //      거래대금 5억원 미만이면 제외 — 저평가를 교정해 줄 매수 주체가 없는 품절주 차단
 //   4) 밸류에이션 문지기 (펀더멘털과 독립 판정): 3년 평균 FCF 수익률(3년 평균 FCF ÷ 시가총액)이
@@ -243,6 +244,10 @@ function screenCorp(years) {
   // 밸류 트랩 필터: 10년 평균이 좋아도 최근 방향이 꺾였으면 시장은 평균을 안 쳐준다
   const peak3 = Math.max(ys[ys.length - 4].ni, ys[ys.length - 3].ni, ys[ys.length - 2].ni); // 직전 3년(최근 연도 제외) 순이익 고점
   const niTrend = peak3 > 0 ? (lastNi / peak3 - 1) * 100 : null; // 최근 순이익의 고점 대비 %
+  // "이익 방향 꺾임" = 고점 대비 크게 줄었고 + 전년 대비로도 아직 감소 중일 때만.
+  // 사이클 저점에서 회복 중인 회사(예: 삼성전자 14.5→33.6→44.3조)가 고점 비교만으로
+  // 꺾임 판정되는 오표기를 막는다. 멀티캠퍼스(311→262, 하락 지속)는 그대로 걸린다.
+  const niBroken = niTrend != null && niTrend < NI_DECLINE_MAX && lastNi < ys[ys.length - 2].ni;
   const roe3 = roeSeries.slice(-3);
   const roeDown = roe3[0] > roe3[1] && roe3[1] > roe3[2]; // ROE 3년 연속 하락
   const metrics = {
@@ -258,7 +263,7 @@ function screenCorp(years) {
     && (metrics.intCov == null || metrics.intCov >= CHECK.intCov)
     && metrics.opStd <= CHECK.opStd
     && metrics.fcfYears >= CHECK.fcfYears && metrics.epsCagr >= CHECK.epsCagr
-    && (niTrend == null || niTrend >= NI_DECLINE_MAX) && !roeDown;
+    && !niBroken && !roeDown;
   // 오너 어닝스: 순이익 + 감가상각 − min(감가상각, 10년 CAPEX 중앙값)
   const dep = last.dep ?? 0;
   const oe = lastNi + dep - Math.min(dep, median(ys.map((v) => v.capex)) ?? dep);
@@ -270,7 +275,7 @@ function screenCorp(years) {
   return {
     pass,
     metrics: { roe10: round(metrics.roe10), debt: round(metrics.debt), intCov: round(metrics.intCov), opStd: round(metrics.opStd), fcfYears: metrics.fcfYears, epsCagr: round(metrics.epsCagr),
-      niTrend: round(niTrend), roeDown, roe3: roe3.map((v) => round(v)), capexCfo: round(capexCfo) },
+      niTrend: round(niTrend), niBroken, roeDown, roe3: roe3.map((v) => round(v)), capexCfo: round(capexCfo) },
     ownerEarnings: Math.round(oe / 1e8), // 억원
     netCash: Math.round(((last.cash ?? 0) - (last.borrow ?? 0)) / 1e8), // 억원
     fcf3Eok: Math.round(fcf3 / 1e8), // 억원 · 3년 평균 FCF
@@ -550,7 +555,7 @@ async function main() {
       if (m.opStd > CHECK.opStd) failKeys.push("opStd");
       if (m.fcfYears < CHECK.fcfYears) failKeys.push("fcfYears");
       if (m.epsCagr < CHECK.epsCagr) failKeys.push("epsCagr");
-      if (m.niTrend != null && m.niTrend < NI_DECLINE_MAX) failKeys.push("niTrend");
+      if (m.niBroken) failKeys.push("niTrend");
       if (m.roeDown) failKeys.push("roeDown");
       if (m.majorHolder != null && m.majorHolder > MAJOR_MAX) failKeys.push("majorHolder");
       if (m.avgValueEok != null && m.avgValueEok < MIN_TRADE_EOK) failKeys.push("avgValueEok");
