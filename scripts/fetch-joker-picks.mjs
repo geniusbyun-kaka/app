@@ -197,8 +197,11 @@ function extractYear(list) {
   const borrow = sumAbs(byNm(/차입금|^사채$|사채\(/, BS)) ?? 0;
   // 이자비용 (이자보상배율용). 손익계산서에 따로 안 적는 회사는 null 로 남아 판정에서 빠진다
   const intExp = sumAbs(byNm(/이자비용/, isIS));
+  // 자기주식 취득·처분 (주주환원 수익률용 · 현금흐름표)
+  const tsBuy = sumAbs(byNm(/자기주식.*취득/, CF));
+  const tsSell = sumAbs(byNm(/자기주식.*처분/, CF));
   if (ni == null || eq == null) return null; // 최소한 순이익·자본이 없으면 못 쓴다
-  return { rev, op, ni, eq, liab, cfo, capex, dep, cash, borrow, intExp };
+  return { rev, op, ni, eq, liab, cfo, capex, dep, cash, borrow, intExp, tsBuy, tsSell };
 }
 // prefer 가 "OFS" 면 별도재무제표부터 조회한다 (연결이 없는 회사로 확인된 경우 호출 절약).
 // 반환: undefined = 한도 소진, null = 데이터 없음, { data, fs } = 성공(어느 재무제표였는지 포함)
@@ -261,13 +264,17 @@ function screenCorp(years) {
   const oe = lastNi + dep - Math.min(dep, median(ys.map((v) => v.capex)) ?? dep);
   const round = (v, d = 1) => (v == null ? null : Math.round(v * 10 ** d) / 10 ** d);
   const fcf3 = ys.slice(-3).reduce((s, v) => s + (v.cfo - v.capex), 0) / 3; // 밸류에이션용 3년 평균 FCF
+  // CAPEX 집약도 = 10년 누적 CAPEX ÷ 영업현금흐름. 버핏의 "통행료 다리" 테스트 (참고 지표)
+  const cfoSum = ys.reduce((s, v) => s + v.cfo, 0);
+  const capexCfo = cfoSum > 0 ? (ys.reduce((s, v) => s + v.capex, 0) / cfoSum) * 100 : null;
   return {
     pass,
     metrics: { roe10: round(metrics.roe10), debt: round(metrics.debt), intCov: round(metrics.intCov), opStd: round(metrics.opStd), fcfYears: metrics.fcfYears, epsCagr: round(metrics.epsCagr),
-      niTrend: round(niTrend), roeDown, roe3: roe3.map((v) => round(v)) },
+      niTrend: round(niTrend), roeDown, roe3: roe3.map((v) => round(v)), capexCfo: round(capexCfo) },
     ownerEarnings: Math.round(oe / 1e8), // 억원
     netCash: Math.round(((last.cash ?? 0) - (last.borrow ?? 0)) / 1e8), // 억원
     fcf3Eok: Math.round(fcf3 / 1e8), // 억원 · 3년 평균 FCF
+    buybackEok: last.tsBuy != null ? Math.round(((last.tsBuy ?? 0) - (last.tsSell ?? 0)) / 1e8) : null, // 억원 · 최근 연도 자사주 순매입
     opLastEok: last.op != null ? Math.round(last.op / 1e8) : null, // 억원 · EV/EBIT 참고용
   };
 }
@@ -275,13 +282,23 @@ function screenCorp(years) {
 // "이 회사를 통째로 사면 연 몇 %를 버는 셈인지, 그게 국채의 2배는 되는지"
 // FCF 수익률 = 3년 평균 FCF ÷ 시가총액 · 커트라인 = 국고채 10년물 × 2 (금리는 중력)
 // EV/EBIT 는 버핏의 "세전이익 10배" 매수 패턴 참고 지표 (판정에는 안 쓴다)
-function valuationOf(s, mcapEok) {
+// extra: { quote (52주 밴드 위치용), divTotEok (현금배당 총액 · FY 사업보고서 기준) }
+// 주주환원 수익률·배당·자사주는 FY 사업보고서(basisYear) 결산 기준이라, 그 뒤에 발표된
+// 자사주 매입·배당 변경은 다음 보고서부터 반영된다 (화면에 기준 연도를 반드시 명시할 것)
+function valuationOf(s, mcapEok, extra = {}) {
   if (!(mcapEok > 0)) return null;
   const fcfYield = (s.fcf3Eok / mcapEok) * 100;
   const cut = KTB10Y * VAL_KTB_MULT;
   const evEbit = s.opLastEok > 0 ? (mcapEok - s.netCash) / s.opLastEok : null;
+  // 주주환원 수익률 = (현금배당 총액 + 자사주 순매입) ÷ 시가총액 (참고 지표)
+  const ret = (extra.divTotEok ?? 0) + Math.max(s.buybackEok ?? 0, 0);
+  const shYield = extra.divTotEok != null || s.buybackEok != null ? (ret / mcapEok) * 100 : null;
+  // 52주 밴드 내 현재가 위치 (0=저점, 100=고점) — 사이클 어디서 사는지 보는 참고 지표
+  const q = extra.quote;
+  const pos52w = q && q.hi52 > q.lo52 ? ((q.price - q.lo52) / (q.hi52 - q.lo52)) * 100 : null;
   const r1 = (v) => (v == null ? null : Math.round(v * 10) / 10);
-  return { fcfYield: r1(fcfYield), cut: r1(cut), ktb10y: KTB10Y, evEbit: r1(evEbit), pass: fcfYield >= cut };
+  return { fcfYield: r1(fcfYield), cut: r1(cut), ktb10y: KTB10Y, evEbit: r1(evEbit), pass: fcfYield >= cut,
+    shYield: r1(shYield), pos52w: pos52w == null ? null : Math.round(pos52w), basisYear: LAST_YEAR };
 }
 function jokerFair(oeEok, netCashEok, shares, { g, r, tg }) {
   const oe = oeEok * 1e8;
@@ -292,16 +309,18 @@ function jokerFair(oeEok, netCashEok, shares, { g, r, tg }) {
   return (pv1 + pv2 + netCashEok * 1e8) / shares;
 }
 
-// ── 현재가 + 5일 평균 거래대금: 야후 (KRX 는 .KS 코스피 / .KQ 코스닥) ──
+// ── 현재가 + 5일 평균 거래대금 + 52주 밴드: 야후 1년치 한 번에 (KRX 는 .KS 코스피 / .KQ 코스닥) ──
 async function fetchPrice(stock) {
   for (const [suffix, market] of [[".KS", "코스피"], [".KQ", "코스닥"]]) {
     try {
-      const { rows } = await yahooChart(stock + suffix, { range: "5d", interval: "1d" });
+      const { rows } = await yahooChart(stock + suffix, { range: "1y", interval: "1d" });
       const c = rows.at(-1)?.c;
       if (c > 0) {
-        const vals = rows.map((r) => (r.c || 0) * (r.v || 0)).filter((v) => v > 0);
+        const vals = rows.slice(-5).map((r) => (r.c || 0) * (r.v || 0)).filter((v) => v > 0);
         const avgValueEok = vals.length ? Math.round((vals.reduce((s, v) => s + v, 0) / vals.length / 1e8) * 10) / 10 : null;
-        return { price: c, market, avgValueEok };
+        let lo52 = Infinity, hi52 = -Infinity;
+        for (const r of rows) { if (r.c > 0) { if (r.c < lo52) lo52 = r.c; if (r.c > hi52) hi52 = r.c; } }
+        return { price: c, market, avgValueEok, lo52: isFinite(lo52) ? lo52 : null, hi52: isFinite(hi52) ? hi52 : null };
       }
     } catch {}
   }
@@ -321,16 +340,20 @@ async function fetchMajorHolder(corp, year) {
   return rt != null && rt > 0 && rt <= 100 ? Math.round(rt * 10) / 10 : null;
 }
 
-// ── 주당 현금배당금(보통주) 당기·전기 → 배당 삭감 플래그. 못 읽으면 null ──
-async function fetchDividendCut(corp, year) {
+// ── 배당에 관한 사항: 주당 배당 삭감 플래그 + 현금배당 총액(억원 · 주주환원 수익률용) ──
+async function fetchDividendInfo(corp, year) {
   const j = await dartJson("alotMatter.json", { corp_code: corp.code, bsns_year: String(year), reprt_code: "11011" });
   if (j == null) return undefined; // 한도 소진
   if (j.status !== "000" || !j.list?.length) return null;
   const row = j.list.find((x) => /주당\s*현금배당금/.test(x.se || "") && (!x.stock_knd || /보통/.test(x.stock_knd)));
-  if (!row) return null;
-  const cur = num(row.thstrm), prev = num(row.frmtrm);
-  if (cur == null || prev == null) return null;
-  return prev > 0 && cur < prev;
+  let cut = null;
+  if (row) {
+    const cur = num(row.thstrm), prev = num(row.frmtrm);
+    if (cur != null && prev != null) cut = prev > 0 && cur < prev;
+  }
+  const totRow = j.list.find((x) => /현금배당금총액/.test(x.se || ""));
+  const totEok = totRow ? (num(totRow.thstrm) != null ? Math.round(num(totRow.thstrm) / 100) : null) : null; // 백만원 → 억원
+  return { cut, totEok };
 }
 
 const readJson = async (p, fb) => { try { return JSON.parse(await readFile(p, "utf8")); } catch { return fb; } };
@@ -365,10 +388,10 @@ async function main() {
       if (!s?.pass) continue;
       // 이자보상배율 도입 전 캐시는 intExp 가 없다. 후보는 여기서 바로 최신 연도를 다시 받아
       // 채우고 재판정한다 (첫 실행부터 intCov 가 판정에 반영되게)
-      if (e.cache.years[LAST_YEAR] && e.cache.years[LAST_YEAR].intExp === undefined && !budgetOut) {
+      if (e.cache.years[LAST_YEAR] && (e.cache.years[LAST_YEAR].intExp === undefined || e.cache.years[LAST_YEAR].tsBuy === undefined) && !budgetOut) {
         const got = await fetchYear(e.corp, LAST_YEAR, e.cache.fs);
         if (got) e.cache.years[LAST_YEAR] = got.data;
-        else if (got === null) e.cache.years[LAST_YEAR].intExp = null;
+        else if (got === null) { e.cache.years[LAST_YEAR].intExp = null; e.cache.years[LAST_YEAR].tsBuy = null; }
         if (got !== undefined) {
           await writeFile(e.cachePath, JSON.stringify(e.cache));
           s = screenCorp(e.cache.years);
@@ -401,20 +424,20 @@ async function main() {
         console.log(`[joker] ${e.corp.name} 제외 — 최대주주 지분율 ${mh}% > ${MAJOR_MAX}%`);
         continue;
       }
-      // 배당 삭감은 제외 사유가 아니라 플래그: 주간 검토에서 매도 신호로 참고한다
-      let divCut = e.cache.divCutYear === LAST_YEAR ? e.cache.divCut : undefined;
-      if (divCut === undefined && !budgetOut) {
-        divCut = await fetchDividendCut(e.corp, LAST_YEAR);
-        if (divCut !== undefined) { e.cache.divCut = divCut; e.cache.divCutYear = LAST_YEAR; await writeFile(e.cachePath, JSON.stringify(e.cache)); }
+      // 배당: 삭감 플래그(참고) + 현금배당 총액(주주환원 수익률용). FY 사업보고서 결산 기준
+      let div = e.cache.divYear === LAST_YEAR ? e.cache.div : undefined;
+      if (div === undefined && !budgetOut) {
+        div = await fetchDividendInfo(e.corp, LAST_YEAR);
+        if (div !== undefined) { e.cache.div = div; e.cache.divYear = LAST_YEAR; await writeFile(e.cachePath, JSON.stringify(e.cache)); }
       }
       const fair = jokerFair(s.ownerEarnings, s.netCash, shares, BASE);
       const margin = fair != null && fair > 0 ? (fair - quote.price) / fair : null;
       if (margin == null) continue;
-      const valuation = valuationOf(s, Math.round((quote.price * shares) / 1e8)); // 펀더멘털과 독립 판정
+      const valuation = valuationOf(s, Math.round((quote.price * shares) / 1e8), { quote, divTotEok: div?.totEok ?? null }); // 펀더멘털과 독립 판정
       candidates.set(e.corp.stock, {
         name: e.corp.name, ticker: e.corp.stock, market: quote.market, price: Math.round(quote.price), shares,
         netCash: s.netCash, ownerEarnings: s.ownerEarnings,
-        metrics: { ...s.metrics, majorHolder: mh ?? null, avgValueEok: quote.avgValueEok ?? null, divCut: divCut ?? null },
+        metrics: { ...s.metrics, majorHolder: mh ?? null, avgValueEok: quote.avgValueEok ?? null, divCut: div?.cut ?? null },
         valuation,
         fair: Math.round(fair), margin: Math.round(margin * 1000) / 1000,
         source: `DART ${LAST_YEAR} 사업보고서 (연결)`,
@@ -431,10 +454,10 @@ async function main() {
   const processCorp = async (e) => {
     let dirty = false;
     // 이자보상배율 도입으로 intExp 가 없는 예전 캐시는 최신 연도만 다시 받아 채운다 (회사당 1회)
-    if (e.cache.years[LAST_YEAR] && e.cache.years[LAST_YEAR].intExp === undefined && !budgetOut && calls < COLLECT_CAP) {
+    if (e.cache.years[LAST_YEAR] && (e.cache.years[LAST_YEAR].intExp === undefined || e.cache.years[LAST_YEAR].tsBuy === undefined) && !budgetOut && calls < COLLECT_CAP) {
       const got = await fetchYear(e.corp, LAST_YEAR, e.cache.fs);
       if (got) { e.cache.years[LAST_YEAR] = got.data; dirty = true; }
-      else if (got === null) { e.cache.years[LAST_YEAR].intExp = null; dirty = true; } // 못 받으면 null 로 마킹해 반복 방지
+      else if (got === null) { e.cache.years[LAST_YEAR].intExp = null; e.cache.years[LAST_YEAR].tsBuy = null; dirty = true; } // 못 받으면 null 로 마킹해 반복 방지
     }
     // 최신 연도부터 조회: 최신이 없으면(신규 상장 등) 과거 조회를 건너뛰고,
     // 연결재무제표가 없는 회사로 확인되면 다음 연도부터 별도를 먼저 조회해 호출을 아낀다
@@ -514,12 +537,12 @@ async function main() {
         mh = await fetchMajorHolder(e.corp, LAST_YEAR);
         if (mh !== undefined) { e.cache.mh = mh; e.cache.mhYear = LAST_YEAR; await writeFile(e.cachePath, JSON.stringify(e.cache)); }
       }
-      let divCut = e.cache.divCutYear === LAST_YEAR ? e.cache.divCut : undefined;
-      if (divCut === undefined && !budgetOut) {
-        divCut = await fetchDividendCut(e.corp, LAST_YEAR);
-        if (divCut !== undefined) { e.cache.divCut = divCut; e.cache.divCutYear = LAST_YEAR; await writeFile(e.cachePath, JSON.stringify(e.cache)); }
+      let div = e.cache.divYear === LAST_YEAR ? e.cache.div : undefined;
+      if (div === undefined && !budgetOut) {
+        div = await fetchDividendInfo(e.corp, LAST_YEAR);
+        if (div !== undefined) { e.cache.div = div; e.cache.divYear = LAST_YEAR; await writeFile(e.cachePath, JSON.stringify(e.cache)); }
       }
-      const m = { ...s.metrics, majorHolder: mh ?? null, avgValueEok: quote?.avgValueEok ?? null, divCut: divCut ?? null };
+      const m = { ...s.metrics, majorHolder: mh ?? null, avgValueEok: quote?.avgValueEok ?? null, divCut: div?.cut ?? null };
       const failKeys = [];
       if (m.roe10 < CHECK.roe10) failKeys.push("roe10");
       if (m.debt > CHECK.debt) failKeys.push("debt");
@@ -538,7 +561,7 @@ async function main() {
         mcapEok,
         verdict: failKeys.length ? "fail" : "pass",
         failKeys, metrics: m,
-        valuation: valuationOf(s, mcapEok), // 펀더멘털과 독립 표기 (상쇄 금지)
+        valuation: valuationOf(s, mcapEok, { quote, divTotEok: div?.totEok ?? null }),
         ownerEarnings: s.ownerEarnings, netCash: s.netCash, shares: shares ?? null,
       };
     };

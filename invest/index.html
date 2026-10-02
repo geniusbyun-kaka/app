@@ -1873,7 +1873,7 @@ async function renderMaxPrices() {
   const gurus = GURUS.filter((g) => g.ready);
   body.innerHTML = [
     maxBackBtn,
-    `<p class="desc">추천 대상은 레전드 연속 매수 종목 화면과 같은 기준입니다: <strong>최근 분기까지 연속 매수 중</strong>이거나 <strong>꾸준히 모으는 종목</strong>(최근 8분기 중 2회 이상 매수, 그 사이 매도 없음)만 올립니다. 여기에 더해 <strong>분기말 보유 평가액 $150M 미만</strong>의 소형 포지션은 연속 매수 중이라도 뺍니다 (수백 종목을 들고 있는 기관의 잔챙이 포지션까지 다 올라오면 정작 의미 있는 픽이 묻히기 때문입니다). <strong>추정 평균단가</strong>는 레전드가 매수한 분기마다 그 분기 <strong>종가 최저가에서 5% 오른 가격</strong>을 매수 단가로 보고, 그 분기에 늘린 주식수로 가중평균한 값입니다 (레전드들은 약세 구간에서 분할 매수하는 경향이 있어 저점 부근 체결로 봅니다). <strong>최근 매수가</strong>는 가장 최근에 매수한 분기의 같은 추정가인데, SEC Form 4 · 13D/G 공시나 수기 등록된 매수 뉴스에 <strong>실제 단가</strong>가 있으면(예: 버크셔의 레너 추가 매수, 알파벳 $350 사모 매입) 추정가 대신 그 단가의 주식수 가중평균을 사용하며 태그가 붙습니다 (My Page 와 같은 값). 따라 사기 판단은 이 값을 기준으로 합니다. 현재가가 <strong>최근 매수가보다 낮으면 강력 추천</strong>, <strong>+10% 이내면 추천</strong>, 그보다 높으면 관망입니다. 티커를 누르면 종목 차트로 이동합니다.</p>`,
+    `<p class="desc"><strong>레전드 실매수 추종 트랙</strong>입니다: 조커픽의 자체 발굴 체크리스트와 별개로, 레전드가 공시로 확인된 가격에 실제로 사고 있다는 사실 자체를 따라갑니다 (펀더멘털 체크리스트 통과 여부와 무관). 추천 대상은 레전드 연속 매수 종목 화면과 같은 기준입니다: <strong>최근 분기까지 연속 매수 중</strong>이거나 <strong>꾸준히 모으는 종목</strong>(최근 8분기 중 2회 이상 매수, 그 사이 매도 없음)만 올립니다. 여기에 더해 <strong>분기말 보유 평가액 $150M 미만</strong>의 소형 포지션은 연속 매수 중이라도 뺍니다 (수백 종목을 들고 있는 기관의 잔챙이 포지션까지 다 올라오면 정작 의미 있는 픽이 묻히기 때문입니다). <strong>추정 평균단가</strong>는 레전드가 매수한 분기마다 그 분기 <strong>종가 최저가에서 5% 오른 가격</strong>을 매수 단가로 보고, 그 분기에 늘린 주식수로 가중평균한 값입니다 (레전드들은 약세 구간에서 분할 매수하는 경향이 있어 저점 부근 체결로 봅니다). <strong>최근 매수가</strong>는 가장 최근에 매수한 분기의 같은 추정가인데, SEC Form 4 · 13D/G 공시나 수기 등록된 매수 뉴스에 <strong>실제 단가</strong>가 있으면(예: 버크셔의 레너 추가 매수, 알파벳 $350 사모 매입) 추정가 대신 그 단가의 주식수 가중평균을 사용하며 태그가 붙습니다 (My Page 와 같은 값). 따라 사기 판단은 이 값을 기준으로 합니다. 현재가가 <strong>최근 매수가보다 낮으면 강력 추천</strong>, <strong>+10% 이내면 추천</strong>, 그보다 높으면 관망입니다. 티커를 누르면 종목 차트로 이동합니다.</p>`,
     gurus.map((g) => `<div class="card" id="mx-follow-${g.id}"><div class="card-head"><h3>${g.name} · ${g.org}</h3></div><div class="empty">분기별 매수와 주가 이력으로 추정 단가를 계산하는 중…</div></div>`).join(""),
     alertsCardHtml(),
     `<p class="small faint">13F는 분기 말 보유분이 45일 뒤에 공개되는 자료이고, 단가는 분기 주가 범위로 계산한 추정치라 실제 체결가와 다를 수 있습니다 (예: 블록딜). 투자 판단과 책임은 본인에게 있습니다.</p>`,
@@ -2156,6 +2156,8 @@ const JK_CHECKS = [
   { k: "majorHolder", label: "최대주주 지분율 (특수관계인 포함)", rule: "50% 이하", fmt: (v) => `${fmt.n(v, 1)}%`, pass: (v) => v <= 50, opt: true },
   { k: "avgValueEok", label: "일 거래대금 (5일 평균)", rule: "5억원 이상", fmt: (v) => `${fmt.n(v, 1)}억원`, pass: (v) => v >= 5, opt: true },
   // 배당 삭감은 탈락 사유가 아니라 참고 플래그 (info: 판정 합계에 넣지 않음)
+  // 통행료 다리 테스트: 번 현금을 공장에 다시 쏟아붓는 사업인지 (참고 · 판정 합계에 안 들어감)
+  { k: "capexCfo", label: "CAPEX 집약도 (10년 CAPEX ÷ 영업현금흐름)", rule: "50% 이하 · 참고", fmt: (v) => `${fmt.n(v, 0)}%`, pass: (v) => v <= 50, opt: true, info: true },
   { k: "divCut", label: "주당 배당 (전년 대비)", rule: "삭감 아님 · 참고", fmt: (v) => (v ? "삭감" : "유지·증가"), pass: (v) => !v, opt: true, info: true },
 ];
 // 오너 어닝스 2단계 DCF: 10년 현재가치 합 + 영구가치(현재가치) + 순현금 → 주당 가치 (모두 원 단위)
@@ -2193,6 +2195,7 @@ function jkValuationHtml(v) {
   if (!v) return "";
   return `<div class="eyebrow" style="margin-top:16px">밸류에이션 문지기 · 펀더멘털과 독립 판정</div>
     <div class="jk-verdict">${v.pass ? '<span class="tag inc">통과</span>' : '<span class="tag exit">미달</span>'}<span>이 회사를 통째로 사면 <strong>연 ${fmt.n(v.fcfYield, 1)}%</strong>를 버는 셈입니다 (3년 평균 FCF ÷ 시가총액). 커트라인은 국고채 10년물 ${fmt.n(v.ktb10y, 1)}%의 2배인 <strong>${fmt.n(v.cut, 1)}%</strong>${v.evEbit != null ? ` · 참고 EV/EBIT <strong>${fmt.n(v.evEbit, 1)}배</strong> (버핏의 실제 매수 패턴은 10배 안팎)` : ""}</span></div>
+    ${v.shYield != null || v.pos52w != null ? `<div class="jk-verdict" style="margin-top:8px"><span class="tag">참고</span><span>${v.shYield != null ? `주주환원 수익률 <strong>${fmt.n(v.shYield, 1)}%</strong> (현금배당 + 자사주 순매입 ÷ 시총 · <strong>FY${v.basisYear} 사업보고서 결산 기준</strong>이라 그 뒤 발표된 자사주 매입·배당 변경은 다음 보고서부터 반영)` : ""}${v.shYield != null && v.pos52w != null ? " · " : ""}${v.pos52w != null ? `현재가는 52주 밴드의 <strong>${v.pos52w}%</strong> 지점 (0=저점, 100=고점)` : ""}</span></div>` : ""}
     <p class="small faint" style="margin-top:6px">싼 가격은 나쁜 사업의 면죄부가 아니므로 밸류에이션 통과가 펀더멘털 탈락을 상쇄하지 않습니다. 조커픽 선정은 펀더멘털 통과와 밸류에이션 통과를 모두 요구합니다.</p>`;
 }
 function jkScenarioKpis(oe, netCash, shares, price, scns = JK_SCN) {
@@ -2277,7 +2280,7 @@ async function renderMaxJoker() {
   body.dataset.screen = "joker";
   body.innerHTML = [
     maxBackBtn,
-    `<p class="desc">"워렌 버핏과 찰리 멍거가 2026년 한국 시장에서 투자한다면 어떤 종목을 고를까"를 정해진 산식으로 재현한 화면입니다. 1단계로 <strong>정량 체크리스트</strong>(ROE 10년 평균 15% 이상 · 부채비율 85% 이하 + 이자보상배율 5배 이상의 2단 구조 · 영업이익률 변동성 낮음 · 잉여현금흐름 계속 플러스 · 이익의 꾸준한 성장)를 통과한 회사만 남기고, 여기에 <strong>밸류 트랩·지배구조 필터</strong>(최근 이익 방향이 꺾인 회사 · ROE 3년 연속 하락 · 최대주주 지분 50% 초과 · 일 거래대금 5억원 미만 제외)와 <strong>밸류에이션 문지기</strong>(3년 평균 FCF 수익률이 국고채 10년물 금리의 2배 이상 · 펀더멘털과 독립 판정이며 서로 상쇄하지 않음)를 더해 거른 뒤, 2단계로 <strong>오너 어닝스(순이익 + 감가상각비 − 유지보수 설비투자) 2단계 DCF</strong>로 적정주가를 계산해 <strong>안전마진 30% 이상</strong>인 종목을 후보로 뽑습니다. 다만 숫자만으로는 <strong>경제적 해자</strong>와 <strong>사업 지배구조</strong>를 판단할 수 없어, 정량 후보는 매주 그 두 가지에 대한 <strong>운영진 검토를 통과한 종목만</strong> 이 화면에 올라옵니다. 할인율 2%p 차이로 적정주가가 20% 넘게 움직이기 때문에, 숫자 하나가 아니라 <strong>보수적·기본·낙관적 3개 시나리오</strong>를 항상 함께 보여줍니다.</p>`,
+    `<p class="desc"><strong>자체 발굴 트랙</strong>입니다: "워렌 버핏과 찰리 멍거가 2026년 한국 시장에서 투자한다면 어떤 종목을 고를까"를 정해진 산식으로 재현합니다 (레전드의 실제 매수를 따라가는 추종 트랙은 Max 라운지의 매수 가격 따라가기 화면에 따로 있습니다). 1단계로 <strong>정량 체크리스트</strong>(ROE 10년 평균 15% 이상 · 부채비율 85% 이하 + 이자보상배율 5배 이상의 2단 구조 · 영업이익률 변동성 낮음 · 잉여현금흐름 계속 플러스 · 이익의 꾸준한 성장)를 통과한 회사만 남기고, 여기에 <strong>밸류 트랩·지배구조 필터</strong>(최근 이익 방향이 꺾인 회사 · ROE 3년 연속 하락 · 최대주주 지분 50% 초과 · 일 거래대금 5억원 미만 제외)와 <strong>밸류에이션 문지기</strong>(3년 평균 FCF 수익률이 국고채 10년물 금리의 2배 이상 · 펀더멘털과 독립 판정이며 서로 상쇄하지 않음)를 더해 거른 뒤, 2단계로 <strong>오너 어닝스(순이익 + 감가상각비 − 유지보수 설비투자) 2단계 DCF</strong>로 적정주가를 계산해 <strong>안전마진 30% 이상</strong>인 종목을 후보로 뽑습니다. 다만 숫자만으로는 <strong>경제적 해자</strong>와 <strong>사업 지배구조</strong>를 판단할 수 없어, 정량 후보는 매주 그 두 가지에 대한 <strong>운영진 검토를 통과한 종목만</strong> 이 화면에 올라옵니다. 할인율 2%p 차이로 적정주가가 20% 넘게 움직이기 때문에, 숫자 하나가 아니라 <strong>보수적·기본·낙관적 3개 시나리오</strong>를 항상 함께 보여줍니다.</p>`,
     `<div class="card" id="jk-latest"><div class="empty">이번 주 조커픽을 불러오는 중…</div></div>`,
     `<div class="card" id="jk-history" hidden></div>`,
     `<div class="card" id="jk-verdicts" hidden></div>`,
