@@ -567,8 +567,8 @@ try { if (localStorage.getItem("sb-hzzmzpsjuovijtananmf-auth-token")) document.g
       <p class="small faint" style="margin-top:12px"><a href="https://github.com/geniusbyun-kaka/app/edit/claude/baby-sleep-tracking-app-23p7s7/invest/lessons.json" target="_blank" rel="noopener">글 관리 (관리자 전용)</a> · 저장소 관리자만 편집할 수 있고, 저장하면 잠시 뒤 이 페이지에 반영됩니다</p>
     </div>
     <div class="card">
-      <div class="card-head"><h3>투자 대가 따라하기</h3><span class="small faint">구독 서비스</span></div>
-      <p class="desc">워렌 버핏, 빌 애크먼, 세스 클라르만 등 투자 대가들이 실제로 사 모으는 종목을 분기 공시(13F) 기준으로 받아보는 프리미엄 기능입니다.</p>
+      <div class="card-head"><h3>투자 레전드 따라하기</h3><span class="small faint">구독 서비스</span></div>
+      <p class="desc">워렌 버핏, 빌 애크먼, 세스 클라르만 등 투자 레전드들이 실제로 사 모으는 종목을 분기 공시(13F) 기준으로 받아보는 프리미엄 기능입니다.</p>
       <div class="form-actions" style="margin-top:10px"><button class="btn primary" id="sc-buffett" type="button">시작하기</button></div>
     </div>
   </section>
@@ -839,7 +839,7 @@ try { if (localStorage.getItem("sb-hzzmzpsjuovijtananmf-auth-token")) document.g
 <div class="modal-ov" id="gu-modal" hidden role="dialog" aria-modal="true" aria-labelledby="gu-title">
   <div class="modal">
     <div class="modal-head">
-      <h3 id="gu-title">투자 대가 따라하기</h3>
+      <h3 id="gu-title">투자 레전드 따라하기</h3>
       <button class="modal-close" id="gu-close" type="button" aria-label="닫기">×</button>
     </div>
     <div class="modal-body" id="gu-body"></div>
@@ -1585,11 +1585,11 @@ function runStarterCalc() {
 }
 // 투자 대가 따라하기 구독 모달
 const PLANS = [
-  { id: "pro", name: "Pro 구독형", price: "29,000원", feats: ["투자 대가들을 따라하며 추천종목 받기"] },
-  { id: "max", name: "Max 구독형", price: "89,000원", hot: true, feats: ["투자 대가들의 추천종목 받기", "원하는 매입 가격 실시간 알림", "AI 추천 투자 포트폴리오 구성", "나스닥 레버리지 투자법 등 훨씬 더 다양한 투자방안 추천"] },
+  { id: "pro", name: "Pro 구독형", price: "29,000원", feats: ["투자 레전드들을 따라하며 추천종목 받기"] },
+  { id: "max", name: "Max 구독형", price: "89,000원", hot: true, feats: ["투자 레전드들의 추천종목 받기", "원하는 매입 가격 실시간 알림", "AI 추천 투자 포트폴리오 구성", "나스닥 레버리지 투자법 등 훨씬 더 다양한 투자방안 추천"] },
 ];
 const GURUS = [
-  { id: "buffett", name: "워렌 버핏", org: "버크셔 해서웨이", filer: "버크셔", ready: true, desc: "가치투자의 대가. 버크셔 해서웨이 13F를 바탕으로 연속으로 사 모으는 종목과 그 근거를 보여드립니다." },
+  { id: "buffett", name: "워렌 버핏", org: "버크셔 해서웨이", filer: "버크셔", ready: true, desc: "가치투자의 레전드. 버크셔 해서웨이 13F를 바탕으로 연속으로 사 모으는 종목과 그 근거를 보여드립니다." },
   { id: "ackman", name: "빌 애크먼", org: "퍼싱 스퀘어", filer: "퍼싱 스퀘어", ready: true, file: "pershing.json", desc: "소수 종목에 집중하는 행동주의 투자자. 2026년부터는 상장 모회사 Pershing Square, Inc.(NYSE: PS)가 13F를 공시합니다." },
   { id: "klarman", name: "세스 클라르만", org: "바우포스트 그룹", filer: "바우포스트", ready: true, file: "baupost.json", desc: "『안전마진』의 저자. 철저한 저평가 매수를 고집하는 절대수익형 가치투자자입니다." },
   { id: "loeb", name: "대니얼 러브", org: "서드 포인트", filer: "서드 포인트", ready: true, file: "thirdpoint.json", desc: "행동주의와 이벤트 드리븐 전략을 함께 쓰는 서드 포인트 창업자입니다." },
@@ -1604,7 +1604,7 @@ function closeGuruModal() { $("#gu-modal").hidden = true; document.body.style.ov
 function renderPlanMenu() {
   $("#gu-title").textContent = "구독 서비스";
   $("#gu-body").innerHTML = `
-    <p class="desc">투자 대가들의 실제 매수를 따라가는 구독 서비스입니다. 원하는 구독 형태를 선택하세요. Max 를 선택하면 Max 전용 라운지가 열립니다.</p>
+    <p class="desc">투자 레전드들의 실제 매수를 따라가는 구독 서비스입니다. 원하는 구독 형태를 선택하세요. Max 를 선택하면 Max 전용 라운지가 열립니다.</p>
     <div class="plan-grid">${PLANS.map((p) => `<button class="plan-card ${p.hot ? "hot" : ""}" type="button" data-plan="${p.id}">
       ${p.hot ? '<span class="plan-badge">인기</span>' : ""}
       <span class="plan-name">${p.name}</span>
@@ -1626,7 +1626,7 @@ function renderGuruTab() {
   if (state.guruSel) return renderGuruPage(state.guruSel);
   $("#panel-gurus").innerHTML = `<div class="card">
     <div class="card-head"><h3>레전드 연속 매수 종목</h3><span class="small faint">분기 공시(13F) 기준</span></div>
-    <p class="desc">대가들이 실제로 사 모으는 종목을 분기 공시(13F)로 따라갑니다. 워렌 버핏 상세 분석은 버핏 탭에 그대로 있고, 여기서는 투자자를 누르면 이 화면 전체에 추천 종목과 근거가 열립니다.</p>
+    <p class="desc">레전드들이 실제로 사 모으는 종목을 분기 공시(13F)로 따라갑니다. 워렌 버핏 상세 분석은 레전드 포트폴리오 탭에 그대로 있고, 여기서는 투자자를 누르면 이 화면 전체에 추천 종목과 근거가 열립니다.</p>
     <div class="gu-grid sm" style="margin-top:12px">${GURUS.map((g) => `<button class="gu-card" type="button" data-guru="${g.id}">
       <span class="gu-name">${g.name}</span>
       <span class="gu-org">${g.org}${g.ready ? "" : " · 준비 중"}</span>
@@ -1634,7 +1634,7 @@ function renderGuruTab() {
       <span class="gu-cta">추천 종목 보기 →</span>
     </button>`).join("")}</div></div>`;
 }
-const guruHeadHtml = (g) => `<div class="gu-page-head"><button class="btn" type="button" id="gu-page-back">← 대가 목록</button><h2>${g.name} 추천 종목</h2><span class="small faint">${g.org}</span>${favStarHtml("guru", g.id, isFavGuru(g.id), true)}</div>`;
+const guruHeadHtml = (g) => `<div class="gu-page-head"><button class="btn" type="button" id="gu-page-back">← 레전드 목록</button><h2>${g.name} 추천 종목</h2><span class="small faint">${g.org}</span>${favStarHtml("guru", g.id, isFavGuru(g.id), true)}</div>`;
 function renderGuruPage(id) {
   const g = GURUS.find((x) => x.id === id); if (!g) { state.guruSel = null; return renderGuruTab(); }
   state.guruSel = id;
@@ -1873,7 +1873,7 @@ async function renderMaxPrices() {
   const gurus = GURUS.filter((g) => g.ready);
   body.innerHTML = [
     maxBackBtn,
-    `<p class="desc">추천 대상은 투자 대가 탭과 같은 기준입니다: <strong>최근 분기까지 연속 매수 중</strong>이거나 <strong>꾸준히 모으는 종목</strong>(최근 8분기 중 2회 이상 매수, 그 사이 매도 없음)만 올립니다. 여기에 더해 <strong>분기말 보유 평가액 $150M 미만</strong>의 소형 포지션은 연속 매수 중이라도 뺍니다 (수백 종목을 들고 있는 기관의 잔챙이 포지션까지 다 올라오면 정작 의미 있는 픽이 묻히기 때문입니다). <strong>추정 평균단가</strong>는 대가가 매수한 분기마다 그 분기 <strong>종가 최저가에서 5% 오른 가격</strong>을 매수 단가로 보고, 그 분기에 늘린 주식수로 가중평균한 값입니다 (대가들은 약세 구간에서 분할 매수하는 경향이 있어 저점 부근 체결로 봅니다). <strong>최근 매수가</strong>는 가장 최근에 매수한 분기의 같은 추정가인데, SEC Form 4 · 13D/G 공시나 수기 등록된 매수 뉴스에 <strong>실제 단가</strong>가 있으면(예: 버크셔의 레너 추가 매수, 알파벳 $350 사모 매입) 추정가 대신 그 단가의 주식수 가중평균을 사용하며 태그가 붙습니다 (My Page 와 같은 값). 따라 사기 판단은 이 값을 기준으로 합니다. 현재가가 <strong>최근 매수가보다 낮으면 강력 추천</strong>, <strong>+10% 이내면 추천</strong>, 그보다 높으면 관망입니다. 티커를 누르면 종목 차트로 이동합니다.</p>`,
+    `<p class="desc">추천 대상은 레전드 연속 매수 종목 화면과 같은 기준입니다: <strong>최근 분기까지 연속 매수 중</strong>이거나 <strong>꾸준히 모으는 종목</strong>(최근 8분기 중 2회 이상 매수, 그 사이 매도 없음)만 올립니다. 여기에 더해 <strong>분기말 보유 평가액 $150M 미만</strong>의 소형 포지션은 연속 매수 중이라도 뺍니다 (수백 종목을 들고 있는 기관의 잔챙이 포지션까지 다 올라오면 정작 의미 있는 픽이 묻히기 때문입니다). <strong>추정 평균단가</strong>는 레전드가 매수한 분기마다 그 분기 <strong>종가 최저가에서 5% 오른 가격</strong>을 매수 단가로 보고, 그 분기에 늘린 주식수로 가중평균한 값입니다 (레전드들은 약세 구간에서 분할 매수하는 경향이 있어 저점 부근 체결로 봅니다). <strong>최근 매수가</strong>는 가장 최근에 매수한 분기의 같은 추정가인데, SEC Form 4 · 13D/G 공시나 수기 등록된 매수 뉴스에 <strong>실제 단가</strong>가 있으면(예: 버크셔의 레너 추가 매수, 알파벳 $350 사모 매입) 추정가 대신 그 단가의 주식수 가중평균을 사용하며 태그가 붙습니다 (My Page 와 같은 값). 따라 사기 판단은 이 값을 기준으로 합니다. 현재가가 <strong>최근 매수가보다 낮으면 강력 추천</strong>, <strong>+10% 이내면 추천</strong>, 그보다 높으면 관망입니다. 티커를 누르면 종목 차트로 이동합니다.</p>`,
     gurus.map((g) => `<div class="card" id="mx-follow-${g.id}"><div class="card-head"><h3>${g.name} · ${g.org}</h3></div><div class="empty">분기별 매수와 주가 이력으로 추정 단가를 계산하는 중…</div></div>`).join(""),
     alertsCardHtml(),
     `<p class="small faint">13F는 분기 말 보유분이 45일 뒤에 공개되는 자료이고, 단가는 분기 주가 범위로 계산한 추정치라 실제 체결가와 다를 수 있습니다 (예: 블록딜). 투자 판단과 책임은 본인에게 있습니다.</p>`,
@@ -1926,13 +1926,13 @@ function guruEventsCardHtml(evs) {
   ].filter((r) => r.date).sort((a, b) => String(b.date).localeCompare(String(a.date))).slice(0, 15);
   const inIdx = (t) => !!state.stockIndex?.items.some((x) => x.symbol === t);
   return `<div class="card"><div class="card-head"><h3>13F 밖 최근 매수·매도 소식</h3><span class="small faint">SEC Form 4 · 13D/G 자동 수집 (매주 월요일 갱신) + 수기 등록</span></div>
-    ${rows.length ? `<div class="tablewrap"><table><thead><tr><th>날짜</th><th>대가</th><th>종목</th><th>내용</th></tr></thead><tbody>${rows.map((r) => `<tr><td class="txt">${String(r.date).slice(2, 10)}</td><td class="txt">${r.guru}</td><td class="txt">${r.ticker ? `<span class="tk ${inIdx(r.ticker) ? "" : "plain"}" ${inIdx(r.ticker) ? `data-stock="${r.ticker}"` : ""}>${r.ticker}</span>` : "–"}</td><td class="txt" style="white-space:normal;min-width:180px">${r.html}${r.url ? ` · <a href="${escHtml(r.url)}" target="_blank" rel="noopener">공시 보기</a>` : ""}</td></tr>`).join("")}</tbody></table></div>` : `<div class="empty">최근 수집된 공시가 없습니다. 13F 스냅샷 워크플로가 실행되면(매주 월요일) 자동으로 채워집니다.</div>`}
+    ${rows.length ? `<div class="tablewrap"><table><thead><tr><th>날짜</th><th>레전드</th><th>종목</th><th>내용</th></tr></thead><tbody>${rows.map((r) => `<tr><td class="txt">${String(r.date).slice(2, 10)}</td><td class="txt">${r.guru}</td><td class="txt">${r.ticker ? `<span class="tk ${inIdx(r.ticker) ? "" : "plain"}" ${inIdx(r.ticker) ? `data-stock="${r.ticker}"` : ""}>${r.ticker}</span>` : "–"}</td><td class="txt" style="white-space:normal;min-width:180px">${r.html}${r.url ? ` · <a href="${escHtml(r.url)}" target="_blank" rel="noopener">공시 보기</a>` : ""}</td></tr>`).join("")}</tbody></table></div>` : `<div class="empty">최근 수집된 공시가 없습니다. 13F 스냅샷 워크플로가 실행되면(매주 월요일) 자동으로 채워집니다.</div>`}
     <p class="small faint" style="margin-top:8px">Form 4 는 지분 10% 이상 보유자가 매매 후 이틀 안에 날짜·주식수·단가까지 신고하는 공시라 13F 보다 훨씬 빠릅니다 (버크셔의 레너 매수가 이렇게 공개됐습니다). 13D/G 는 5% 지분 공시입니다. <a href="https://github.com/geniusbyun-kaka/app/edit/claude/baby-sleep-tracking-app-23p7s7/invest/guru-news.json" target="_blank" rel="noopener">뉴스 수기 등록 (관리자 전용)</a></p></div>`;
 }
 async function renderMaxCommon() {
   const body = $("#max-body");
   body.dataset.screen = "common";
-  body.innerHTML = `${maxBackBtn}<div class="card"><div class="empty">대가들의 13F 를 모아 겹치는 종목을 찾는 중…</div></div>`;
+  body.innerHTML = `${maxBackBtn}<div class="card"><div class="empty">레전드들의 13F 를 모아 겹치는 종목을 찾는 중…</div></div>`;
   try { await ensureStockIndex(); } catch {}
   const [loaded, evs] = await Promise.all([
     Promise.all(GURUS.filter((g) => g.ready).map((g) => ensureGuruFilings(g).then((f) => ({ g, f })).catch(() => null))),
@@ -1982,8 +1982,8 @@ async function renderMaxCommon() {
   });
   reco.sort((a, b) => b.reasons.length - a.reasons.length || b.qualified.length - a.qualified.length || b.buySum - a.buySum);
   const recoTop = reco.slice(0, 5);
-  const recoCard = `<div class="card"><div class="card-head"><h3>이번 분기 공통 매수 추천 종목</h3><span class="small faint">대가당 $10M 이상 매수한 종목 중 TOP 5</span></div>
-    ${recoTop.length ? `<div class="tablewrap"><table><thead><tr><th>종목</th><th>판단</th><th>매수 대가 (추정 매수액)</th><th>근거</th><th>현재가</th></tr></thead><tbody>${recoTop.map((e) => `<tr>
+  const recoCard = `<div class="card"><div class="card-head"><h3>이번 분기 공통 매수 추천 종목</h3><span class="small faint">레전드당 $10M 이상 매수한 종목 중 TOP 5</span></div>
+    ${recoTop.length ? `<div class="tablewrap"><table><thead><tr><th>종목</th><th>판단</th><th>매수 레전드 (추정 매수액)</th><th>근거</th><th>현재가</th></tr></thead><tbody>${recoTop.map((e) => `<tr>
       <td class="txt">${tickerCell(e, false)}</td>
       <td class="txt">${e.reasons.length ? '<span class="tag inc">강력 추천</span>' : '<span class="tag new">추천</span>'}</td>
       <td class="txt">${e.qualified.map((x) => `${GURU_SHORT[x.g.id] || x.g.name} (${fmtB(x.buyVal)})`).join(", ")}</td>
@@ -1992,7 +1992,7 @@ async function renderMaxCommon() {
     </tr>`).join("")}</tbody></table></div>` : '<div class="empty">이번 분기에 $10M 이상 매수한 종목이 없습니다</div>'}</div>`;
   // 표는 이름만 간단히. 비중·보유/축소 상태는 인원수를 눌러 상세 창에서 본다.
   const buyerNames = (e) => e.holders.filter((x) => x.buy).map((x) => GURU_SHORT[x.g.id] || x.g.name).join(", ") || "–";
-  const table = (list) => `<div class="tablewrap"><table><thead><tr><th>종목</th><th>매수 대가</th><th>이번 분기 매수</th><th>보유</th><th>현재가</th></tr></thead><tbody>${list.map((e) => `<tr>
+  const table = (list) => `<div class="tablewrap"><table><thead><tr><th>종목</th><th>매수 레전드</th><th>이번 분기 매수</th><th>보유</th><th>현재가</th></tr></thead><tbody>${list.map((e) => `<tr>
       <td class="txt">${tickerCell(e)}</td>
       <td class="txt">${buyerNames(e)}</td>
       <td class="${e.buyers >= 2 ? "pos" : ""}"><button class="chip" type="button" data-cm-i="${e.id}">${e.buyers ? `${e.buyers}명` : "–"}</button></td>
@@ -2030,7 +2030,7 @@ function openCommonDetail(i) {
   $("#cm-title").textContent = `${label ? label + " · " : ""}${e.name}`;
   $("#cm-body").innerHTML = [
     `<p class="desc">현재가 <strong>${e.price != null ? "$" + fmt.n(e.price) : "–"}</strong> · 보유 <strong>${e.holders.length}명</strong> · 이번 분기 매수 <strong>${e.buyers}명</strong></p>`,
-    `<div class="tablewrap"><table><thead><tr><th>대가</th><th>이번 분기</th><th>포트폴리오 비중</th></tr></thead><tbody>${[...e.holders]
+    `<div class="tablewrap"><table><thead><tr><th>레전드</th><th>이번 분기</th><th>포트폴리오 비중</th></tr></thead><tbody>${[...e.holders]
       .sort((a, b) => (b.buy - a.buy) || (b.weight - a.weight))
       .map((x) => `<tr><td class="txt">${GURU_SHORT[x.g.id] || x.g.name}</td><td class="txt">${x.buy ? '<span class="tag inc">매수</span>' : x.dec ? '<span class="tag dec">축소</span>' : '<span class="tag">보유</span>'}</td><td>${fmt.n(x.weight * 100, 1)}%</td></tr>`).join("")}</tbody></table></div>`,
     chartable ? `<div class="form-actions"><button class="btn" type="button" data-stock="${first}">종목 차트 보기 →</button></div>` : "",
@@ -2127,7 +2127,7 @@ function runPortfolioCalc() {
   r.innerHTML = `
     <div class="kpis">
       ${kpi("현금으로 보유 (30~40%)", fmt.krw(Math.round(cashLo / 10000) * 10000), `~ ${fmt.krw(Math.round(cashHi / 10000) * 10000)} · 위기 때의 실탄`)}
-      ${kpi("투자 자산 (60~70%)", fmt.krw(Math.round(invLo / 10000) * 10000), `~ ${fmt.krw(Math.round(invHi / 10000) * 10000)} · VOO 적립 + 대가 추천 종목`)}
+      ${kpi("투자 자산 (60~70%)", fmt.krw(Math.round(invLo / 10000) * 10000), `~ ${fmt.krw(Math.round(invHi / 10000) * 10000)} · VOO 적립 + 레전드 추천 종목`)}
       ${kpi("월 적립 제안", fmt.krw(monthly), "투자분을 24개월에 나눠 분할 매수")}
     </div>
     <p class="desc" style="margin-top:10px">투자분을 한 번에 넣지 않고 24개월에 나누는 것은 매수 시점을 분산해 고점 몰빵을 피하기 위해서입니다. 아래 계산기에 이 금액을 넣어 장기 결과를 확인해 보세요.</p>
@@ -2951,7 +2951,7 @@ function openGuruPortfolio(id) {
 // 제목·설명·레전드 선택 칩 등 데이터와 무관한 틀
 function renderPortFrame() {
   const g = portGuru();
-  $("#bf-title").innerHTML = `${g.org} 포트폴리오 · 13F <button class="fav-btn sm" type="button" data-fav-guru="${g.id}" aria-pressed="false" title="관심 대가로 등록">☆</button>`;
+  $("#bf-title").innerHTML = `${g.org} 포트폴리오 · 13F <button class="fav-btn sm" type="button" data-fav-guru="${g.id}" aria-pressed="false" title="관심 레전드로 등록">☆</button>`;
   $("#bf-desc").textContent = `${g.name}의 ${g.org}가 분기마다 SEC 에 제출하는 13F 보고서 기준입니다. 분기 말 보유분이 45일 뒤에 공개되므로 가장 최근 매매는 다음 보고서에 나옵니다.`;
   $("#bf-gurus").innerHTML = GURUS.filter((x) => x.ready).map((x) => `<button class="chip" type="button" data-port-guru="${x.id}" aria-pressed="${x.id === g.id}">${GURU_SHORT[x.id] || x.name}</button>`).join("");
   updateFavButtons();
@@ -3117,7 +3117,7 @@ function myStockTableHtml(rows) {
   const trs = rows.flatMap((r) => {
     const base = `<td class="txt">${stockCell(r)}</td><td>${r.item ? fmt.n(r.item.price) : "–"}</td><td class="${cls(r.item?.changePercent)}">${r.item?.changePercent == null ? "–" : fmt.signed(r.item.changePercent) + "%"}</td>`;
     const tail = `<td class="txt">${favStarHtml("stock", r.sym, true, true)}</td>`;
-    if (!r.matches.length) return [`<tr>${base}<td class="txt faint" colspan="5">관심 대가 보유 없음</td>${tail}</tr>`];
+    if (!r.matches.length) return [`<tr>${base}<td class="txt faint" colspan="5">관심 레전드 보유 없음</td>${tail}</tr>`];
     return r.matches.map((m) => {
       const gname = GURU_SHORT[m.g.id] || m.g.name;
       const holdNote = m.h?.ticker && m.h.ticker !== r.sym ? ` <span class="faint small">(${m.h.ticker} 보유)</span>` : "";
@@ -3130,11 +3130,11 @@ function myStockTableHtml(rows) {
         <td class="txt">${m.grade >= 0 ? followTagHtml(m.grade) : m.rec ? '<span class="faint">현재가 없음</span>' : '<span class="faint">최근 매수 이력 없음</span>'}</td>${tail}</tr>`;
     });
   });
-  return `<div class="tablewrap"><table><thead><tr><th>종목</th><th>현재가</th><th>전일비</th><th>관심 대가</th><th>마지막 매수</th><th>최근 매수가 (추정)</th><th>최근 매수가 대비</th><th>판단</th><th>관리</th></tr></thead><tbody>${trs.join("")}</tbody></table></div>
-    <p class="small faint" style="margin-top:8px">최근 매수가는 대가가 마지막으로 매수한 분기의 <strong>종가 최저가에서 5% 오른 가격</strong>으로 계산한 추정치입니다. 다만 SEC Form 4 · 13D/G 공시나 수기 등록된 매수 뉴스에 <strong>실제 단가</strong>가 있으면(마지막 13F 매수 분기 안의 거래 포함 · 예: 버크셔의 레너 추가 매수, 알파벳 $350 사모 매입) 추정가 대신 그 공시들의 주식수 가중평균 단가를 최근 매수가로 사용하며 <span class="tag new">Form 4</span> 또는 <span class="tag new">매입 공시·뉴스</span> 표시가 붙습니다. 현재가가 최근 매수가보다 낮으면 <strong>강력 추천</strong>, +10% 이내면 <strong>추천</strong>입니다. 티커를 누르면 종목 차트로 이동합니다.</p>`;
+  return `<div class="tablewrap"><table><thead><tr><th>종목</th><th>현재가</th><th>전일비</th><th>관심 레전드</th><th>마지막 매수</th><th>최근 매수가 (추정)</th><th>최근 매수가 대비</th><th>판단</th><th>관리</th></tr></thead><tbody>${trs.join("")}</tbody></table></div>
+    <p class="small faint" style="margin-top:8px">최근 매수가는 레전드가 마지막으로 매수한 분기의 <strong>종가 최저가에서 5% 오른 가격</strong>으로 계산한 추정치입니다. 다만 SEC Form 4 · 13D/G 공시나 수기 등록된 매수 뉴스에 <strong>실제 단가</strong>가 있으면(마지막 13F 매수 분기 안의 거래 포함 · 예: 버크셔의 레너 추가 매수, 알파벳 $350 사모 매입) 추정가 대신 그 공시들의 주식수 가중평균 단가를 최근 매수가로 사용하며 <span class="tag new">Form 4</span> 또는 <span class="tag new">매입 공시·뉴스</span> 표시가 붙습니다. 현재가가 최근 매수가보다 낮으면 <strong>강력 추천</strong>, +10% 이내면 <strong>추천</strong>입니다. 티커를 누르면 종목 차트로 이동합니다.</p>`;
 }
 async function myGuruCardHtml(g) {
-  const headBtn = g.id === "buffett" ? `<button class="btn" type="button" data-mytab="buffett" style="margin-left:auto">상세 보기 →</button>` : "";
+  const headBtn = `<button class="btn" type="button" data-port-open="${g.id}" style="margin-left:auto">상세 보기 →</button>`;
   const head = `<div class="card-head"><h3>${g.name} · ${g.org} ${favStarHtml("guru", g.id, true, true)}</h3>${headBtn}</div>`;
   let f; try { f = await ensureGuruFilings(g); } catch { return `<div class="card" id="my-guru-${g.id}">${head}<div class="empty">13F 데이터를 불러오지 못했습니다</div></div>`; }
   const L = f.latest;
@@ -3183,9 +3183,9 @@ async function myNewsHtml(stocks, guruObjs) {
         ${rows.length ? rows.map((r) => `<div class="my-news-item"><div class="t">${r.html}</div><div class="src">${String(r.date).slice(0, 10)}${r.url ? ` · <a href="${escHtml(r.url)}" target="_blank" rel="noopener">공시 보기</a>` : ""}</div></div>`).join("") : `<div class="my-news-item"><div class="src">최근 수집된 공시가 없습니다 (SEC Form 4 · 13D/G · 매주 월요일 갱신)</div></div>`}
       </div>`;
     });
-    parts.push(`<div class="eyebrow" style="margin-top:${stocks.length ? "14px" : "0"}">관심 대가 매수·매도 공시</div>${groups.join("")}`);
+    parts.push(`<div class="eyebrow" style="margin-top:${stocks.length ? "14px" : "0"}">관심 레전드 매수·매도 공시</div>${groups.join("")}`);
   }
-  parts.push(`<p class="small faint" style="margin-top:10px">종목 뉴스는 매일 한국시간 오전 6시에 수집되고, 대가 공시(SEC Form 4 · 13D/G)는 매주 월요일 갱신됩니다.</p>`);
+  parts.push(`<p class="small faint" style="margin-top:10px">종목 뉴스는 매일 한국시간 오전 6시에 수집되고, 레전드 공시(SEC Form 4 · 13D/G)는 매주 월요일 갱신됩니다.</p>`);
   return parts.join("");
 }
 async function renderMyPage() {
@@ -3194,16 +3194,16 @@ async function renderMyPage() {
   const alive = () => state.mySeq === seq && !p.hidden;
   const stocks = favStocks(), gurus = favGurus();
   const guruObjs = gurus.map((id) => GURUS.find((g) => g.id === id)).filter(Boolean);
-  const head = `<div class="card"><div class="card-head"><h3>My Page</h3><span class="small faint">관심 종목 ${stocks.length} · 관심 대가 ${gurus.length}</span></div>
-    <p class="desc">종목 탭에서 종목을 연 뒤 <strong>☆</strong>를 누르면 관심 종목으로, 버크셔(버핏) 탭이나 투자 대가 화면에서 <strong>☆</strong>를 누르면 관심 대가로 등록됩니다. 관심 종목은 대가들의 <strong>최근 매수가(추정)</strong>와 자동으로 비교됩니다.</p></div>`;
+  const head = `<div class="card"><div class="card-head"><h3>My Page</h3><span class="small faint">관심 종목 ${stocks.length} · 관심 레전드 ${gurus.length}</span></div>
+    <p class="desc">종목 탭에서 종목을 연 뒤 <strong>☆</strong>를 누르면 관심 종목으로, 레전드 포트폴리오 탭이나 레전드 화면에서 <strong>☆</strong>를 누르면 관심 레전드로 등록됩니다. 관심 종목은 레전드들의 <strong>최근 매수가(추정)</strong>와 자동으로 비교됩니다.</p></div>`;
   if (!stocks.length && !gurus.length) {
-    p.innerHTML = head + `<div class="card"><div class="empty">아직 등록한 관심 종목·대가가 없습니다.<br>예를 들어 종목 탭에서 GOOG 를 검색해 열고 ☆를 누르고,<br>버크셔(버핏) 탭 제목 옆의 ☆를 눌러 보세요.</div>
-      <div class="form-actions" style="justify-content:center"><button class="btn primary" type="button" data-mytab="stocks">종목 보러 가기</button><button class="btn" type="button" data-mytab="buffett">버크셔(버핏) 보러 가기</button></div></div>`;
+    p.innerHTML = head + `<div class="card"><div class="empty">아직 등록한 관심 종목·레전드가 없습니다.<br>예를 들어 종목 탭에서 GOOG 를 검색해 열고 ☆를 누르고,<br>레전드 포트폴리오 탭 제목 옆의 ☆를 눌러 보세요.</div>
+      <div class="form-actions" style="justify-content:center"><button class="btn primary" type="button" data-mytab="stocks">종목 보러 가기</button><button class="btn" type="button" data-mytab="buffett">레전드 포트폴리오 보러 가기</button></div></div>`;
     return;
   }
   p.innerHTML = [
     head,
-    stocks.length ? `<div class="card"><div class="card-head"><h3>관심 종목</h3><span class="small faint">대가들의 최근 매수가와 비교</span></div><div id="my-stocks-body"><div class="empty">13F 와 주가 이력으로 추정 단가를 계산하는 중…</div></div></div>` : "",
+    stocks.length ? `<div class="card"><div class="card-head"><h3>관심 종목</h3><span class="small faint">레전드들의 최근 매수가와 비교</span></div><div id="my-stocks-body"><div class="empty">13F 와 주가 이력으로 추정 단가를 계산하는 중…</div></div></div>` : "",
     guruObjs.map((g) => `<div class="card" id="my-guru-${g.id}"><div class="card-head"><h3>${g.name} · ${g.org}</h3></div><div class="empty">13F 데이터를 불러오는 중…</div></div>`).join(""),
     `<div class="card"><div class="card-head"><h3>뉴스 및 공시</h3><span class="small faint">매일 오전 6시 갱신</span></div><div id="my-news-body"><div class="empty">불러오는 중…</div></div></div>`,
   ].join("");
@@ -3230,6 +3230,7 @@ async function renderMyPage() {
 // 마이 페이지 안의 바로가기: 티커 → 종목 차트, data-mytab → 해당 탭
 $("#panel-my").addEventListener("click", (e) => {
   const mt = e.target.closest("[data-mytab]"); if (mt) return selectTab(mt.dataset.mytab);
+  const po = e.target.closest("[data-port-open]"); if (po) return openGuruPortfolio(po.dataset.portOpen); // 관심 레전드 카드의 상세 보기
   const t = e.target.closest("[data-stock]"); if (t) { gotoStock(t.dataset.stock); }
 });
 
