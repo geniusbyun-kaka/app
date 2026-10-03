@@ -1,0 +1,47 @@
+{
+ "updated": "2026-10-03",
+ "note": "DART 2025 사업보고서 기반 자동 스크리닝 (10년치 수집 완료 3467/3467개 회사). 유지보수 설비투자는 min(감가상각비, 10년 CAPEX 중앙값) 근사치이며, 금융사·지주사·스팩·리츠는 제외했습니다. 이익 방향(직전 3년 고점 대비)·ROE 추세·최대주주 지분율·거래대금 필터와 밸류에이션 문지기(3년 평균 FCF 수익률 ≥ 국고채 10년물 × 2)를 모두 통과한 후보만 올라옵니다.",
+ "picks": [
+  {
+   "week": "2026-09-28",
+   "name": "SOOP",
+   "ticker": "067160",
+   "market": "코스닥",
+   "price": 36300,
+   "shares": 10656904,
+   "netCash": 2470,
+   "ownerEarnings": 1018,
+   "metrics": {
+    "roe10": 25,
+    "debt": 81.7,
+    "intCov": null,
+    "opStd": 4.3,
+    "fcfYears": 10,
+    "epsCagr": 29.1,
+    "niTrend": 0.6,
+    "niBroken": false,
+    "roeDown": false,
+    "roe3": [
+     25.6,
+     26.5,
+     21.8
+    ],
+    "capexCfo": 15.4,
+    "majorHolder": 25.8,
+    "avgValueEok": 13.1,
+    "divCut": false
+   },
+   "valuation": {
+    "fcfYield": 30.5,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 1.1,
+    "pass": true,
+    "shYield": 9.3,
+    "pos52w": 0,
+    "basisYear": 2025
+   },
+   "source": "DART 2025 사업보고서 (연결)"
+  }
+ ]
+}

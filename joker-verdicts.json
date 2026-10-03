@@ -1,0 +1,2351 @@
+{
+ "updated": "2026-10-03",
+ "seriesStart": "2026-10-05",
+ "batchSize": 10,
+ "note": "버핏 정량 체크리스트와 밸류 트랩·지배구조·수급 필터로 시총 상위 기업을 판정합니다. 통과는 정량 기준 통과일 뿐 추천이 아니며, 실제 조커픽은 안전마진 계산과 주간 검토를 따로 거칩니다.",
+ "kospi": [
+  {
+   "market": "코스피",
+   "name": "삼성전자",
+   "ticker": "005930",
+   "price": 276000,
+   "mcapEok": 16084753,
+   "verdict": "fail",
+   "failKeys": [
+    "roe10",
+    "opStd"
+   ],
+   "metrics": {
+    "roe10": 12.1,
+    "debt": 30.8,
+    "intCov": null,
+    "opStd": 5.8,
+    "fcfYears": 9,
+    "epsCagr": 7.9,
+    "niTrend": -19.1,
+    "niBroken": false,
+    "roeDown": false,
+    "roe3": [
+     4.1,
+     8.6,
+     10.4
+    ],
+    "capexCfo": 71,
+    "majorHolder": 19.8,
+    "avgValueEok": 43009.4,
+    "divCut": false
+   },
+   "valuation": {
+    "fcfYield": 0.7,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 34.6,
+    "pass": false,
+    "shYield": 1.2,
+    "pos52w": 68,
+    "basisYear": 2025
+   },
+   "ownerEarnings": 442610,
+   "netCash": 1017598,
+   "shares": 5827808935,
+   "rank": 1
+  },
+  {
+   "market": "코스피",
+   "name": "SK하이닉스",
+   "ticker": "000660",
+   "price": 1841000,
+   "mcapEok": 12918141,
+   "verdict": "fail",
+   "failKeys": [
+    "opStd",
+    "fcfYears"
+   ],
+   "metrics": {
+    "roe10": 15.5,
+    "debt": 46,
+    "intCov": null,
+    "opStd": 21.5,
+    "fcfYears": 6,
+    "epsCagr": 34.6,
+    "niTrend": 116.9,
+    "niBroken": false,
+    "roeDown": false,
+    "roe3": [
+     -17,
+     26.8,
+     35.6
+    ],
+    "capexCfo": 79.7,
+    "majorHolder": 20.1,
+    "avgValueEok": 49274.5,
+    "divCut": false
+   },
+   "valuation": {
+    "fcfYield": 0.9,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 27.2,
+    "pass": false,
+    "shYield": 0.2,
+    "pos52w": 57,
+    "basisYear": 2025
+   },
+   "ownerEarnings": 429193,
+   "netCash": 73556,
+   "shares": 701691520,
+   "rank": 2
+  },
+  {
+   "market": "코스피",
+   "name": "현대자동차",
+   "ticker": "005380",
+   "price": 346500,
+   "mcapEok": 703773,
+   "verdict": "fail",
+   "failKeys": [
+    "roe10",
+    "debt",
+    "fcfYears",
+    "epsCagr",
+    "niTrend",
+    "roeDown"
+   ],
+   "metrics": {
+    "roe10": 7.1,
+    "debt": 208.9,
+    "intCov": null,
+    "opStd": 2.2,
+    "fcfYears": 1,
+    "epsCagr": 6.4,
+    "niTrend": -24.6,
+    "niBroken": true,
+    "roeDown": true,
+    "roe3": [
+     12.9,
+     11.5,
+     8.2
+    ],
+    "capexCfo": 1694.8,
+    "majorHolder": 30.7,
+    "avgValueEok": 1571.7,
+    "divCut": true
+   },
+   "valuation": {
+    "fcfYield": -21.1,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 16.4,
+    "pass": false,
+    "shYield": 4.7,
+    "pos52w": 24,
+    "basisYear": 2025
+   },
+   "ownerEarnings": 94460,
+   "netCash": -1174107,
+   "shares": 203109208,
+   "rank": 3
+  },
+  {
+   "market": "코스피",
+   "name": "삼성물산",
+   "ticker": "028260",
+   "price": 346000,
+   "mcapEok": 561100,
+   "verdict": "fail",
+   "failKeys": [
+    "roe10"
+   ],
+   "metrics": {
+    "roe10": 5.1,
+    "debt": 58.2,
+    "intCov": null,
+    "opStd": 2.3,
+    "fcfYears": 10,
+    "epsCagr": 41.5,
+    "niTrend": 9.4,
+    "niBroken": false,
+    "roeDown": false,
+    "roe3": [
+     6.5,
+     7.2,
+     4.9
+    ],
+    "capexCfo": 49.4,
+    "majorHolder": 36,
+    "avgValueEok": 1034.3,
+    "divCut": false
+   },
+   "valuation": {
+    "fcfYield": 2.4,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 16.2,
+    "pass": false,
+    "shYield": 0.8,
+    "pos52w": 44,
+    "basisYear": 2025
+   },
+   "ownerEarnings": 24391,
+   "netCash": 28634,
+   "shares": 162167581,
+   "rank": 4
+  },
+  {
+   "market": "코스피",
+   "name": "한화에어로스페이스",
+   "ticker": "012450",
+   "price": 1072000,
+   "mcapEok": 551531,
+   "verdict": "fail",
+   "failKeys": [
+    "roe10",
+    "debt",
+    "fcfYears",
+    "niTrend"
+   ],
+   "metrics": {
+    "roe10": 12.3,
+    "debt": 383.7,
+    "intCov": 6.3,
+    "opStd": 4.2,
+    "fcfYears": 8,
+    "epsCagr": 16.9,
+    "niTrend": -38.9,
+    "niBroken": true,
+    "roeDown": false,
+    "roe3": [
+     23.2,
+     46,
+     14.5
+    ],
+    "capexCfo": 49.2,
+    "majorHolder": 35.6,
+    "avgValueEok": 1018.7,
+    "divCut": false
+   },
+   "valuation": {
+    "fcfYield": 2.1,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 19.4,
+    "pass": false,
+    "shYield": 0.7,
+    "pos52w": 36,
+    "basisYear": 2025
+   },
+   "ownerEarnings": 14050,
+   "netCash": -46815,
+   "shares": 51448788,
+   "rank": 5
+  },
+  {
+   "market": "코스피",
+   "name": "두산에너빌리티",
+   "ticker": "034020",
+   "price": 81100,
+   "mcapEok": 519417,
+   "verdict": "fail",
+   "failKeys": [
+    "roe10",
+    "debt",
+    "fcfYears",
+    "epsCagr",
+    "niTrend"
+   ],
+   "metrics": {
+    "roe10": -8.4,
+    "debt": 199.1,
+    "intCov": null,
+    "opStd": 1.6,
+    "fcfYears": 6,
+    "epsCagr": -999,
+    "niTrend": -23.9,
+    "niBroken": true,
+    "roeDown": false,
+    "roe3": [
+     0.8,
+     1.5,
+     1.1
+    ],
+    "capexCfo": 75.2,
+    "majorHolder": 30.7,
+    "avgValueEok": 1517,
+    "divCut": null
+   },
+   "valuation": {
+    "fcfYield": 0.7,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 70.1,
+    "pass": false,
+    "shYield": null,
+    "pos52w": 27,
+    "basisYear": 2025
+   },
+   "ownerEarnings": 848,
+   "netCash": -15300,
+   "shares": 640465168,
+   "rank": 6
+  },
+  {
+   "market": "코스피",
+   "name": "기아",
+   "ticker": "000270",
+   "price": 112900,
+   "mcapEok": 438732,
+   "verdict": "fail",
+   "failKeys": [
+    "roe10",
+    "niTrend",
+    "roeDown"
+   ],
+   "metrics": {
+    "roe10": 10.6,
+    "debt": 61.8,
+    "intCov": null,
+    "opStd": 3.6,
+    "fcfYears": 10,
+    "epsCagr": 11.9,
+    "niTrend": -22.6,
+    "niBroken": true,
+    "roeDown": true,
+    "roe3": [
+     18.9,
+     17.5,
+     12.4
+    ],
+    "capexCfo": 42.6,
+    "majorHolder": 37,
+    "avgValueEok": 1019.1,
+    "divCut": false
+   },
+   "valuation": {
+    "fcfYield": 15.3,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 2.6,
+    "pass": true,
+    "shYield": 7.6,
+    "pos52w": 12,
+    "basisYear": 2025
+   },
+   "ownerEarnings": 75610,
+   "netCash": 204697,
+   "shares": 388602725,
+   "rank": 7
+  },
+  {
+   "market": "코스피",
+   "name": "삼성SDI",
+   "ticker": "006400",
+   "price": 529000,
+   "mcapEok": 408674,
+   "verdict": "fail",
+   "failKeys": [
+    "roe10",
+    "debt",
+    "opStd",
+    "fcfYears",
+    "epsCagr",
+    "niTrend",
+    "roeDown"
+   ],
+   "metrics": {
+    "roe10": 5.2,
+    "debt": 87.1,
+    "intCov": null,
+    "opStd": 8.8,
+    "fcfYears": 1,
+    "epsCagr": -999,
+    "niTrend": -132.3,
+    "niBroken": true,
+    "roeDown": true,
+    "roe3": [
+     10.9,
+     3,
+     -3
+    ],
+    "capexCfo": 286.9,
+    "majorHolder": 20.2,
+    "avgValueEok": 1423.9,
+    "divCut": null
+   },
+   "valuation": {
+    "fcfYield": -8.8,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": null,
+    "pass": false,
+    "shYield": null,
+    "pos52w": 64,
+    "basisYear": 2025
+   },
+   "ownerEarnings": -6495,
+   "netCash": -90799,
+   "shares": 77254139,
+   "rank": 8
+  },
+  {
+   "market": "코스피",
+   "name": "셀트리온",
+   "ticker": "068270",
+   "price": 182600,
+   "mcapEok": 399188,
+   "verdict": "fail",
+   "failKeys": [
+    "roe10",
+    "opStd",
+    "fcfYears"
+   ],
+   "metrics": {
+    "roe10": 10,
+    "debt": 29,
+    "intCov": null,
+    "opStd": 9.4,
+    "fcfYears": 8,
+    "epsCagr": 23.1,
+    "niTrend": 91.4,
+    "niBroken": false,
+    "roeDown": false,
+    "roe3": [
+     3.2,
+     2.4,
+     6
+    ],
+    "capexCfo": 56.7,
+    "majorHolder": 31.2,
+    "avgValueEok": 599.2,
+    "divCut": null
+   },
+   "valuation": {
+    "fcfYield": 0.9,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 33.2,
+    "pass": false,
+    "shYield": 2.7,
+    "pos52w": 30,
+    "basisYear": 2025
+   },
+   "ownerEarnings": 10296,
+   "netCash": 11192,
+   "shares": 218613124,
+   "rank": 9
+  },
+  {
+   "market": "코스피",
+   "name": "LG전자",
+   "ticker": "066570",
+   "price": 216000,
+   "mcapEok": 351831,
+   "verdict": "fail",
+   "failKeys": [
+    "roe10",
+    "debt",
+    "fcfYears"
+   ],
+   "metrics": {
+    "roe10": 5.7,
+    "debt": 167.7,
+    "intCov": null,
+    "opStd": 0.8,
+    "fcfYears": 7,
+    "epsCagr": 32.4,
+    "niTrend": -19.7,
+    "niBroken": false,
+    "roeDown": false,
+    "roe3": [
+     3.6,
+     1.8,
+     4
+    ],
+    "capexCfo": 89.2,
+    "majorHolder": 35.3,
+    "avgValueEok": 1220.5,
+    "divCut": false
+   },
+   "valuation": {
+    "fcfYield": 2.2,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 15.8,
+    "pass": false,
+    "shYield": 0.7,
+    "pos52w": 44,
+    "basisYear": 2025
+   },
+   "ownerEarnings": 9606,
+   "netCash": -38744,
+   "shares": 162884638,
+   "rank": 10
+  },
+  {
+   "market": "코스피",
+   "name": "현대모비스",
+   "ticker": "012330",
+   "price": 383500,
+   "mcapEok": 341993,
+   "verdict": "fail",
+   "failKeys": [
+    "roe10",
+    "epsCagr"
+   ],
+   "metrics": {
+    "roe10": 7.2,
+    "debt": 43.1,
+    "intCov": null,
+    "opStd": 1,
+    "fcfYears": 10,
+    "epsCagr": 2.1,
+    "niTrend": -9.9,
+    "niBroken": false,
+    "roeDown": false,
+    "roe3": [
+     8.4,
+     8.8,
+     7.4
+    ],
+    "capexCfo": 42.4,
+    "majorHolder": 32.7,
+    "avgValueEok": 1108.7,
+    "divCut": false
+   },
+   "valuation": {
+    "fcfYield": 8.1,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 9.6,
+    "pass": false,
+    "shYield": 2.9,
+    "pos52w": 20,
+    "basisYear": 2025
+   },
+   "ownerEarnings": 36558,
+   "netCash": 19768,
+   "shares": 89176783,
+   "rank": 11
+  },
+  {
+   "market": "코스피",
+   "name": "NAVER",
+   "ticker": "035420",
+   "price": 192200,
+   "mcapEok": 287492,
+   "verdict": "pass",
+   "failKeys": [],
+   "metrics": {
+    "roe10": 16.6,
+    "debt": 44,
+    "intCov": null,
+    "opStd": 4.7,
+    "fcfYears": 10,
+    "epsCagr": 11.2,
+    "niTrend": 1.6,
+    "niBroken": false,
+    "roeDown": false,
+    "roe3": [
+     4.4,
+     7.6,
+     7.1
+    ],
+    "capexCfo": 41.4,
+    "majorHolder": 9.3,
+    "avgValueEok": 1094.2,
+    "divCut": false
+   },
+   "valuation": {
+    "fcfYield": 5.9,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 9.9,
+    "pass": false,
+    "shYield": 1.4,
+    "pos52w": 9,
+    "basisYear": 2025
+   },
+   "ownerEarnings": 19532,
+   "netCash": 69324,
+   "shares": 149579777,
+   "rank": 12
+  },
+  {
+   "market": "코스피",
+   "name": "SK이노베이션",
+   "ticker": "096770",
+   "price": 154000,
+   "mcapEok": 260339,
+   "verdict": "fail",
+   "failKeys": [
+    "roe10",
+    "debt",
+    "fcfYears",
+    "epsCagr",
+    "niTrend",
+    "roeDown",
+    "majorHolder"
+   ],
+   "metrics": {
+    "roe10": 0.2,
+    "debt": 317.6,
+    "intCov": null,
+    "opStd": 4.1,
+    "fcfYears": 3,
+    "epsCagr": -999,
+    "niTrend": -313.4,
+    "niBroken": true,
+    "roeDown": true,
+    "roe3": [
+     1.2,
+     -9.2,
+     -15.4
+    ],
+    "capexCfo": 215.3,
+    "majorHolder": 52.1,
+    "avgValueEok": 1428.9,
+    "divCut": null
+   },
+   "valuation": {
+    "fcfYield": -22.4,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 88.4,
+    "pass": false,
+    "shYield": 0,
+    "pos52w": 94,
+    "basisYear": 2025
+   },
+   "ownerEarnings": -33479,
+   "netCash": -136214,
+   "shares": 169051561,
+   "rank": 13
+  },
+  {
+   "market": "코스피",
+   "name": "한미반도체",
+   "ticker": "042700",
+   "price": 272000,
+   "mcapEok": 258000,
+   "verdict": "fail",
+   "failKeys": [
+    "opStd",
+    "epsCagr",
+    "majorHolder"
+   ],
+   "metrics": {
+    "roe10": 21.5,
+    "debt": 17.8,
+    "intCov": null,
+    "opStd": 9.8,
+    "fcfYears": 10,
+    "epsCagr": -999,
+    "niTrend": -19.9,
+    "niBroken": false,
+    "roeDown": false,
+    "roe3": [
+     46.7,
+     28.2,
+     31
+    ],
+    "capexCfo": 37.4,
+    "majorHolder": 55.7,
+    "avgValueEok": 1489.5,
+    "divCut": false
+   },
+   "valuation": {
+    "fcfYield": 0.3,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 101.5,
+    "pass": false,
+    "shYield": 0.3,
+    "pos52w": 56,
+    "basisYear": 2025
+   },
+   "ownerEarnings": 2140,
+   "netCash": 2762,
+   "shares": 94853002,
+   "rank": 14
+  },
+  {
+   "market": "코스피",
+   "name": "한화오션",
+   "ticker": "042660",
+   "price": 78800,
+   "mcapEok": 241441,
+   "verdict": "fail",
+   "failKeys": [
+    "roe10",
+    "debt",
+    "opStd",
+    "fcfYears",
+    "epsCagr"
+   ],
+   "metrics": {
+    "roe10": -51.9,
+    "debt": 226.3,
+    "intCov": null,
+    "opStd": 16.6,
+    "fcfYears": 4,
+    "epsCagr": -999,
+    "niTrend": 135.9,
+    "niBroken": false,
+    "roeDown": false,
+    "roe3": [
+     3.7,
+     10.9,
+     20.2
+    ],
+    "capexCfo": null,
+    "majorHolder": 42,
+    "avgValueEok": 500.3,
+    "divCut": null
+   },
+   "valuation": {
+    "fcfYield": -6.6,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 24.8,
+    "pass": false,
+    "shYield": null,
+    "pos52w": 6,
+    "basisYear": 2025
+   },
+   "ownerEarnings": 12458,
+   "netCash": -48679,
+   "shares": 306397187,
+   "rank": 15
+  },
+  {
+   "market": "코스피",
+   "name": "HMM",
+   "ticker": "011200",
+   "price": 21500,
+   "mcapEok": 202796,
+   "verdict": "fail",
+   "failKeys": [
+    "roe10",
+    "opStd",
+    "fcfYears",
+    "epsCagr",
+    "niTrend"
+   ],
+   "metrics": {
+    "roe10": -17.9,
+    "debt": 26.3,
+    "intCov": null,
+    "opStd": 24.4,
+    "fcfYears": 4,
+    "epsCagr": -999,
+    "niTrend": -81.4,
+    "niBroken": true,
+    "roeDown": false,
+    "roe3": [
+     4.5,
+     13.6,
+     7.1
+    ],
+    "capexCfo": 41.1,
+    "majorHolder": 35.4,
+    "avgValueEok": 153.2,
+    "divCut": false
+   },
+   "valuation": {
+    "fcfYield": 6.5,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 12.8,
+    "pass": false,
+    "shYield": 13.8,
+    "pos52w": 52,
+    "basisYear": 2025
+   },
+   "ownerEarnings": 18784,
+   "netCash": 16347,
+   "shares": 943237970,
+   "rank": 16
+  },
+  {
+   "market": "코스피",
+   "name": "한국전력공사",
+   "ticker": "015760",
+   "price": 30050,
+   "mcapEok": 192910,
+   "verdict": "fail",
+   "failKeys": [
+    "roe10",
+    "debt",
+    "opStd",
+    "fcfYears",
+    "epsCagr",
+    "majorHolder"
+   ],
+   "metrics": {
+    "roe10": -4.6,
+    "debt": 426.8,
+    "intCov": null,
+    "opStd": 17.3,
+    "fcfYears": 3,
+    "epsCagr": 2.2,
+    "niTrend": 144.7,
+    "niBroken": false,
+    "roeDown": false,
+    "roe3": [
+     -13.5,
+     8.7,
+     17.7
+    ],
+    "capexCfo": 178.7,
+    "majorHolder": 51.1,
+    "avgValueEok": 279.9,
+    "divCut": false
+   },
+   "valuation": {
+    "fcfYield": -10.3,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 1.3,
+    "pass": false,
+    "shYield": 5.1,
+    "pos52w": 0,
+    "basisYear": 2025
+   },
+   "ownerEarnings": 92421,
+   "netCash": 22408,
+   "shares": 641964077,
+   "rank": 17
+  },
+  {
+   "market": "코스피",
+   "name": "LG화학",
+   "ticker": "051910",
+   "price": 262500,
+   "mcapEok": 185305,
+   "verdict": "fail",
+   "failKeys": [
+    "roe10",
+    "debt",
+    "fcfYears",
+    "epsCagr",
+    "niTrend",
+    "roeDown"
+   ],
+   "metrics": {
+    "roe10": 5.4,
+    "debt": 164.3,
+    "intCov": null,
+    "opStd": 3.4,
+    "fcfYears": 3,
+    "epsCagr": -999,
+    "niTrend": -198.6,
+    "niBroken": true,
+    "roeDown": true,
+    "roe3": [
+     4.2,
+     -2.1,
+     -5.5
+    ],
+    "capexCfo": 167.7,
+    "majorHolder": 31.5,
+    "avgValueEok": 453.6,
+    "divCut": false
+   },
+   "valuation": {
+    "fcfYield": -34.1,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 35.9,
+    "pass": false,
+    "shYield": 0.8,
+    "pos52w": 15,
+    "basisYear": 2025
+   },
+   "ownerEarnings": -18194,
+   "netCash": -239120,
+   "shares": 70592341,
+   "rank": 18
+  },
+  {
+   "market": "코스피",
+   "name": "케이티앤지",
+   "ticker": "033780",
+   "price": 176900,
+   "mcapEok": 183600,
+   "verdict": "fail",
+   "failKeys": [
+    "roe10",
+    "epsCagr"
+   ],
+   "metrics": {
+    "roe10": 12.5,
+    "debt": 52.3,
+    "intCov": null,
+    "opStd": 4.5,
+    "fcfYears": 9,
+    "epsCagr": -1.2,
+    "niTrend": -6.5,
+    "niBroken": false,
+    "roeDown": false,
+    "roe3": [
+     9.8,
+     12.6,
+     11.7
+    ],
+    "capexCfo": 36.1,
+    "majorHolder": 8.1,
+    "avgValueEok": 370.4,
+    "divCut": false
+   },
+   "valuation": {
+    "fcfYield": 1.2,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 13.4,
+    "pass": false,
+    "shYield": 6.5,
+    "pos52w": 78,
+    "basisYear": 2025
+   },
+   "ownerEarnings": 10901,
+   "netCash": 4053,
+   "shares": 103787644,
+   "rank": 19
+  },
+  {
+   "market": "코스피",
+   "name": "엘에스일렉트릭",
+   "ticker": "010120",
+   "price": 209500,
+   "mcapEok": 62302,
+   "verdict": "fail",
+   "failKeys": [
+    "roe10",
+    "debt"
+   ],
+   "metrics": {
+    "roe10": 9.1,
+    "debt": 136,
+    "intCov": null,
+    "opStd": 1.2,
+    "fcfYears": 9,
+    "epsCagr": 15.1,
+    "niTrend": 20.1,
+    "niBroken": false,
+    "roeDown": false,
+    "roe3": [
+     12,
+     13,
+     13.8
+    ],
+    "capexCfo": 56.7,
+    "majorHolder": 49.3,
+    "avgValueEok": 576.1,
+    "divCut": null
+   },
+   "valuation": {
+    "fcfYield": 1.4,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 16,
+    "pass": false,
+    "shYield": 1.4,
+    "pos52w": 58,
+    "basisYear": 2025
+   },
+   "ownerEarnings": 3361,
+   "netCash": -5797,
+   "shares": 29738491,
+   "rank": 20
+  },
+  {
+   "market": "코스피",
+   "name": "LG에너지솔루션",
+   "ticker": "373220",
+   "verdict": "nodata",
+   "note": "10년치 재무 데이터가 아직 안 모였습니다",
+   "rank": 21
+  },
+  {
+   "market": "코스피",
+   "name": "삼성바이오로직스",
+   "ticker": "207940",
+   "verdict": "nodata",
+   "note": "10년치 재무 데이터가 아직 안 모였습니다",
+   "rank": 22
+  },
+  {
+   "market": "코스피",
+   "name": "POSCO홀딩스",
+   "ticker": "005490",
+   "verdict": "excluded",
+   "note": "금융·지주·리츠 등은 이 산식이 맞지 않아 판정 제외",
+   "rank": 23
+  },
+  {
+   "market": "코스피",
+   "name": "KB금융",
+   "ticker": "105560",
+   "verdict": "excluded",
+   "note": "금융·지주·리츠 등은 이 산식이 맞지 않아 판정 제외",
+   "rank": 24
+  },
+  {
+   "market": "코스피",
+   "name": "신한지주",
+   "ticker": "055550",
+   "verdict": "excluded",
+   "note": "금융·지주·리츠 등은 이 산식이 맞지 않아 판정 제외",
+   "rank": 25
+  },
+  {
+   "market": "코스피",
+   "name": "HD현대중공업",
+   "ticker": "329180",
+   "verdict": "nodata",
+   "note": "10년치 재무 데이터가 아직 안 모였습니다",
+   "rank": 26
+  },
+  {
+   "market": "코스피",
+   "name": "카카오",
+   "ticker": "035720",
+   "verdict": "nodata",
+   "note": "10년치 재무 데이터가 아직 안 모였습니다",
+   "rank": 27
+  },
+  {
+   "market": "코스피",
+   "name": "하나금융지주",
+   "ticker": "086790",
+   "verdict": "excluded",
+   "note": "금융·지주·리츠 등은 이 산식이 맞지 않아 판정 제외",
+   "rank": 28
+  },
+  {
+   "market": "코스피",
+   "name": "삼성생명",
+   "ticker": "032830",
+   "verdict": "excluded",
+   "note": "금융·지주·리츠 등은 이 산식이 맞지 않아 판정 제외",
+   "rank": 29
+  },
+  {
+   "market": "코스피",
+   "name": "메리츠금융지주",
+   "ticker": "138040",
+   "verdict": "excluded",
+   "note": "금융·지주·리츠 등은 이 산식이 맞지 않아 판정 제외",
+   "rank": 30
+  },
+  {
+   "market": "코스피",
+   "name": "삼성화재해상보험",
+   "ticker": "000810",
+   "verdict": "excluded",
+   "note": "금융·지주·리츠 등은 이 산식이 맞지 않아 판정 제외",
+   "rank": 31
+  },
+  {
+   "market": "코스피",
+   "name": "크래프톤",
+   "ticker": "259960",
+   "verdict": "nodata",
+   "note": "10년치 재무 데이터가 아직 안 모였습니다",
+   "rank": 32
+  }
+ ],
+ "kosdaq": [
+  {
+   "market": "코스닥",
+   "name": "알테오젠",
+   "ticker": "196170",
+   "price": 259500,
+   "mcapEok": 138786,
+   "verdict": "fail",
+   "failKeys": [
+    "roe10",
+    "opStd",
+    "fcfYears",
+    "epsCagr"
+   ],
+   "metrics": {
+    "roe10": 0.5,
+    "debt": 54.9,
+    "intCov": null,
+    "opStd": 44.4,
+    "fcfYears": 3,
+    "epsCagr": -999,
+    "niTrend": 127.6,
+    "niBroken": false,
+    "roeDown": false,
+    "roe3": [
+     -2.3,
+     22.8,
+     31.8
+    ],
+    "capexCfo": 141.2,
+    "majorHolder": 20.4,
+    "avgValueEok": 745.2,
+    "divCut": null
+   },
+   "valuation": {
+    "fcfYield": 0.2,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 125.9,
+    "pass": false,
+    "shYield": 0.1,
+    "pos52w": 24,
+    "basisYear": 2025
+   },
+   "ownerEarnings": 1417,
+   "netCash": 4250,
+   "shares": 53482080,
+   "rank": 1
+  },
+  {
+   "market": "코스닥",
+   "name": "에코프로",
+   "ticker": "086520",
+   "price": 88900,
+   "mcapEok": 119986,
+   "verdict": "fail",
+   "failKeys": [
+    "roe10",
+    "debt",
+    "opStd",
+    "fcfYears",
+    "epsCagr"
+   ],
+   "metrics": {
+    "roe10": 3.1,
+    "debt": 269.2,
+    "intCov": null,
+    "opStd": 5.3,
+    "fcfYears": 0,
+    "epsCagr": -999,
+    "niTrend": -393.6,
+    "niBroken": false,
+    "roeDown": false,
+    "roe3": [
+     3.1,
+     -12.8,
+     -7.6
+    ],
+    "capexCfo": 1220.4,
+    "majorHolder": 25.5,
+    "avgValueEok": 625.6,
+    "divCut": false
+   },
+   "valuation": {
+    "fcfYield": -7.1,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 66.4,
+    "pass": false,
+    "shYield": 0.2,
+    "pos52w": 31,
+    "basisYear": 2025
+   },
+   "ownerEarnings": -1498,
+   "netCash": -21955,
+   "shares": 134967651,
+   "rank": 2
+  },
+  {
+   "market": "코스닥",
+   "name": "원익IPS",
+   "ticker": "240810",
+   "price": 138200,
+   "mcapEok": 67242,
+   "verdict": "fail",
+   "failKeys": [
+    "roe10",
+    "opStd",
+    "fcfYears"
+   ],
+   "metrics": {
+    "roe10": 12.4,
+    "debt": 20.1,
+    "intCov": null,
+    "opStd": 6.3,
+    "fcfYears": 6,
+    "epsCagr": 15.8,
+    "niTrend": -6,
+    "niBroken": false,
+    "roeDown": false,
+    "roe3": [
+     -1.6,
+     2.3,
+     8.7
+    ],
+    "capexCfo": 66.9,
+    "majorHolder": 33,
+    "avgValueEok": 1635,
+    "divCut": false
+   },
+   "valuation": {
+    "fcfYield": 0.5,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 89.7,
+    "pass": false,
+    "shYield": 0.1,
+    "pos52w": 65,
+    "basisYear": 2025
+   },
+   "ownerEarnings": 840,
+   "netCash": 1073,
+   "shares": 48655690,
+   "rank": 3
+  },
+  {
+   "market": "코스닥",
+   "name": "이오테크닉스",
+   "ticker": "039030",
+   "price": 532000,
+   "mcapEok": 65540,
+   "verdict": "fail",
+   "failKeys": [
+    "roe10",
+    "opStd",
+    "fcfYears"
+   ],
+   "metrics": {
+    "roe10": 8.4,
+    "debt": 13.1,
+    "intCov": null,
+    "opStd": 6.2,
+    "fcfYears": 8,
+    "epsCagr": 12.9,
+    "niTrend": -25.2,
+    "niBroken": false,
+    "roeDown": false,
+    "roe3": [
+     6.6,
+     7.2,
+     8.3
+    ],
+    "capexCfo": 30.9,
+    "majorHolder": 31.1,
+    "avgValueEok": 541.2,
+    "divCut": null
+   },
+   "valuation": {
+    "fcfYield": 0.6,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 78.3,
+    "pass": false,
+    "shYield": null,
+    "pos52w": 79,
+    "basisYear": 2025
+   },
+   "ownerEarnings": 572,
+   "netCash": 2293,
+   "shares": 12319550,
+   "rank": 4
+  },
+  {
+   "market": "코스닥",
+   "name": "심텍",
+   "ticker": "222800",
+   "price": 167200,
+   "mcapEok": 62422,
+   "verdict": "fail",
+   "failKeys": [
+    "roe10",
+    "debt",
+    "opStd",
+    "fcfYears",
+    "epsCagr",
+    "niTrend"
+   ],
+   "metrics": {
+    "roe10": 3.4,
+    "debt": 181.4,
+    "intCov": null,
+    "opStd": 7.9,
+    "fcfYears": 4,
+    "epsCagr": -999,
+    "niTrend": -166.8,
+    "niBroken": true,
+    "roeDown": false,
+    "roe3": [
+     -24.5,
+     -6.8,
+     -28.5
+    ],
+    "capexCfo": 164.6,
+    "majorHolder": 33.3,
+    "avgValueEok": 1100,
+    "divCut": false
+   },
+   "valuation": {
+    "fcfYield": -4,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 568.2,
+    "pass": false,
+    "shYield": 0.1,
+    "pos52w": 100,
+    "basisYear": 2025
+   },
+   "ownerEarnings": -1642,
+   "netCash": -5191,
+   "shares": 37333952,
+   "rank": 5
+  },
+  {
+   "market": "코스닥",
+   "name": "HLB",
+   "ticker": "028300",
+   "price": 40450,
+   "mcapEok": 53587,
+   "verdict": "fail",
+   "failKeys": [
+    "roe10",
+    "debt",
+    "opStd",
+    "fcfYears",
+    "epsCagr"
+   ],
+   "metrics": {
+    "roe10": -20.2,
+    "debt": 104.1,
+    "intCov": null,
+    "opStd": 65.4,
+    "fcfYears": 0,
+    "epsCagr": -999,
+    "niTrend": null,
+    "niBroken": false,
+    "roeDown": false,
+    "roe3": [
+     -36.1,
+     -16,
+     -52.7
+    ],
+    "capexCfo": null,
+    "majorHolder": 9.8,
+    "avgValueEok": 901.3,
+    "divCut": null
+   },
+   "valuation": {
+    "fcfYield": -2.3,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": null,
+    "pass": false,
+    "shYield": 0,
+    "pos52w": 35,
+    "basisYear": 2025
+   },
+   "ownerEarnings": -2205,
+   "netCash": 410,
+   "shares": 132477546,
+   "rank": 6
+  },
+  {
+   "market": "코스닥",
+   "name": "삼천당제약",
+   "ticker": "000250",
+   "price": 207000,
+   "mcapEok": 48144,
+   "verdict": "fail",
+   "failKeys": [
+    "roe10",
+    "opStd",
+    "fcfYears",
+    "epsCagr"
+   ],
+   "metrics": {
+    "roe10": 1.4,
+    "debt": 71.6,
+    "intCov": null,
+    "opStd": 7.4,
+    "fcfYears": 5,
+    "epsCagr": -5.4,
+    "niTrend": -9.9,
+    "niBroken": false,
+    "roeDown": false,
+    "roe3": [
+     -4.7,
+     -4.1,
+     1.9
+    ],
+    "capexCfo": 157.1,
+    "majorHolder": 37.6,
+    "avgValueEok": 403.1,
+    "divCut": true
+   },
+   "valuation": {
+    "fcfYield": -0.5,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 562.9,
+    "pass": false,
+    "shYield": 0,
+    "pos52w": 8,
+    "basisYear": 2025
+   },
+   "ownerEarnings": 53,
+   "netCash": 301,
+   "shares": 23257878,
+   "rank": 7
+  },
+  {
+   "market": "코스닥",
+   "name": "ISC",
+   "ticker": "095340",
+   "price": 206000,
+   "mcapEok": 42156,
+   "verdict": "fail",
+   "failKeys": [
+    "roe10",
+    "opStd",
+    "fcfYears"
+   ],
+   "metrics": {
+    "roe10": 8.4,
+    "debt": 15.9,
+    "intCov": null,
+    "opStd": 9.1,
+    "fcfYears": 8,
+    "epsCagr": 21.4,
+    "niTrend": 2.7,
+    "niBroken": false,
+    "roeDown": false,
+    "roe3": [
+     2.8,
+     10.5,
+     10.5
+    ],
+    "capexCfo": 46.4,
+    "majorHolder": 48.9,
+    "avgValueEok": 332.9,
+    "divCut": false
+   },
+   "valuation": {
+    "fcfYield": 0.6,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 64.5,
+    "pass": false,
+    "shYield": 0.4,
+    "pos52w": 67,
+    "basisYear": 2025
+   },
+   "ownerEarnings": 561,
+   "netCash": 3421,
+   "shares": 20464192,
+   "rank": 8
+  },
+  {
+   "market": "코스닥",
+   "name": "유진테크",
+   "ticker": "084370",
+   "price": 176800,
+   "mcapEok": 39983,
+   "verdict": "fail",
+   "failKeys": [
+    "roe10",
+    "opStd",
+    "epsCagr",
+    "niTrend"
+   ],
+   "metrics": {
+    "roe10": 10.4,
+    "debt": 19.4,
+    "intCov": null,
+    "opStd": 5.1,
+    "fcfYears": 9,
+    "epsCagr": 3.1,
+    "niTrend": -32.9,
+    "niBroken": true,
+    "roeDown": false,
+    "roe3": [
+     7.1,
+     15.6,
+     9.2
+    ],
+    "capexCfo": 34,
+    "majorHolder": 36.1,
+    "avgValueEok": 306.2,
+    "divCut": false
+   },
+   "valuation": {
+    "fcfYield": 1.1,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 76.3,
+    "pass": false,
+    "shYield": 0.1,
+    "pos52w": 78,
+    "basisYear": 2025
+   },
+   "ownerEarnings": 425,
+   "netCash": 549,
+   "shares": 22614717,
+   "rank": 9
+  },
+  {
+   "market": "코스닥",
+   "name": "하나마이크론",
+   "ticker": "067310",
+   "price": 51500,
+   "mcapEok": 34185,
+   "verdict": "fail",
+   "failKeys": [
+    "roe10",
+    "debt",
+    "opStd",
+    "fcfYears",
+    "epsCagr"
+   ],
+   "metrics": {
+    "roe10": -2.8,
+    "debt": 342.3,
+    "intCov": null,
+    "opStd": 5.7,
+    "fcfYears": 2,
+    "epsCagr": -999,
+    "niTrend": 1246.6,
+    "niBroken": false,
+    "roeDown": false,
+    "roe3": [
+     -4.4,
+     -6.4,
+     9.6
+    ],
+    "capexCfo": 192.3,
+    "majorHolder": 26.3,
+    "avgValueEok": 904.8,
+    "divCut": false
+   },
+   "valuation": {
+    "fcfYield": -3.3,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 33.8,
+    "pass": false,
+    "shYield": 0.3,
+    "pos52w": 85,
+    "basisYear": 2025
+   },
+   "ownerEarnings": 381,
+   "netCash": -9020,
+   "shares": 66378151,
+   "rank": 10
+  },
+  {
+   "market": "코스닥",
+   "name": "티씨케이",
+   "ticker": "064760",
+   "price": 296000,
+   "mcapEok": 33091,
+   "verdict": "fail",
+   "failKeys": [
+    "niTrend",
+    "majorHolder"
+   ],
+   "metrics": {
+    "roe10": 20.2,
+    "debt": 9.3,
+    "intCov": null,
+    "opStd": 3.9,
+    "fcfYears": 9,
+    "epsCagr": 13.3,
+    "niTrend": -25.7,
+    "niBroken": true,
+    "roeDown": false,
+    "roe3": [
+     13.4,
+     13.9,
+     13.5
+    ],
+    "capexCfo": 41.6,
+    "majorHolder": 52.6,
+    "avgValueEok": 190.7,
+    "divCut": false
+   },
+   "valuation": {
+    "fcfYield": 0.9,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 39.4,
+    "pass": false,
+    "shYield": 2,
+    "pos52w": 75,
+    "basisYear": 2025
+   },
+   "ownerEarnings": 699,
+   "netCash": 0,
+   "shares": 11179416,
+   "rank": 11
+  },
+  {
+   "market": "코스닥",
+   "name": "티에스이",
+   "ticker": "131290",
+   "price": 290500,
+   "mcapEok": 32133,
+   "verdict": "fail",
+   "failKeys": [
+    "roe10",
+    "opStd",
+    "fcfYears",
+    "epsCagr",
+    "niTrend",
+    "majorHolder"
+   ],
+   "metrics": {
+    "roe10": 8.9,
+    "debt": 36.7,
+    "intCov": null,
+    "opStd": 8.1,
+    "fcfYears": 4,
+    "epsCagr": -999,
+    "niTrend": -23.3,
+    "niBroken": true,
+    "roeDown": false,
+    "roe3": [
+     0,
+     12.4,
+     9.8
+    ],
+    "capexCfo": 114.4,
+    "majorHolder": 50.4,
+    "avgValueEok": 268.8,
+    "divCut": false
+   },
+   "valuation": {
+    "fcfYield": -0.5,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 64.3,
+    "pass": false,
+    "shYield": 0.2,
+    "pos52w": 94,
+    "basisYear": 2025
+   },
+   "ownerEarnings": 382,
+   "netCash": 510,
+   "shares": 11061429,
+   "rank": 12
+  },
+  {
+   "market": "코스닥",
+   "name": "파마리서치",
+   "ticker": "214450",
+   "price": 306000,
+   "mcapEok": 31792,
+   "verdict": "fail",
+   "failKeys": [
+    "roe10",
+    "opStd",
+    "fcfYears"
+   ],
+   "metrics": {
+    "roe10": 12.9,
+    "debt": 46.4,
+    "intCov": null,
+    "opStd": 7.3,
+    "fcfYears": 8,
+    "epsCagr": 31.7,
+    "niTrend": 79.4,
+    "niBroken": false,
+    "roeDown": false,
+    "roe3": [
+     17.7,
+     17.1,
+     24
+    ],
+    "capexCfo": 36.4,
+    "majorHolder": 31.4,
+    "avgValueEok": 290.7,
+    "divCut": false
+   },
+   "valuation": {
+    "fcfYield": 3.1,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 14,
+    "pass": false,
+    "shYield": 1.3,
+    "pos52w": 14,
+    "basisYear": 2025
+   },
+   "ownerEarnings": 1651,
+   "netCash": 1752,
+   "shares": 10389648,
+   "rank": 13
+  },
+  {
+   "market": "코스닥",
+   "name": "제주반도체",
+   "ticker": "080220",
+   "price": 92400,
+   "mcapEok": 31123,
+   "verdict": "fail",
+   "failKeys": [
+    "roe10",
+    "fcfYears",
+    "epsCagr"
+   ],
+   "metrics": {
+    "roe10": 9.1,
+    "debt": 47.9,
+    "intCov": null,
+    "opStd": 4.3,
+    "fcfYears": 6,
+    "epsCagr": -999,
+    "niTrend": 62.4,
+    "niBroken": false,
+    "roeDown": false,
+    "roe3": [
+     10.6,
+     10.6,
+     17.4
+    ],
+    "capexCfo": 139,
+    "majorHolder": 10.5,
+    "avgValueEok": 1869.3,
+    "divCut": null
+   },
+   "valuation": {
+    "fcfYield": 0.1,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 86,
+    "pass": false,
+    "shYield": null,
+    "pos52w": 64,
+    "basisYear": 2025
+   },
+   "ownerEarnings": 395,
+   "netCash": 252,
+   "shares": 33683104,
+   "rank": 14
+  },
+  {
+   "market": "코스닥",
+   "name": "펩트론",
+   "ticker": "087010",
+   "price": 129500,
+   "mcapEok": 30100,
+   "verdict": "fail",
+   "failKeys": [
+    "roe10",
+    "opStd",
+    "fcfYears",
+    "epsCagr"
+   ],
+   "metrics": {
+    "roe10": -23.1,
+    "debt": 26,
+    "intCov": null,
+    "opStd": 188.6,
+    "fcfYears": 0,
+    "epsCagr": -999,
+    "niTrend": null,
+    "niBroken": false,
+    "roeDown": false,
+    "roe3": [
+     -44.1,
+     -14.5,
+     -9.7
+    ],
+    "capexCfo": null,
+    "majorHolder": 8.5,
+    "avgValueEok": 221.4,
+    "divCut": null
+   },
+   "valuation": {
+    "fcfYield": -0.6,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": null,
+    "pass": false,
+    "shYield": 0,
+    "pos52w": 9,
+    "basisYear": 2025
+   },
+   "ownerEarnings": -138,
+   "netCash": 424,
+   "shares": 23243389,
+   "rank": 15
+  },
+  {
+   "market": "코스닥",
+   "name": "동진쎄미켐",
+   "ticker": "005290",
+   "price": 52000,
+   "mcapEok": 26722,
+   "verdict": "fail",
+   "failKeys": [
+    "fcfYears",
+    "niTrend",
+    "roeDown"
+   ],
+   "metrics": {
+    "roe10": 16.5,
+    "debt": 83.5,
+    "intCov": null,
+    "opStd": 2.9,
+    "fcfYears": 8,
+    "epsCagr": 16,
+    "niTrend": -37.9,
+    "niBroken": true,
+    "roeDown": true,
+    "roe3": [
+     15.8,
+     15.5,
+     9.1
+    ],
+    "capexCfo": 79.4,
+    "majorHolder": 38.6,
+    "avgValueEok": 379.3,
+    "divCut": false
+   },
+   "valuation": {
+    "fcfYield": -0.1,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 17.1,
+    "pass": false,
+    "shYield": 1.3,
+    "pos52w": 59,
+    "basisYear": 2025
+   },
+   "ownerEarnings": 991,
+   "netCash": -2815,
+   "shares": 51387996,
+   "rank": 16
+  },
+  {
+   "market": "코스닥",
+   "name": "대한광통신",
+   "ticker": "010170",
+   "price": 17800,
+   "mcapEok": 23493,
+   "verdict": "fail",
+   "failKeys": [
+    "roe10",
+    "debt",
+    "opStd",
+    "fcfYears",
+    "epsCagr"
+   ],
+   "metrics": {
+    "roe10": -28.9,
+    "debt": 228.6,
+    "intCov": null,
+    "opStd": 10.7,
+    "fcfYears": 0,
+    "epsCagr": -999,
+    "niTrend": null,
+    "niBroken": false,
+    "roeDown": false,
+    "roe3": [
+     -38.7,
+     -137.3,
+     -42
+    ],
+    "capexCfo": null,
+    "majorHolder": 18.1,
+    "avgValueEok": 1477.4,
+    "divCut": null
+   },
+   "valuation": {
+    "fcfYield": -0.6,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": null,
+    "pass": false,
+    "shYield": null,
+    "pos52w": 59,
+    "basisYear": 2025
+   },
+   "ownerEarnings": -280,
+   "netCash": -743,
+   "shares": 131985660,
+   "rank": 17
+  },
+  {
+   "market": "코스닥",
+   "name": "테크윙",
+   "ticker": "089030",
+   "price": 54900,
+   "mcapEok": 19622,
+   "verdict": "fail",
+   "failKeys": [
+    "roe10",
+    "debt",
+    "fcfYears",
+    "epsCagr"
+   ],
+   "metrics": {
+    "roe10": 8.5,
+    "debt": 196,
+    "intCov": null,
+    "opStd": 5,
+    "fcfYears": 4,
+    "epsCagr": -4.9,
+    "niTrend": -71.2,
+    "niBroken": false,
+    "roeDown": false,
+    "roe3": [
+     -4.3,
+     -10.9,
+     4.4
+    ],
+    "capexCfo": 150.2,
+    "majorHolder": 24.1,
+    "avgValueEok": 472.6,
+    "divCut": false
+   },
+   "valuation": {
+    "fcfYield": -1.7,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 140.8,
+    "pass": false,
+    "shYield": 0.2,
+    "pos52w": 59,
+    "basisYear": 2025
+   },
+   "ownerEarnings": 94,
+   "netCash": -2632,
+   "shares": 35740474,
+   "rank": 18
+  },
+  {
+   "market": "코스닥",
+   "name": "휴젤",
+   "ticker": "145020",
+   "price": 180100,
+   "mcapEok": 19457,
+   "verdict": "fail",
+   "failKeys": [
+    "roe10",
+    "opStd"
+   ],
+   "metrics": {
+    "roe10": 10.8,
+    "debt": 10.2,
+    "intCov": null,
+    "opStd": 7.5,
+    "fcfYears": 10,
+    "epsCagr": 14,
+    "niTrend": 3.7,
+    "niBroken": false,
+    "roeDown": false,
+    "roe3": [
+     12.5,
+     16.9,
+     14.8
+    ],
+    "capexCfo": 34.1,
+    "majorHolder": 43.5,
+    "avgValueEok": 124.1,
+    "divCut": null
+   },
+   "valuation": {
+    "fcfYield": 5.4,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 7.1,
+    "pass": false,
+    "shYield": 0.1,
+    "pos52w": 0,
+    "basisYear": 2025
+   },
+   "ownerEarnings": 1409,
+   "netCash": 5287,
+   "shares": 10803292,
+   "rank": 19
+  },
+  {
+   "market": "코스닥",
+   "name": "에스엠",
+   "ticker": "041510",
+   "price": 79200,
+   "mcapEok": 18133,
+   "verdict": "fail",
+   "failKeys": [
+    "roe10"
+   ],
+   "metrics": {
+    "roe10": 7.4,
+    "debt": 64.7,
+    "intCov": null,
+    "opStd": 4,
+    "fcfYears": 10,
+    "epsCagr": 65.9,
+    "niTrend": 297.7,
+    "niBroken": false,
+    "roeDown": false,
+    "roe3": [
+     12.1,
+     2.8,
+     34.6
+    ],
+    "capexCfo": 40.2,
+    "majorHolder": 41.9,
+    "avgValueEok": 99.8,
+    "divCut": false
+   },
+   "valuation": {
+    "fcfYield": 5.5,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 7.9,
+    "pass": false,
+    "shYield": 2,
+    "pos52w": 19,
+    "basisYear": 2025
+   },
+   "ownerEarnings": 3472,
+   "netCash": 3594,
+   "shares": 22894690,
+   "rank": 20
+  },
+  {
+   "market": "코스닥",
+   "name": "씨젠",
+   "ticker": "096530",
+   "price": 36900,
+   "mcapEok": 17016,
+   "verdict": "fail",
+   "failKeys": [
+    "opStd"
+   ],
+   "metrics": {
+    "roe10": 18,
+    "debt": 21.7,
+    "intCov": null,
+    "opStd": 20.2,
+    "fcfYears": 10,
+    "epsCagr": 23.7,
+    "niTrend": -73.5,
+    "niBroken": false,
+    "roeDown": false,
+    "roe3": [
+     0.1,
+     -2.1,
+     4.8
+    ],
+    "capexCfo": 32.2,
+    "majorHolder": 28.8,
+    "avgValueEok": 124.2,
+    "divCut": false
+   },
+   "valuation": {
+    "fcfYield": 4.2,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 39.7,
+    "pass": false,
+    "shYield": 3,
+    "pos52w": 97,
+    "basisYear": 2025
+   },
+   "ownerEarnings": 483,
+   "netCash": 3319,
+   "shares": 46114611,
+   "rank": 21
+  },
+  {
+   "market": "코스닥",
+   "name": "셀트리온제약",
+   "ticker": "068760",
+   "price": 38400,
+   "mcapEok": 16676,
+   "verdict": "fail",
+   "failKeys": [
+    "roe10",
+    "opStd",
+    "fcfYears",
+    "epsCagr"
+   ],
+   "metrics": {
+    "roe10": 4.2,
+    "debt": 74.2,
+    "intCov": null,
+    "opStd": 7.4,
+    "fcfYears": 5,
+    "epsCagr": -999,
+    "niTrend": 49.3,
+    "niBroken": false,
+    "roeDown": false,
+    "roe3": [
+     5.6,
+     5.5,
+     8.9
+    ],
+    "capexCfo": 47.5,
+    "majorHolder": null,
+    "avgValueEok": 42,
+    "divCut": null
+   },
+   "valuation": {
+    "fcfYield": 2.4,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 31.4,
+    "pass": false,
+    "shYield": 0.7,
+    "pos52w": 1,
+    "basisYear": 2025
+   },
+   "ownerEarnings": 388,
+   "netCash": -921,
+   "shares": 43426161,
+   "rank": 22
+  },
+  {
+   "market": "코스닥",
+   "name": "JYP Ent.",
+   "ticker": "035900",
+   "price": 37400,
+   "mcapEok": 12392,
+   "verdict": "pass",
+   "failKeys": [],
+   "metrics": {
+    "roe10": 20.9,
+    "debt": 36.4,
+    "intCov": null,
+    "opStd": 4.7,
+    "fcfYears": 9,
+    "epsCagr": 38.6,
+    "niTrend": 52.2,
+    "niBroken": false,
+    "roeDown": false,
+    "roe3": [
+     26.8,
+     20.4,
+     25.9
+    ],
+    "capexCfo": 32.6,
+    "majorHolder": 15.8,
+    "avgValueEok": 55,
+    "divCut": false
+   },
+   "valuation": {
+    "fcfYield": 5.9,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 6.1,
+    "pass": false,
+    "shYield": 2.3,
+    "pos52w": 0,
+    "basisYear": 2025
+   },
+   "ownerEarnings": 1688,
+   "netCash": 2945,
+   "shares": 33133059,
+   "rank": 23
+  },
+  {
+   "market": "코스닥",
+   "name": "피엔티",
+   "ticker": "137400",
+   "price": 32400,
+   "mcapEok": 7551,
+   "verdict": "fail",
+   "failKeys": [
+    "roe10",
+    "debt",
+    "opStd",
+    "fcfYears",
+    "niTrend"
+   ],
+   "metrics": {
+    "roe10": 14.1,
+    "debt": 147.2,
+    "intCov": null,
+    "opStd": 5.9,
+    "fcfYears": 2,
+    "epsCagr": 43.4,
+    "niTrend": -47.6,
+    "niBroken": true,
+    "roeDown": false,
+    "roe3": [
+     15.3,
+     23.1,
+     10.7
+    ],
+    "capexCfo": 558.2,
+    "majorHolder": 14.8,
+    "avgValueEok": 46.7,
+    "divCut": false
+   },
+   "valuation": {
+    "fcfYield": -14.2,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 10.5,
+    "pass": false,
+    "shYield": 0.9,
+    "pos52w": 20,
+    "basisYear": 2025
+   },
+   "ownerEarnings": 743,
+   "netCash": -2452,
+   "shares": 23304599,
+   "rank": 24
+  },
+  {
+   "market": "코스닥",
+   "name": "에코프로비엠",
+   "ticker": "247540",
+   "verdict": "nodata",
+   "note": "10년치 재무 데이터가 아직 안 모였습니다",
+   "rank": 25
+  },
+  {
+   "market": "코스닥",
+   "name": "리가켐바이오",
+   "ticker": "141080",
+   "verdict": "nodata",
+   "note": "10년치 재무 데이터가 아직 안 모였습니다",
+   "rank": 26
+  },
+  {
+   "market": "코스닥",
+   "name": "클래시스",
+   "ticker": "214150",
+   "verdict": "nodata",
+   "note": "10년치 재무 데이터가 아직 안 모였습니다",
+   "rank": 27
+  },
+  {
+   "market": "코스닥",
+   "name": "펄어비스",
+   "ticker": "263750",
+   "verdict": "nodata",
+   "note": "10년치 재무 데이터가 아직 안 모였습니다",
+   "rank": 28
+  },
+  {
+   "market": "코스닥",
+   "name": "리노공업",
+   "ticker": "058470",
+   "verdict": "nodata",
+   "note": "10년치 재무 데이터가 아직 안 모였습니다",
+   "rank": 29
+  },
+  {
+   "market": "코스닥",
+   "name": "HPSP",
+   "ticker": "403870",
+   "verdict": "nodata",
+   "note": "10년치 재무 데이터가 아직 안 모였습니다",
+   "rank": 30
+  },
+  {
+   "market": "코스닥",
+   "name": "실리콘투",
+   "ticker": "257720",
+   "verdict": "nodata",
+   "note": "10년치 재무 데이터가 아직 안 모였습니다",
+   "rank": 31
+  },
+  {
+   "market": "코스닥",
+   "name": "솔브레인",
+   "ticker": "357780",
+   "verdict": "nodata",
+   "note": "10년치 재무 데이터가 아직 안 모였습니다",
+   "rank": 32
+  },
+  {
+   "market": "코스닥",
+   "name": "주성엔지니어링",
+   "ticker": "036930",
+   "verdict": "nodata",
+   "note": "10년치 재무 데이터가 아직 안 모였습니다",
+   "rank": 33
+  },
+  {
+   "market": "코스닥",
+   "name": "카카오게임즈",
+   "ticker": "293490",
+   "verdict": "nodata",
+   "note": "10년치 재무 데이터가 아직 안 모였습니다",
+   "rank": 34
+  },
+  {
+   "market": "코스닥",
+   "name": "대주전자재료",
+   "ticker": "078600",
+   "verdict": "nodata",
+   "note": "10년치 재무 데이터가 아직 안 모였습니다",
+   "rank": 35
+  },
+  {
+   "market": "코스닥",
+   "name": "보로노이",
+   "ticker": "310210",
+   "verdict": "nodata",
+   "note": "10년치 재무 데이터가 아직 안 모였습니다",
+   "rank": 36
+  },
+  {
+   "market": "코스닥",
+   "name": "레인보우로보틱스",
+   "ticker": "277810",
+   "verdict": "nodata",
+   "note": "10년치 재무 데이터가 아직 안 모였습니다",
+   "rank": 37
+  },
+  {
+   "market": "코스닥",
+   "name": "테스",
+   "ticker": "095610",
+   "verdict": "nodata",
+   "note": "10년치 재무 데이터가 아직 안 모였습니다",
+   "rank": 38
+  },
+  {
+   "market": "코스닥",
+   "name": "피에스케이",
+   "ticker": "319660",
+   "verdict": "nodata",
+   "note": "10년치 재무 데이터가 아직 안 모였습니다",
+   "rank": 39
+  },
+  {
+   "market": "코스닥",
+   "name": "피에스케이홀딩스",
+   "ticker": "031980",
+   "verdict": "excluded",
+   "note": "금융·지주·리츠 등은 이 산식이 맞지 않아 판정 제외",
+   "rank": 40
+  },
+  {
+   "market": "코스닥",
+   "name": "파두",
+   "ticker": "440110",
+   "verdict": "nodata",
+   "note": "10년치 재무 데이터가 아직 안 모였습니다",
+   "rank": 41
+  },
+  {
+   "market": "코스닥",
+   "name": "로보티즈",
+   "ticker": "108490",
+   "verdict": "nodata",
+   "note": "10년치 재무 데이터가 아직 안 모였습니다",
+   "rank": 42
+  },
+  {
+   "market": "코스닥",
+   "name": "에이비엘바이오",
+   "ticker": "298380",
+   "verdict": "nodata",
+   "note": "10년치 재무 데이터가 아직 안 모였습니다",
+   "rank": 43
+  }
+ ]
+}
