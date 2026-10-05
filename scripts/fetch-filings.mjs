@@ -66,7 +66,7 @@ async function edgar(url, asText = false) {
   const wait = lastCall + 150 - Date.now(); if (wait > 0) await sleep(wait);
   lastCall = Date.now();
   for (let i = 0; i < 4; i++) {
-    const res = await fetch(url, { headers: { "User-Agent": UA, "Accept-Encoding": "gzip, deflate", Accept: asText ? "*/*" : "application/json" } });
+    const res = await fetch(url, { headers: { "User-Agent": UA, "Accept-Encoding": "gzip, deflate", Accept: asText ? "*/*" : "application/json" }, signal: AbortSignal.timeout(30000) });
     if (res.ok) return asText ? res.text() : res.json();
     if (res.status === 429 || res.status >= 500) { await sleep(3000 * (i + 1)); continue; }
     if (res.status === 403) throw new Error(`SEC 가 요청을 거부했습니다 (403). SEC 는 자동 조회에 "이름 이메일" 형식의 User-Agent 를 요구합니다. 저장소 Settings → Secrets and variables → Actions 에 EDGAR_USER_AGENT 를 예: "Hong Gildong hong@example.com" 으로 추가하세요. 현재 UA: "${UA}"`);
@@ -178,7 +178,7 @@ async function mapTickers(cusips, cache) {
   for (let i = 0; i < todo.length; i += 10) {
     const batch = todo.slice(i, i + 10);
     try {
-      const res = await fetch(`${FIGI_BASE}/v3/mapping`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(batch.map((c) => ({ idType: "ID_CUSIP", idValue: c }))) });
+      const res = await fetch(`${FIGI_BASE}/v3/mapping`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(batch.map((c) => ({ idType: "ID_CUSIP", idValue: c }))), signal: AbortSignal.timeout(30000) });
       if (!res.ok) throw new Error(`${res.status}`);
       const data = await res.json();
       batch.forEach((c, k) => {
