@@ -103,7 +103,7 @@ async function dart(pathname, params = {}) {
   let res;
   try {
     res = await withRetry(async () => {
-      const r = await fetch(url);
+      const r = await fetch(url, { signal: AbortSignal.timeout(30000) }); // 매달리는 소켓은 30초에 끊고 재시도
       if (!r.ok) throw new Error(`${r.status} for ${pathname}`);
       return r;
     });

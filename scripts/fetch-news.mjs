@@ -25,7 +25,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function fetchText(url) {
   for (let i = 0; i < 3; i++) {
     try {
-      const res = await fetch(url, { headers: { "User-Agent": UA, Accept: "text/html,application/xhtml+xml,*/*", "Accept-Language": "en-US,en;q=0.9" }, redirect: "follow" });
+      const res = await fetch(url, { headers: { "User-Agent": UA, Accept: "text/html,application/xhtml+xml,*/*", "Accept-Language": "en-US,en;q=0.9" }, redirect: "follow", signal: AbortSignal.timeout(30000) });
       if (res.ok) return res.text();
       if (res.status === 429 || res.status >= 500) { await sleep(2000 * (i + 1)); continue; }
       throw new Error(`HTTP ${res.status}`);
@@ -162,7 +162,7 @@ async function toKorean(text) {
     for (const e of endpoints) {
       try {
         await sleep(300);
-        const res = await fetch(e.u, { headers: { "User-Agent": UA } });
+        const res = await fetch(e.u, { headers: { "User-Agent": UA }, signal: AbortSignal.timeout(20000) });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const out = String(e.pick(await res.json()) || "").trim();
         // 번역기가 원문을 그대로 돌려주면 실패로 보고 다음 엔드포인트로

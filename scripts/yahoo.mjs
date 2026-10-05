@@ -5,14 +5,18 @@ export const YAHOO_FALLBACK = process.env.YAHOO_BASE ? null : "https://query2.fi
 export const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
 
+// 응답이 아예 안 오고 소켓이 매달리는 장애(2026-10-05 저녁처럼)가 나면 fetch 가 무한 대기해
+// 잡이 10분 타임아웃으로 통째로 취소된다. 30초 안에 응답이 없으면 끊고 재시도로 넘긴다.
+export const FETCH_TIMEOUT_MS = Number(process.env.FETCH_TIMEOUT_MS || 30000);
+
 export async function fetchJson(url) {
-  const res = await fetch(url, { headers: { "User-Agent": UA, Accept: "application/json" } });
+  const res = await fetch(url, { headers: { "User-Agent": UA, Accept: "application/json" }, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
   if (!res.ok) throw new Error(`${res.status} ${res.statusText} for ${url}`);
   return res.json();
 }
 
 export async function fetchText(url) {
-  const res = await fetch(url, { headers: { "User-Agent": UA } });
+  const res = await fetch(url, { headers: { "User-Agent": UA }, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
   if (!res.ok) throw new Error(`${res.status} ${res.statusText} for ${url}`);
   return res.text();
 }

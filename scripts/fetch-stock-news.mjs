@@ -35,7 +35,7 @@ const POPULAR = [
 async function fetchJson(url) {
   for (let i = 0; i < 3; i++) {
     try {
-      const res = await fetch(url, { headers: { "User-Agent": UA, Accept: "application/json" } });
+      const res = await fetch(url, { headers: { "User-Agent": UA, Accept: "application/json" }, signal: AbortSignal.timeout(30000) });
       if (res.ok) return res.json();
       if (res.status === 429 || res.status >= 500) { await sleep(1500 * (i + 1)); continue; }
       throw new Error(`HTTP ${res.status}`);
@@ -69,7 +69,7 @@ async function toKorean(text) {
   for (const e of endpoints) {
     try {
       await sleep(200);
-      const res = await fetch(e.u, { headers: { "User-Agent": UA } });
+      const res = await fetch(e.u, { headers: { "User-Agent": UA }, signal: AbortSignal.timeout(20000) });
       if (!res.ok) continue;
       const out = String(e.pick(await res.json()) || "").trim();
       if (out && out.toLowerCase() !== text.trim().toLowerCase()) return out;
