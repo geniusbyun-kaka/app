@@ -2149,35 +2149,39 @@ function bhAssetsHtml(f) {
     </div>`).join("")}
     <div class="jk-verdict" style="margin-top:16px"><span class="tag inc">배당주 비중</span><span>주식 계좌의 <strong>약 ${fmt.n(divPct, 0)}%</strong>가 배당을 주는 종목입니다. 버크셔는 자신은 배당을 주지 않지만, 보유 주식 대부분에서 배당을 꼬박꼬박 받아 다시 투자 실탄으로 씁니다.</span></div>`;
 }
-// 소득 흐름: 버크셔의 최근 현금 흐름을 입력한 월 소득에 비례해 월 단위 가계부로 축소
-// 가계부는 두 줄만: 번 돈과 저축. 주식 순매매·자사주·인수는 저축에 반영하고 설명 문장에 풀어 쓴다.
+// 버핏식 매월 월급 관리: 버크셔의 최근 현금 흐름을 입력한 월 소득에 비례해 월 가계부로 축소.
+// 번 돈이 어디에 쓰였는지 항목별로 다 보여주고, 마지막 줄이 저축(현금·단기 국채 증감)이다.
 function runBhFlow() {
   const income = numVal("#bh-income");
   if (!(income > 0)) return alert("월 소득을 입력하세요.");
   const fl = Object.values(BRK_FLOW).at(-1);
   const k = income / ((fl.opEarn / fl.months) * 1e9); // 버크셔 월 영업이익 $1 → 원 환산 비율
-  const mWon = (b) => bhWon((b / fl.months) * 1e9 * k); // $B(기간 합계) → 사람의 월 환산 금액
+  const mB = (b) => b / fl.months; // $B(기간 합계) → 월평균 $B
+  const mWonV = (b) => mB(b) * 1e9 * k; // $B(기간 합계) → 사람의 월 환산 원화
   const netBuy = fl.buy - fl.sell; // 플러스면 주식 순매수, 마이너스면 순매도
   const spentB = netBuy + fl.buyback + fl.acq; // 소득 외로 나간(+) 또는 들어온(−) 돈
-  const save = income - (spentB / fl.months) * 1e9 * k; // 월 저축(현금·단기 국채 증감)
+  const save = income - mWonV(spentB); // 월 저축(현금·단기 국채 증감)
   const cash = Object.values(BRK_CASH).at(-1), stocks = state.filings?.latest?.totalValue || 0;
   const mult = stocks ? (cash + stocks) / ((fl.opEarn / fl.months) * 1e9 * 12) : null;
   const cashPct = stocks ? cash / (cash + stocks) : null; // 통장(현금·단기 국채)이 투자자산에서 차지하는 비중
-  const brkSaveM = (fl.opEarn - spentB) / fl.months; // 버크셔의 실제 월평균 저축 ($B)
+  const brkSaveM = mB(fl.opEarn - spentB); // 버크셔의 실제 월평균 저축 ($B)
   const saving = save >= income; // 번 돈 이상을 저축하면 실탄을 모으는 중
-  const detail = [
-    netBuy > 0 ? `주식을 판 것보다 <strong>${mWon(netBuy)}</strong>어치 더 사고` : `주식을 산 것보다 <strong>${mWon(-netBuy)}</strong>어치 더 팔아 저축에 보태고`,
-    fl.acq > 0 ? `회사를 통째로 인수하는 데 <strong>${mWon(fl.acq)}</strong>을 쓰고` : "",
-    fl.buyback > 0 ? `자기 회사 주식(자사주)을 <strong>${mWon(fl.buyback)}</strong>어치 다시 사들였습니다` : "",
-  ].filter(Boolean).join(", ");
+  const row = (label, won, b, { sign = -1, bold = false } = {}) =>
+    `<tr><td class="txt">${bold ? `<strong>${label}</strong>` : label}</td>
+     <td class="${sign > 0 ? "pos" : won === 0 ? "" : "neg"}">${bold ? "<strong>" : ""}${won === 0 ? "0원" : `${sign > 0 ? "+" : "−"}${bhWon(Math.abs(won))}`}${bold ? "</strong>" : ""}</td>
+     <td>${b === 0 ? "$0" : `${sign > 0 ? "" : "−"}$${fmt.n(Math.abs(b), 1)}B`}</td></tr>`;
   const out = $("#bh-flow");
   out.innerHTML = `<div class="tablewrap bh-ledger" style="margin-top:12px"><table><thead><tr><th>한 달 가계부</th><th>당신이라면</th><th>버크셔 실제 (월평균)</th></tr></thead><tbody>
-      <tr><td class="txt">본업(자회사 사업)에서 번 돈</td><td class="pos">+${bhWon(income)}</td><td>$${fmt.n(fl.opEarn / fl.months, 1)}B</td></tr>
-      <tr><td class="txt"><strong>저축 (현금·단기 국채)</strong></td><td class="${save >= 0 ? "pos" : "neg"}"><strong>${save >= 0 ? "+" : "−"}${bhWon(Math.abs(save))}</strong></td><td>${brkSaveM >= 0 ? "" : "−"}$${fmt.n(Math.abs(brkSaveM), 1)}B</td></tr>
+      ${row("본업(자회사 사업)에서 번 돈", income, mB(fl.opEarn), { sign: 1 })}
+      ${row("주식 산 돈", mWonV(fl.buy), mB(fl.buy))}
+      ${row("주식 판 돈", mWonV(fl.sell), mB(fl.sell), { sign: 1 })}
+      ${fl.acq > 0 ? row("회사 통째로 인수", mWonV(fl.acq), mB(fl.acq)) : ""}
+      ${row("자사주 매입 · 주주 배당", mWonV(fl.buyback), mB(fl.buyback))}
+      ${row("→ 저축 (현금·단기 국채)", Math.abs(save), Math.abs(brkSaveM), { sign: save >= 0 ? 1 : -1, bold: true })}
     </tbody></table></div>
-    <div class="jk-verdict"><span class="tag inc">${saving ? "실탄을 모으는 중" : "실탄을 쓰기 시작"}</span><span><strong>${escHtml(fl.label)}</strong>의 버크셔는 매달 <strong>${bhWon(income)}</strong>을 벌어 ${detail}${detail ? ". " : ""}그 결과 ${save >= 0
-      ? `한 달에 <strong>${bhWon(save)}</strong>씩 현금·단기 국채 통장에 ${saving ? "번 돈보다 더 많이 " : ""}저축했습니다.`
-      : `저축을 늘리기는커녕 모아둔 통장에서 매달 <strong>${bhWon(-save)}</strong>씩 꺼내 썼습니다. 몇 년간 쌓아 온 실탄을 드디어 꺼내 쓰는 것입니다.`}
+    <div class="jk-verdict"><span class="tag inc">${saving ? "실탄을 모으는 중" : "실탄을 쓰기 시작"}</span><span><strong>${escHtml(fl.label)}</strong> 기준, 버크셔가 월 <strong>${bhWon(income)}</strong> 버는 사람이라면 ${save >= 0
+      ? `매달 <strong>${bhWon(save)}</strong>씩 현금·단기 국채 통장에 ${saving ? "번 돈보다 더 많이 " : ""}저축했습니다.${saving ? " 주식을 산 것보다 판 돈이 많아, 번 돈에 그만큼을 보태 저축한 것입니다." : ""}`
+      : `번 돈보다 쓴 돈이 많아, 모아둔 통장에서 매달 <strong>${bhWon(-save)}</strong>씩 꺼내 썼습니다. 몇 년간 신중하게 쌓아 온 실탄을 드디어 꺼내 쓰기 시작한 것입니다.`}
       ${cashPct != null ? `그래도 통장(현금·단기 국채)에는 여전히 투자자산의 <strong>${fmt.n(cashPct * 100, 0)}%</strong>가 남아 있어, 시장을 신중하게 보는 자세는 그대로입니다.` : ""}${mult ? ` 참고로 이 사람의 투자 계좌 잔고는 연 소득의 약 <strong>${fmt.n(mult, 0)}배</strong>로, 당신이라면 약 <strong>${bhWon(income * 12 * mult)}</strong>인 셈입니다.` : ""}</span></div>`;
   out.hidden = false;
 }
@@ -2197,7 +2201,7 @@ function renderMaxPortfolio() {
       <div class="notice" style="margin:14px 0 0" id="pf-brk">버크셔의 분기별 현금 비중을 계산하는 중…</div>
     </div>`,
     `<div class="card" id="bh-card">
-      <div class="card-head"><h3>버크셔를 사람으로 치면</h3><span class="small faint">투자자산을 1억원으로 축소한 모습</span></div>
+      <div class="card-head"><h3>버핏식 매월 월급 관리 방식</h3><span class="small faint">버크셔를 사람으로 치면 · 투자자산 1억원으로 축소</span></div>
       <p class="desc">버크셔의 숫자는 단위가 수천억 달러(Billion)라 감이 잘 안 옵니다. 그래서 <strong>버크셔의 투자자산(상장주식 + 현금성 자산)을 딱 1억원으로 줄이면</strong> 어떤 사람인지 보여드립니다. 버크셔를 한 사람으로 치면 보험·철도·에너지 같은 자회사 사업은 <strong>매달 월급을 주는 본업</strong>이고, 13F로 공시되는 상장주식과 단기 국채는 <strong>그 월급을 모아 굴리는 투자 계좌</strong>입니다.</p>
       <div id="bh-assets"><div class="empty">버크셔 13F를 불러오는 중…</div></div>
       <div class="eyebrow" style="margin-top:20px">월급은 어디로 가나 · 당신의 소득으로 환산</div>
