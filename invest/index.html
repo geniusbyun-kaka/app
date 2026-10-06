@@ -48,57 +48,49 @@
   --mt-green:#56BD92; --mt-blue:#7AA5E8; --mt-red:#E4838D;
 }
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
 .wrap{max-width:1080px;margin:0 auto;padding:16px 16px 48px}
 .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
-h1,h2,h3{margin:0;text-wrap:balance;line-height:1.25}
-h1{font-size:25px;font-weight:700;letter-spacing:-.01em}
-h2{font-size:17px;font-weight:600}
-h3{font-size:16px;font-weight:650;letter-spacing:-.005em}
+h1,h2,h3{margin:0;text-wrap:balance;line-height:1.3;word-break:keep-all}
+h1{font-size:26px;font-weight:700;letter-spacing:-.01em}
+h2{font-size:19px;font-weight:600}
+h3{font-size:18.5px;font-weight:650;letter-spacing:-.005em}
 p{margin:0}
 button,select,input{font:inherit;color:inherit}
 button{cursor:pointer}
 a{color:var(--accent)}
 [hidden]{display:none!important}
-.eyebrow{font-size:11.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.eyebrow{font-size:12.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
 .muted{color:var(--ink-2)} .faint{color:var(--ink-3)}
-.desc{font-size:13.5px;color:var(--ink-2);line-height:1.65;max-width:720px}
-.small{font-size:12.5px}
+.desc{font-size:16px;color:var(--ink-2);line-height:1.8;max-width:720px}
+.small{font-size:13.5px}
 /* 소개 탭 강조 문구: 로고의 세 산 색(초록·파랑·빨강)을 순서대로 입혀 모바일에서도 bold 가 또렷이 보이게 */
 #panel-intro strong{font-weight:700}
 .mt-g{color:var(--mt-green)} .mt-b{color:var(--mt-blue)} .mt-r{color:var(--mt-red)}
-/* 소개·초보 탭: 핸드폰에서 기사 본문처럼 읽히도록 글자를 키움 (다른 탭은 단계적으로 적용 예정) */
-#panel-intro .desc,#panel-starter .desc,#panel-starter .card>p:not(.small){font-size:16.5px;line-height:1.85}
-#panel-intro h3,#panel-starter h3{font-size:19px;line-height:1.4;word-break:keep-all}
-#panel-starter .quote{font-size:16px;line-height:1.8;padding:12px 16px}
-#panel-starter .lesson h4{font-size:17px}
-#panel-starter .lesson p{font-size:15.5px;line-height:1.8}
-#panel-starter .lesson .date{font-size:12.5px}
-#panel-intro .small,#panel-starter .small{font-size:13.5px}
-#panel-intro .kpi .k,#panel-intro .kpi .b{font-size:13px}
+/* 글자 크기는 전 탭 공통으로 기사 본문 수준(본문 16px 안팎)으로 키움 (2026-10 David 요청) */
 
 /* header */
 header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 20px;padding-bottom:14px;border-bottom:1px solid var(--line);margin-bottom:16px}
-.brand p{color:var(--ink-2);font-size:13px;margin-top:2px}
+.brand p{color:var(--ink-2);font-size:14px;margin-top:2px}
 .brand{display:flex;align-items:center;gap:12px}
 .brand-logo{width:46px;height:37px;flex-shrink:0}
 .brand-logo .ko{stroke:var(--bg)}
-.status{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-2)}
+.status{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13.5px;color:var(--ink-2)}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--flat);display:inline-block;margin-right:6px;vertical-align:1px}
 .dot.ok{background:#2E9E5B}.dot.warn{background:#D9A400}.dot.bad{background:var(--up)}
-.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 12px;font-size:13px;font-weight:500;color:var(--ink)}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 12px;font-size:14px;font-weight:500;color:var(--ink)}
 .btn:hover{border-color:var(--ink-3)}
-.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600;padding:9px 18px;font-size:14px}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600;padding:9px 18px;font-size:15px}
 .btn.primary:hover{filter:brightness(1.06)}
 .btn:focus-visible,select:focus-visible,input:focus-visible,.tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 /* notices */
-.notice{background:var(--surface);border:1px solid var(--line);border-left:4px solid #D9A400;border-radius:var(--radius);padding:12px 14px;margin-bottom:16px;font-size:13.5px}
+.notice{background:var(--surface);border:1px solid var(--line);border-left:4px solid #D9A400;border-radius:var(--radius);padding:12px 14px;margin-bottom:16px;font-size:15px;line-height:1.7}
 .notice code{font-family:var(--mono);font-size:12px;background:var(--surface-2);padding:1px 5px;border-radius:4px}
 .notice.error{border-left-color:var(--up)}
 
 /* ticker strip (접힌 시세) */
-.strip{display:flex;align-items:center;gap:6px 18px;flex-wrap:wrap;width:100%;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:8px 14px;margin-bottom:14px;font-size:13px;color:var(--ink-2)}
+.strip{display:flex;align-items:center;gap:6px 18px;flex-wrap:wrap;width:100%;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:8px 14px;margin-bottom:14px;font-size:14px;color:var(--ink-2)}
 .strip-item{display:inline-flex;align-items:baseline;gap:8px}
 .strip-item .k{font-weight:600;color:var(--ink-3);font-size:12px;letter-spacing:.02em}
 .strip-item .v{color:var(--ink);font-weight:600}
@@ -133,22 +125,22 @@ header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:spac
 .news-card{padding:0;overflow:hidden}
 .news-card img{display:block;width:100%;max-height:280px;object-fit:cover;border-bottom:1px solid var(--line-2)}
 .news-body{padding:16px 18px}
-.news-body h3{font-size:17px;line-height:1.4}
+.news-body h3{font-size:19px;line-height:1.4}
 .news-body h3 a{color:var(--ink);text-decoration:none}
 .news-body h3 a:hover{color:var(--accent)}
-.news-orig{font-size:12.5px;color:var(--ink-3);margin-top:4px}
-.news-kp{margin:12px 0 0;padding:10px 14px 10px 30px;background:var(--surface-2);border-radius:8px;font-size:13.5px}
+.news-orig{font-size:13.5px;color:var(--ink-3);margin-top:4px}
+.news-kp{margin:12px 0 0;padding:10px 14px 10px 30px;background:var(--surface-2);border-radius:8px;font-size:15px;line-height:1.7}
 .news-kp li+li{margin-top:4px}
 .news-paras{margin-top:12px}
-.news-paras p{margin:0 0 10px;font-size:14px;line-height:1.7;color:var(--ink-2)}
-.news-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;padding-top:10px;border-top:1px solid var(--line-2);font-size:12.5px;color:var(--ink-3)}
+.news-paras p{margin:0 0 10px;font-size:16px;line-height:1.8;color:var(--ink-2)}
+.news-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;padding-top:10px;border-top:1px solid var(--line-2);font-size:13.5px;color:var(--ink-3)}
 
 /* 초보 가이드 */
-.quote{margin:12px 0 0;padding:10px 14px;border-left:3px solid var(--accent);background:var(--surface-2);border-radius:0 8px 8px 0;font-size:14px;line-height:1.7}
+.quote{margin:12px 0 0;padding:12px 16px;border-left:3px solid var(--accent);background:var(--surface-2);border-radius:0 8px 8px 0;font-size:16px;line-height:1.8}
 .lesson{margin-top:14px;padding-top:12px;border-top:1px solid var(--line-2)}
-.lesson h4{margin:0;font-size:14px}
-.lesson .date{font-size:11.5px;color:var(--ink-3);margin:2px 0 6px}
-.lesson p{margin:0 0 6px;font-size:13.5px;color:var(--ink-2)}
+.lesson h4{margin:0;font-size:17px}
+.lesson .date{font-size:12.5px;color:var(--ink-3);margin:2px 0 6px}
+.lesson p{margin:0 0 6px;font-size:15.5px;line-height:1.8;color:var(--ink-2)}
 
 /* cards */
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px}
@@ -164,10 +156,10 @@ header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:spac
 .chart{min-width:0}
 
 /* notional table */
-table{width:100%;border-collapse:collapse;font-size:13px}
-thead th{font-size:11.5px;color:var(--ink-3);font-weight:600;letter-spacing:.03em}
+table{width:100%;border-collapse:collapse;font-size:14.5px}
+thead th{font-size:12.5px;color:var(--ink-3);font-weight:600;letter-spacing:.03em}
 th,td{padding:7px 8px;border-bottom:1px solid var(--line-2);text-align:right;white-space:nowrap}
-th{font-weight:600;color:var(--ink-3);font-size:11.5px;letter-spacing:.04em;text-transform:uppercase}
+th{font-weight:600;color:var(--ink-3);font-size:12.5px;letter-spacing:.04em;text-transform:uppercase}
 th:first-child,td:first-child{text-align:left}
 td{font-family:var(--mono);font-variant-numeric:tabular-nums}
 td.txt{font-family:var(--font)}
@@ -191,13 +183,13 @@ td.txt{font-family:var(--font)}
 /* backtest form */
 .form{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px 14px}
 .field{display:flex;flex-direction:column;gap:5px;min-width:0}
-.field label{font-size:12px;font-weight:600;color:var(--ink-2)}
+.field label{font-size:13.5px;font-weight:600;color:var(--ink-2)}
 .field select,.field input{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 10px;font-size:14px;min-width:0;width:100%}
 .field input[type=number]{font-family:var(--mono)}
-.field .hint{font-size:11.5px;color:var(--ink-3)}
+.field .hint{font-size:12.5px;color:var(--ink-3)}
 .form-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
-.chip{border:1px solid var(--line);background:var(--surface-2);border-radius:999px;padding:4px 10px;font-size:12px;color:var(--ink-2)}
+.chip{border:1px solid var(--line);background:var(--surface-2);border-radius:999px;padding:4px 10px;font-size:13px;color:var(--ink-2)}
 .chip:hover{color:var(--ink);border-color:var(--ink-3)}
 .dv-cats{margin-bottom:8px}
 .dv-cats .chip{flex:1 1 auto;font-size:13.5px;font-weight:600;padding:8px 14px;text-align:center}
@@ -211,9 +203,9 @@ td.txt{font-family:var(--font)}
 /* KPI */
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
 .kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px}
-.kpi .k{font-size:11.5px;color:var(--ink-3);font-weight:600;letter-spacing:.04em}
+.kpi .k{font-size:13px;color:var(--ink-3);font-weight:600;letter-spacing:.04em}
 .kpi .v{font-family:var(--mono);font-size:24px;font-weight:600;margin-top:4px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
-.kpi .b{font-size:11.5px;color:var(--ink-3);margin-top:3px;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.kpi .b{font-size:12.5px;color:var(--ink-3);margin-top:3px;font-family:var(--mono);font-variant-numeric:tabular-nums}
 .verdict{font-size:13.5px;line-height:1.6}
 .verdict strong{font-weight:600}
 
@@ -243,7 +235,7 @@ td.txt{font-family:var(--font)}
 .stats div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed var(--line-2);padding:4px 0}
 .stats span:first-child{color:var(--ink-3)}
 .stats span:last-child{font-family:var(--mono);font-variant-numeric:tabular-nums}
-.empty{padding:28px 0;text-align:center;color:var(--ink-3);font-size:13.5px}
+.empty{padding:28px 0;text-align:center;color:var(--ink-3);font-size:14.5px}
 /* compare */
 .cmp-inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
 .cmp-inputs .field input{font-family:var(--mono);text-transform:uppercase}
@@ -265,7 +257,7 @@ tr.hl4 td{background:color-mix(in srgb,var(--up) 9%,transparent)}
 tr.hl3 td{background:color-mix(in srgb,var(--up) 5%,transparent)}
 .hist{font-family:var(--mono);letter-spacing:1px;font-size:12px;white-space:nowrap}
 .hist .u{color:var(--up)}.hist .d{color:var(--down)}.hist .n{color:var(--ink-3)}.hist .x{color:var(--accent);font-weight:700}
-.tag{display:inline-block;font-size:11px;padding:1px 6px;border-radius:4px;background:var(--surface-2);color:var(--ink-2);margin-left:6px;font-family:var(--font)}
+.tag{display:inline-block;font-size:12px;padding:1px 6px;border-radius:4px;background:var(--surface-2);color:var(--ink-2);margin-left:6px;font-family:var(--font)}
 .tag.new{background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent)}
 .tag.inc{background:color-mix(in srgb,var(--up) 12%,transparent);color:var(--up)}
 .tag.dec{background:color-mix(in srgb,var(--down) 12%,transparent);color:var(--down)}
@@ -314,7 +306,7 @@ td .nm{font-family:var(--font);color:var(--ink-3);font-size:12px;margin-left:6px
 .modal-ov{position:fixed;inset:0;z-index:50;background:rgba(8,13,17,.55);overflow-y:auto;padding:24px 16px;display:flex;align-items:flex-start;justify-content:center;backdrop-filter:blur(2px)}
 .modal{background:var(--bg);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);width:100%;max-width:780px;margin:3vh 0 24px;display:flex;flex-direction:column;max-height:calc(100vh - 60px)}
 .modal-head{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line);flex:0 0 auto}
-.modal-head h3{flex:1;font-size:17px}
+.modal-head h3{flex:1;font-size:18.5px}
 .modal-close{border:0;background:none;font-size:24px;line-height:1;color:var(--ink-3);padding:2px 10px;border-radius:8px}
 .modal-close:hover{background:var(--surface-2);color:var(--ink)}
 .modal-body{padding:16px 18px;overflow-y:auto;display:grid;gap:12px;align-content:start}
@@ -374,19 +366,19 @@ html.gated,html.gated body{overflow:hidden}
 .max-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
 .max-feat{text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:8px;transition:border-color .15s,transform .15s}
 .max-feat:hover{border-color:var(--accent);transform:translateY(-1px)}
-.max-feat .t{font-weight:700;font-size:15.5px;color:var(--ink)}
-.max-feat .d{font-size:13px;color:var(--ink-2);line-height:1.6}
+.max-feat .t{font-weight:700;font-size:17px;color:var(--ink)}
+.max-feat .d{font-size:14.5px;color:var(--ink-2);line-height:1.65}
 .max-feat .go{margin-top:auto;font-size:13px;font-weight:600;color:var(--accent)}
 .max-page .desc strong{color:var(--accent)}
 .max-feat .plan{align-self:flex-start;margin-top:-2px}
 .max-feat .plan .tag{margin-left:0;font-size:11.5px;padding:2px 8px}
-.max-sig{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;border-radius:10px;background:var(--surface-2);font-size:14px}
+.max-sig{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;border-radius:10px;background:var(--surface-2);font-size:15px}
 .max-sig .light{width:12px;height:12px;border-radius:50%;background:var(--flat)}
 .max-sig.on .light{background:#2E9E5B}
 .max-sig.off .light{background:var(--up)}
 /* Max 라운지 · 조커픽 (버핏식 한국 종목 선별) */
 .jk-scn{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
-.jk-verdict{display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-top:12px;padding:12px 14px;border-radius:10px;background:var(--surface-2);font-size:14px;line-height:1.6}
+.jk-verdict{display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-top:12px;padding:12px 14px;border-radius:10px;background:var(--surface-2);font-size:15.5px;line-height:1.7}
 .jk-verdict .tag{margin-left:0;font-size:12.5px;padding:3px 10px;flex-shrink:0}
 .jk-hot{background:color-mix(in srgb,var(--accent) 14%,transparent);font-weight:700}
 .jk-neg{color:var(--ink-3)}
@@ -395,12 +387,25 @@ html.gated,html.gated body{overflow:hidden}
 .jkv-row:hover td{background:var(--surface-2)}
 .jkv-more{color:var(--accent);font-size:12px;font-weight:600;white-space:nowrap}
 .jkv-detail>td{position:static!important;max-width:none!important;white-space:normal;font-family:var(--font);text-align:left;border-right:0!important;box-shadow:none!important;background:color-mix(in srgb,var(--surface-2) 55%,var(--surface));padding:12px 12px 18px}
+/* 버크셔를 사람으로 치면: 비중 바. 모든 구간에 이름·금액을 글자로 함께 적어 색만으로 구분하지 않는다 */
+.bh-split{display:flex;gap:2px;height:30px;border-radius:8px;overflow:hidden;margin-top:12px}
+.bh-split>i{display:block;height:100%;background:var(--c);min-width:3px}
+.bh-legend{display:flex;gap:8px 24px;flex-wrap:wrap;margin-top:10px;font-size:15px}
+.bh-legend .sw{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:7px;vertical-align:-1px;background:var(--c)}
+.bh-legend b{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.bh-row{display:grid;grid-template-columns:minmax(92px,auto) 1fr minmax(0,auto);gap:4px 12px;align-items:center;margin-top:12px}
+.bh-row .lbl{font-size:14.5px;font-weight:600}
+.bh-row .bar{height:10px;border-radius:5px;background:var(--surface-2)}
+.bh-row .bar>i{display:block;height:100%;border-radius:5px;background:var(--c);min-width:2px}
+.bh-row .amt{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:13.5px;white-space:nowrap;color:var(--ink)}
+.bh-row .names{grid-column:1/-1;font-size:12.5px;color:var(--ink-3);margin-top:-2px}
+.bh-ledger td:first-child,.bh-ledger th:first-child{white-space:normal;max-width:none!important;overflow:visible;text-overflow:clip}
 .gu-pick{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
 .gu-pick .top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .gu-pick .tk2{font-family:var(--mono);font-weight:700;font-size:16px;color:var(--accent);cursor:pointer}
 .gu-pick .tk2.plain{color:var(--ink);cursor:default}
-.gu-pick .nm2{color:var(--ink-2);font-size:13px;margin-right:auto}
-.gu-pick .why{font-size:13.5px;color:var(--ink-2);line-height:1.65;margin-top:8px}
+.gu-pick .nm2{color:var(--ink-2);font-size:14px;margin-right:auto}
+.gu-pick .why{font-size:15px;color:var(--ink-2);line-height:1.7;margin-top:8px}
 .gu-pick .why strong{color:var(--ink)}
 .gu-pick .meta{display:flex;gap:6px 16px;flex-wrap:wrap;margin-top:8px;font-size:12px;color:var(--ink-3)}
 .gu-pick .meta b{color:var(--ink);font-family:var(--mono);font-weight:600;font-variant-numeric:tabular-nums}
@@ -410,7 +415,7 @@ html.gated,html.gated body{overflow:hidden}
 .dv-search-row input,.dv-search-row select{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:9px 12px;font-size:14px;min-width:0}
 .dv-tools{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:12px}
 .dv-tools select,.dv-tools input{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 10px;font-size:14px;min-width:0;width:100%}
-.dv-tools .field label{font-size:12px;font-weight:600;color:var(--ink-2)}
+.dv-tools .field label{font-size:13.5px;font-weight:600;color:var(--ink-2)}
 .dv-list{display:grid;gap:8px}
 .dv-row{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) auto;gap:8px 14px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
 .dv-row .id .tk{font-weight:700;font-family:var(--mono);color:var(--accent);cursor:pointer}
@@ -438,7 +443,7 @@ html.gated,html.gated body{overflow:hidden}
 @media (max-width:520px){.dv-row{grid-template-columns:minmax(0,1fr) auto}.dv-row .dates{grid-column:1/-1}}
 
 /* guide */
-footer{margin-top:28px;font-size:12px;color:var(--ink-3);line-height:1.6}
+footer{margin-top:28px;font-size:13px;color:var(--ink-3);line-height:1.6}
 @media (max-width:480px){
   .card{padding:14px}
   .kpi .v{font-size:19px}
@@ -2091,6 +2096,84 @@ function runLevBacktest() {
 // 버크셔의 분기별 현금성 자산(현금 + 단기 국채, 보험·기타 부문 10-Q/10-K 기준).
 // 새 분기 보고서가 나오면 여기에 한 줄 추가하면 비중이 자동 계산된다.
 const BRK_CASH = { "2025-06-30": 344.1e9, "2025-09-30": 381.7e9, "2025-12-31": 369.0e9, "2026-03-31": 397.4e9, "2026-06-30": 359.2e9 };
+// ── 버크셔를 사람으로 치면: 분기 숫자를 "투자자산 1억원 · 월 소득 n원인 사람"으로 축소해 보여준다 ──
+// 분기 현금 흐름 ($B · 10-Q 기준 약식 수치). 새 분기 보고서가 나오면 한 줄 추가하면 화면이 최신 분기를 쓴다.
+// opEarn: 세후 영업이익 · buy/sell: 상장주식 매수/매도 · buyback: 자사주 매입 · div: 주주 배당
+const BRK_FLOW = {
+  "2025-06-30": { opEarn: 11.2, buy: 3.9, sell: 6.9, buyback: 0, div: 0 },
+  "2025-09-30": { opEarn: 13.5, buy: 6.4, sell: 12.5, buyback: 0, div: 0 },
+};
+// 13F 상장주식의 업종 구분 (대표 종목 수기 매핑 · 여기 없는 티커는 '그 외'로 묶인다)
+const BRK_SECTORS = [
+  { label: "기술주", c: "--nq", names: "애플 · 알파벳 · 베리사인", set: ["AAPL", "GOOGL", "GOOG", "VRSN"] },
+  { label: "금융주", c: "--strat", names: "아메리칸 익스프레스 · 뱅크오브아메리카 · 처브 · 무디스 등", set: ["AXP", "BAC", "CB", "MCO", "ALLY", "COF", "JEF"] },
+  { label: "소비·음식료", c: "--fx", names: "코카콜라 · 크래프트하인즈 · 크로거 · 메이시스", set: ["KO", "KHC", "KR", "M"] },
+  { label: "에너지", c: "--c4", names: "셰브런 · 옥시덴털", set: ["CVX", "OXY"] },
+];
+// 배당을 주지 않는 보유 종목 (배당주 비중 계산용 · 나머지 보유 종목은 전부 배당 지급)
+const BRK_NO_DIV = new Set(["DVA", "VRSN", "NVR", "LLYVA", "LLYVK"]);
+// 원 단위 금액을 "x,xxx만원 / x.x억원"으로
+const bhWon = (v) => (Math.abs(v) >= 1e8 ? `${fmt.n(v / 1e8, 1)}억원` : `${fmt.n(Math.round(v / 1e4), 0)}만원`);
+// 자산 구성: 투자자산(현금성 + 13F 주식)을 1억원으로 축소
+function bhAssetsHtml(f) {
+  const latest = f.latest;
+  const cashEntry = Object.entries(BRK_CASH).find(([p]) => p === latest.period);
+  if (!cashEntry || !latest.totalValue) return `<div class="empty">최근 분기(${escHtml(latest.period)})의 현금성 자산 수치가 아직 등록되지 않았습니다.</div>`;
+  const cash = cashEntry[1], stocks = latest.totalValue, total = cash + stocks;
+  const SCALE = 1e8; // 투자자산 전체 = 1억원
+  const cashW = (cash / total) * SCALE, stockW = (stocks / total) * SCALE;
+  // 업종별 합산 (매핑 밖 티커는 '그 외')
+  const sectors = BRK_SECTORS.map((s) => ({ ...s, v: 0 }));
+  let other = 0, noDiv = 0;
+  for (const h of latest.holdings) {
+    const s = sectors.find((x) => x.set.includes(h.ticker));
+    if (s) s.v += h.value; else other += h.value;
+    if (BRK_NO_DIV.has(h.ticker)) noDiv += h.value;
+  }
+  const rows = [...sectors, { label: "그 외", c: "--bench", names: "다비타 · 델타항공 · 시리우스XM · 건설주 등", v: other }];
+  const maxV = Math.max(...rows.map((r) => r.v));
+  const divPct = (1 - noDiv / stocks) * 100;
+  return `<div class="eyebrow" style="margin-top:16px">투자 계좌가 1억원이라면 · ${escHtml(latest.period.slice(0, 7))} 기준</div>
+    <div class="bh-split"><i style="--c:var(--bench);width:${(cash / total) * 100}%" title="현금·단기국채"></i><i style="--c:var(--nq);width:${(stocks / total) * 100}%" title="주식"></i></div>
+    <div class="bh-legend">
+      <span><span class="sw" style="--c:var(--bench)"></span>현금·단기 국채 <b>${bhWon(cashW)}</b> (${fmt.n((cash / total) * 100, 0)}% · $${fmt.n(cash / 1e9, 0)}B)</span>
+      <span><span class="sw" style="--c:var(--nq)"></span>상장주식 <b>${bhWon(stockW)}</b> (${fmt.n((stocks / total) * 100, 0)}% · $${fmt.n(stocks / 1e9, 0)}B)</span>
+    </div>
+    <div class="eyebrow" style="margin-top:18px">주식 ${bhWon(stockW)}의 업종 구성 · 최근 13F</div>
+    ${rows.map((r) => `<div class="bh-row">
+      <span class="lbl">${r.label}</span>
+      <span class="bar"><i style="--c:var(${r.c});width:${maxV ? (r.v / maxV) * 100 : 0}%"></i></span>
+      <span class="amt">${bhWon((r.v / stocks) * stockW)} · ${fmt.n((r.v / stocks) * 100, 0)}%</span>
+      <span class="names">${r.names}</span>
+    </div>`).join("")}
+    <div class="jk-verdict" style="margin-top:16px"><span class="tag inc">배당주 비중</span><span>주식 계좌의 <strong>약 ${fmt.n(divPct, 0)}%</strong>가 배당을 주는 종목입니다. 버크셔는 자신은 배당을 주지 않지만, 보유 주식 대부분에서 배당을 꼬박꼬박 받아 다시 투자 실탄으로 씁니다.</span></div>`;
+}
+// 소득 흐름: 최근 분기 현금 흐름을 입력한 월 소득에 비례해 축소한 가계부
+function runBhFlow() {
+  const income = numVal("#bh-income");
+  if (!(income > 0)) return alert("월 소득을 입력하세요.");
+  const [period, fl] = Object.entries(BRK_FLOW).at(-1);
+  const qIncome = income * 3; // 분기 소득 = 영업이익에 해당
+  const k = qIncome / (fl.opEarn * 1e9); // $1 → 원 환산 비율
+  const buy = fl.buy * 1e9 * k, sell = fl.sell * 1e9 * k, net = sell - buy;
+  const cashAdd = qIncome + net - (fl.buyback + fl.div) * 1e9 * k;
+  // 투자 계좌 잔고가 연 소득의 몇 배인지 (현금성 + 주식 ÷ 영업이익×4)
+  const cash = Object.values(BRK_CASH).at(-1), stocks = state.filings?.latest?.totalValue || 0;
+  const mult = stocks ? (cash + stocks) / (fl.opEarn * 1e9 * 4) : null;
+  const out = $("#bh-flow");
+  out.innerHTML = `<div class="tablewrap bh-ledger" style="margin-top:12px"><table><thead><tr><th>가계부 (분기)</th><th>당신이라면</th><th>버크셔 실제</th></tr></thead><tbody>
+      <tr><td class="txt">본업(자회사 사업)에서 번 돈</td><td class="pos">+${bhWon(qIncome)}</td><td>$${fmt.n(fl.opEarn, 1)}B</td></tr>
+      <tr><td class="txt">주식 산 돈</td><td>−${bhWon(buy)}</td><td>$${fmt.n(fl.buy, 1)}B</td></tr>
+      <tr><td class="txt">주식 판 돈</td><td class="pos">+${bhWon(sell)}</td><td>$${fmt.n(fl.sell, 1)}B</td></tr>
+      <tr><td class="txt">자사주 매입 · 주주 배당</td><td>${fl.buyback + fl.div > 0 ? "−" + bhWon((fl.buyback + fl.div) * 1e9 * k) : "0원"}</td><td>${fl.buyback + fl.div > 0 ? `$${fmt.n(fl.buyback + fl.div, 1)}B` : "$0"}</td></tr>
+      <tr><td class="txt"><strong>→ 현금·단기 국채에 적립</strong></td><td class="${cashAdd >= 0 ? "pos" : "neg"}"><strong>${cashAdd >= 0 ? "+" : "−"}${bhWon(Math.abs(cashAdd))}</strong></td><td>–</td></tr>
+    </tbody></table></div>
+    <div class="jk-verdict"><span class="tag inc">${net >= 0 ? "실탄을 모으는 중" : "실탄을 쓰는 중"}</span><span>${escHtml(period.slice(0, 7))} 분기의 버크셔는 ${net >= 0
+      ? `번 돈 <strong>${bhWon(qIncome)}</strong>을 전부 저축하고, 주식도 산 것보다 <strong>${bhWon(net)}</strong>어치 더 팔아 현금에 보탰습니다. 월 ${bhWon(income)} 버는 사람이 한 분기에 <strong>${bhWon(cashAdd)}</strong>을 단기 국채 적금에 넣은 셈입니다. 싸게 살 기회를 기다리며 실탄을 쌓는 구간입니다.`
+      : `번 돈 <strong>${bhWon(qIncome)}</strong>에 더해 모아둔 현금까지 꺼내 주식을 <strong>${bhWon(-net)}</strong>어치 더 샀습니다. 기회가 왔다고 판단하면 실탄을 쓰는 구간입니다.`}
+      ${mult ? ` 이 사람의 투자 계좌 잔고는 연 소득의 약 <strong>${fmt.n(mult, 0)}배</strong>로, 당신이라면 약 <strong>${bhWon(income * 12 * mult)}</strong>인 셈입니다.` : ""}</span></div>`;
+  out.hidden = false;
+}
 function renderMaxPortfolio() {
   const body = $("#max-body");
   body.dataset.screen = "portfolio";
@@ -2105,6 +2188,19 @@ function renderMaxPortfolio() {
       </div>
       <div id="pf-result" hidden style="margin-top:12px"></div>
       <div class="notice" style="margin:14px 0 0" id="pf-brk">버크셔의 분기별 현금 비중을 계산하는 중…</div>
+    </div>`,
+    `<div class="card" id="bh-card">
+      <div class="card-head"><h3>버크셔를 사람으로 치면</h3><span class="small faint">투자자산을 1억원으로 축소한 모습</span></div>
+      <p class="desc">버크셔의 숫자는 단위가 수천억 달러(Billion)라 감이 잘 안 옵니다. 그래서 <strong>버크셔의 투자자산(상장주식 + 현금성 자산)을 딱 1억원으로 줄이면</strong> 어떤 사람인지 보여드립니다. 버크셔를 한 사람으로 치면 보험·철도·에너지 같은 자회사 사업은 <strong>매달 월급을 주는 본업</strong>이고, 13F로 공시되는 상장주식과 단기 국채는 <strong>그 월급을 모아 굴리는 투자 계좌</strong>입니다.</p>
+      <div id="bh-assets"><div class="empty">버크셔 13F를 불러오는 중…</div></div>
+      <div class="eyebrow" style="margin-top:20px">월급은 어디로 가나 · 당신의 소득으로 환산</div>
+      <p class="desc" style="margin-top:6px">버크셔의 최근 분기 현금 흐름(10-Q)을 <strong>당신의 소득 비율로 그대로 줄여서</strong>, 한 분기 가계부로 보여드립니다.</p>
+      <div class="cmp-row" style="margin-top:10px">
+        <div class="field"><label for="bh-income">당신의 월 소득 (원)</label><input id="bh-income" class="num-comma" value="2,000,000" style="min-width:160px"></div>
+        <button class="btn primary" type="button" id="bh-run">버크셔처럼 가계부 쓰기</button>
+      </div>
+      <div id="bh-flow" hidden></div>
+      <p class="small faint" style="margin-top:12px">출처: 버크셔 해서웨이 10-Q(현금성 자산·영업이익·주식 매매)와 13F(상장주식 구성). 영업이익·매매 금액은 약식 수치이고 업종 구분은 모픽이 임의로 묶은 것입니다. 비율을 쉽게 보여주는 예시일 뿐, 특정 비중을 권유하는 것이 아닙니다.</p>
     </div>`,
     `<div class="card">
       <div class="card-head"><h3>VOO (S&amp;P 500) 매달 적립하면</h3><span class="small faint">매월 일정 금액 적립 시뮬레이션</span></div>
@@ -2131,7 +2227,14 @@ function renderMaxPortfolio() {
     if (!rows.length) { $("#pf-brk").textContent = "버크셔 13F 데이터가 아직 없어 현금 비중을 계산할 수 없습니다."; return; }
     const last = rows.at(-1);
     $("#pf-brk").innerHTML = `<strong>참고 · 버크셔의 현금 비중</strong> (현금성 자산 ÷ 투자자산(상장주식+현금성), 분기별): ${rows.map((r) => `<span class="num" ${r === last ? 'style="font-weight:700"' : ""}>${r.p.slice(0, 7)} ${fmt.n(r.pct * 100, 0)}%</span>`).join(" · ")} — 최근 분기 기준 투자자산의 <strong>${fmt.n(last.pct * 100, 0)}%</strong>가 현금·단기 국채입니다 (10-Q 기준 $${fmt.n(BRK_CASH[last.p] / 1e9, 0)}B).`;
-  }).catch(() => { const el = $("#pf-brk"); if (el) el.textContent = "버크셔 13F 데이터를 불러오지 못해 현금 비중을 표시할 수 없습니다."; });
+    // 버크셔를 사람으로 치면: 자산 구성 채우고, 가계부도 연 소득 배수까지 포함해 다시 그린다
+    const bh = $("#bh-assets");
+    if (bh) { bh.innerHTML = bhAssetsHtml(f); if (!$("#bh-flow").hidden) runBhFlow(); }
+  }).catch(() => {
+    const el = $("#pf-brk"); if (el) el.textContent = "버크셔 13F 데이터를 불러오지 못해 현금 비중을 표시할 수 없습니다.";
+    const bh = $("#bh-assets"); if (bh) bh.innerHTML = `<div class="empty">버크셔 13F 데이터를 불러오지 못했습니다</div>`;
+  });
+  runBhFlow();
 }
 function runPortfolioCalc() {
   const total = numVal("#pf-total");
@@ -2444,6 +2547,7 @@ $("#max-page").addEventListener("click", (e) => {
   if (jv) return toggleJkvDetail(+jv.dataset.jkv);
   if (e.target.closest("#max-lev-bt")) return runLevBacktest();
   if (e.target.closest("#pf-run")) return runPortfolioCalc();
+  if (e.target.closest("#bh-run")) return runBhFlow();
   if (e.target.closest("#sc-run")) return runStarterCalc();
   if (e.target.closest("#pf-to-voo")) {
     const total = numVal("#pf-total"), monthly = Math.max(10000, Math.round((total * 0.65) / 24 / 10000) * 10000);
