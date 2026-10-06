@@ -136,6 +136,12 @@ header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:spac
 .news-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;padding-top:10px;border-top:1px solid var(--line-2);font-size:13.5px;color:var(--ink-3)}
 
 /* 초보 가이드 */
+/* 계좌 개설 단계: 번호 동그라미 + 세로 연결선 */
+.steps{margin:12px 0 0;padding:0;list-style:none;counter-reset:step}
+.steps li{position:relative;padding:0 0 16px 42px;counter-increment:step;font-size:15.5px;line-height:1.65;color:var(--ink-2)}
+.steps li::before{content:counter(step);position:absolute;left:0;top:0;width:28px;height:28px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center}
+.steps li:not(:last-child)::after{content:"";position:absolute;left:13.5px;top:32px;bottom:2px;width:2px;background:var(--line)}
+.steps li strong{color:var(--ink)}
 .quote{margin:12px 0 0;padding:12px 16px;border-left:3px solid var(--accent);background:var(--surface-2);border-radius:0 8px 8px 0;font-size:16px;line-height:1.8}
 .lesson{margin-top:14px;padding-top:12px;border-top:1px solid var(--line-2)}
 .lesson h4{margin:0;font-size:17px}
@@ -400,6 +406,14 @@ html.gated,html.gated body{overflow:hidden}
 .bh-row .amt{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:13.5px;white-space:nowrap;color:var(--ink)}
 .bh-row .names{grid-column:1/-1;font-size:12.5px;color:var(--ink-3);margin-top:-2px}
 .bh-ledger td:first-child,.bh-ledger th:first-child{white-space:normal;max-width:none!important;overflow:visible;text-overflow:clip}
+.bh-ledger tr.sub td{color:var(--ink-3);font-size:13px;border-bottom-style:dashed}
+.bh-ledger tr.sub td:first-child{padding-left:24px}
+/* 배당 대시보드: 월별 배당 막대 (각 달에 금액을 글자로도 보여주는 미니 차트) */
+.divi-chart{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;margin-top:12px}
+.divi-chart .col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;height:150px}
+.divi-chart .peak{font-size:10.5px;color:var(--ink-3);font-family:var(--mono)}
+.divi-chart .bar{width:70%;max-width:26px;min-height:2px;border-radius:4px 4px 0 0;background:var(--c4)}
+.divi-chart .m{font-size:10.5px;color:var(--ink-3);white-space:nowrap}
 .gu-pick{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
 .gu-pick .top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .gu-pick .tk2{font-family:var(--mono);font-weight:700;font-size:16px;color:var(--accent);cursor:pointer}
@@ -585,6 +599,36 @@ try { if (localStorage.getItem("sb-hzzmzpsjuovijtananmf-auth-token")) document.g
       <blockquote class="quote">"10년 동안 보유할 생각이 없는 주식은 단 10분도 보유하지 마십시오."<br><span class="small faint">If you aren't willing to own a stock for ten years, don't even think about owning it for ten minutes. — 워렌 버핏, 1996년 버크셔 해서웨이 주주서한</span></blockquote>
       <div id="lessons"></div>
       <p class="small faint" style="margin-top:12px"><a href="https://github.com/geniusbyun-kaka/app/edit/claude/baby-sleep-tracking-app-23p7s7/invest/lessons.json" target="_blank" rel="noopener">글 관리 (관리자 전용)</a> · 저장소 관리자만 편집할 수 있고, 저장하면 잠시 뒤 이 페이지에 반영됩니다</p>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>1단계 · 주식 통장(증권 계좌) 만들기</h3><span class="small faint">신분증 하나로 5~10분</span></div>
+      <p class="desc">주식은 은행 통장이 아니라 <strong>증권 계좌</strong>로 삽니다. 지점에 갈 필요 없이 핸드폰 앱에서 바로 만들 수 있습니다. 준비물은 세 가지입니다: <strong>본인 명의 휴대폰 · 신분증(주민등록증 또는 운전면허증) · 본인 명의 은행 계좌</strong>.</p>
+      <div class="two" style="margin-top:14px">
+        <div class="card" style="margin-bottom:0">
+          <div class="card-head"><h3>방법 1 · 토스증권<span class="tag">처음이라면 가장 쉬움</span></h3></div>
+          <ol class="steps">
+            <li>앱스토어(구글 플레이)에서 <strong>"토스"</strong>를 검색해 설치합니다. 토스증권은 따로 앱이 없고 <strong>토스 앱 안</strong>에 있습니다.</li>
+            <li>토스에 가입(휴대폰 인증)한 뒤, 아래 메뉴에서 <strong>증권 탭</strong>을 누릅니다.</li>
+            <li><strong>"주식 계좌 만들기"</strong>를 누르고 약관에 동의합니다.</li>
+            <li><strong>신분증을 촬영</strong>하고 본인 명의 은행 계좌를 인증합니다.</li>
+            <li>비밀번호를 정하면 끝. 보통 <strong>5분이면 완료</strong>됩니다.</li>
+            <li>연결한 은행 계좌에서 돈을 채우면 한국 주식·미국 주식 모두 바로 살 수 있습니다.</li>
+          </ol>
+        </div>
+        <div class="card" style="margin-bottom:0">
+          <div class="card-head"><h3>방법 2 · 미래에셋증권</h3></div>
+          <ol class="steps">
+            <li>앱스토어(구글 플레이)에서 <strong>"미래에셋증권 M-STOCK"</strong>을 검색해 설치합니다.</li>
+            <li>앱을 열고 <strong>"계좌 개설"</strong>(비대면 계좌 개설) 메뉴를 누릅니다.</li>
+            <li>휴대폰 <strong>본인 인증</strong>을 합니다.</li>
+            <li><strong>신분증을 촬영</strong>해 본인 확인을 합니다.</li>
+            <li>본인 명의 은행 계좌로 <strong>1원 인증</strong>(은행 계좌 확인)을 합니다.</li>
+            <li>계좌 비밀번호를 정하면 완료. 미국 주식을 사려면 앱에서 <strong>"해외주식 거래 신청"</strong>을 한 번 더 눌러 두세요.</li>
+          </ol>
+        </div>
+      </div>
+      <p class="desc" style="margin-top:12px">어느 증권사로 만들어도 괜찮습니다. 중요한 건 증권사가 아니라 <strong>계좌를 만들고, 미국 S&amp;P 500(VOO)부터 적립을 시작하는 것</strong>입니다.</p>
+      <p class="small faint" style="margin-top:8px">화면 구성과 절차는 앱 업데이트에 따라 조금 달라질 수 있습니다 (2026-10 기준).</p>
     </div>
     <div class="card">
       <div class="card-head"><h3>투자 레전드 따라하기</h3><span class="small faint">구독 서비스</span></div>
@@ -1710,7 +1754,7 @@ function guruPicksHtml(g, f) {
 // 앱을 벗어나는 대신 라운지의 이전 화면 → 라운지 홈 → 앱 순서로 돌아가게 한다.
 function maxPush(screen) { try { history.pushState({ tab: state.curTab, max: screen, d: (history.state?.max ? history.state.d || 1 : 0) + 1 }, ""); } catch {} }
 function maxShow(k, fromPop) {
-  const fn = { home: renderMaxHome, gurus: renderMaxGurus, prices: renderMaxPrices, common: renderMaxCommon, portfolio: renderMaxPortfolio, lev: renderMaxLev, joker: renderMaxJoker }[k] || renderMaxHome;
+  const fn = { home: renderMaxHome, gurus: renderMaxGurus, prices: renderMaxPrices, common: renderMaxCommon, portfolio: renderMaxPortfolio, lev: renderMaxLev, joker: renderMaxJoker, divi: renderMaxDivi }[k] || renderMaxHome;
   restoreGuruPanel(); // innerHTML 덮어쓰기에 투자 레전드 패널이 지워지지 않게 먼저 제자리로
   fn();
   if (!fromPop) maxPush(k);
@@ -1737,6 +1781,7 @@ function renderMaxHome() {
       <button class="max-feat" type="button" data-maxfeat="prices"><span class="t">레전드 픽 매수 가격 따라가기</span>${mfMax}<span class="d">레전드들이 연속으로 사 모으는 종목의 분기말 단가와 현재가를 비교해, 레전드보다 싸게 살 수 있는 종목을 찾아드립니다.</span><span class="go" data-mf-go>열기 →</span></button>
       <button class="max-feat" type="button" data-maxfeat="joker"><span class="t">버핏이 한국주식에 투자한다면?</span>${mfMax}<span class="d">버핏·멍거가 2026년 한국 시장에 투자한다면? ROE·부채비율·현금흐름 5가지 기준과 오너 어닝스 DCF로 매주 1종목을 선별합니다. 사업보고서 숫자를 직접 넣는 버핏 계산기 포함.</span><span class="go" data-mf-go>열기 →</span></button>
       <button class="max-feat" type="button" data-maxfeat="portfolio"><span class="t">포트폴리오 구성 및 적립식 추천 방식</span>${mfMax}<span class="d">여유 자금에서 현금을 얼마나 남길지(버크셔의 현금 비중 참고), 매달 VOO 적립은 얼마가 되는지 계산합니다.</span><span class="go" data-mf-go>열기 →</span></button>
+      <button class="max-feat" type="button" data-maxfeat="divi"><span class="t">배당 대시보드</span>${mfMax}<span class="d">보유 배당주의 다음 12개월 예상 배당과 월별 일정, 종목별 기여도, 그리고 배당이 끊길 걱정이 없는지 보는 배당 퀄리티 점수(0~6)를 한눈에 봅니다.</span><span class="go" data-mf-go>열기 →</span></button>
       <button class="max-feat" type="button" data-maxfeat="lev"><span class="t">AI 나스닥 레버리지 투자법 따라하기</span>${mfMax}<span class="d">나스닥 100이 200일 이동평균 위에 있을 때만 레버리지(TQQQ)를 보유하는 추세 전략. 오늘의 신호와 백테스트를 제공합니다.</span><span class="go" data-mf-go>열기 →</span></button>
     </div></div>`;
   // Pro 구독(또는 미구독)에게는 Max 전용 카드가 잠겨 있음을 열기 버튼 자리에 보여준다
@@ -2115,6 +2160,13 @@ const BRK_SECTORS = [
 const BRK_NO_DIV = new Set(["DVA", "VRSN", "NVR", "LLYVA", "LLYVK"]);
 // 원 단위 금액을 "x,xxx만원 / x.x억원"으로
 const bhWon = (v) => (Math.abs(v) >= 1e8 ? `${fmt.n(v / 1e8, 1)}억원` : `${fmt.n(Math.round(v / 1e4), 0)}만원`);
+// 입력 힌트용: 12,345,678 → "1,234만 5,678원" 처럼 소리 내어 읽는 형태
+function bhWonRead(v) {
+  v = Math.round(v);
+  if (!(v > 0)) return "";
+  const eok = Math.floor(v / 1e8), man = Math.floor((v % 1e8) / 1e4), won = v % 1e4;
+  return [eok ? `${fmt.n(eok, 0)}억` : "", man ? `${fmt.n(man, 0)}만` : "", won ? fmt.n(won, 0) : ""].filter(Boolean).join(" ") + "원";
+}
 // 자산 구성: 투자자산(현금성 + 13F 주식)을 1억원으로 축소
 function bhAssetsHtml(f) {
   const latest = f.latest;
@@ -2166,19 +2218,24 @@ function runBhFlow() {
   const cashPct = stocks ? cash / (cash + stocks) : null; // 통장(현금·단기 국채)이 투자자산에서 차지하는 비중
   const brkSaveM = mB(fl.opEarn - spentB); // 버크셔의 실제 월평균 저축 ($B)
   const saving = save >= income; // 번 돈 이상을 저축하면 실탄을 모으는 중
-  const row = (label, won, b, { sign = -1, bold = false } = {}) =>
-    `<tr><td class="txt">${bold ? `<strong>${label}</strong>` : label}</td>
+  const row = (label, won, b, { sign = -1, bold = false, sub = false } = {}) =>
+    `<tr${sub ? ' class="sub"' : ""}><td class="txt">${bold ? `<strong>${label}</strong>` : label}</td>
      <td class="${sign > 0 ? "pos" : won === 0 ? "" : "neg"}">${bold ? "<strong>" : ""}${won === 0 ? "0원" : `${sign > 0 ? "+" : "−"}${bhWon(Math.abs(won))}`}${bold ? "</strong>" : ""}</td>
      <td>${b === 0 ? "$0" : `${sign > 0 ? "" : "−"}$${fmt.n(Math.abs(b), 1)}B`}</td></tr>`;
+  // 회사 인수와 자사주 매입도 결국 "주식(회사 지분)을 산 돈"이므로 합쳐서 한 줄로, 내역은 하위 줄로
+  const buyTotal = fl.buy + fl.acq + fl.buyback;
+  const hasParts = fl.acq > 0 || fl.buyback > 0;
   const out = $("#bh-flow");
   out.innerHTML = `<div class="tablewrap bh-ledger" style="margin-top:12px"><table><thead><tr><th>한 달 가계부</th><th>당신이라면</th><th>버크셔 실제 (월평균)</th></tr></thead><tbody>
       ${row("본업(자회사 사업)에서 번 돈", income, mB(fl.opEarn), { sign: 1 })}
-      ${row("주식 산 돈", mWonV(fl.buy), mB(fl.buy))}
+      ${row("주식 산 돈", mWonV(buyTotal), mB(buyTotal))}
+      ${hasParts ? row("└ 상장주식 매수", mWonV(fl.buy), mB(fl.buy), { sub: true }) : ""}
+      ${fl.acq > 0 ? row("└ 회사 통째로 인수", mWonV(fl.acq), mB(fl.acq), { sub: true }) : ""}
+      ${fl.buyback > 0 ? row("└ 자기 회사 주식(자사주) 매입", mWonV(fl.buyback), mB(fl.buyback), { sub: true }) : ""}
       ${row("주식 판 돈", mWonV(fl.sell), mB(fl.sell), { sign: 1 })}
-      ${fl.acq > 0 ? row("회사 통째로 인수", mWonV(fl.acq), mB(fl.acq)) : ""}
-      ${row("자사주 매입 · 주주 배당", mWonV(fl.buyback), mB(fl.buyback))}
       ${row("→ 저축 (현금·단기 국채)", Math.abs(save), Math.abs(brkSaveM), { sign: save >= 0 ? 1 : -1, bold: true })}
     </tbody></table></div>
+    <p class="small faint" style="margin-top:8px">'버크셔 실제'는 ${escHtml(fl.label)}(${fl.months}개월) 10-Q 합계를 ${fl.months}으로 나눈 월평균이고, '당신이라면'은 같은 비율을 당신의 월 소득에 적용한 값입니다.</p>
     <div class="jk-verdict"><span class="tag inc">${saving ? "실탄을 모으는 중" : "실탄을 쓰기 시작"}</span><span><strong>${escHtml(fl.label)}</strong> 기준, 버크셔가 월 <strong>${bhWon(income)}</strong> 버는 사람이라면 ${save >= 0
       ? `매달 <strong>${bhWon(save)}</strong>씩 현금·단기 국채 통장에 ${saving ? "번 돈보다 더 많이 " : ""}저축했습니다.${saving ? " 주식을 산 것보다 판 돈이 많아, 번 돈에 그만큼을 보태 저축한 것입니다." : ""}`
       : `번 돈보다 쓴 돈이 많아, 모아둔 통장에서 매달 <strong>${bhWon(-save)}</strong>씩 꺼내 썼습니다. 몇 년간 신중하게 쌓아 온 실탄을 드디어 꺼내 쓰기 시작한 것입니다.`}
@@ -2207,7 +2264,7 @@ function renderMaxPortfolio() {
       <div class="eyebrow" style="margin-top:20px">월급은 어디로 가나 · 당신의 소득으로 환산</div>
       <p class="desc" style="margin-top:6px">버크셔의 최근 현금 흐름(10-Q)을 <strong>당신의 소득 비율로 그대로 줄여서</strong>, 한 달 가계부로 보여드립니다. 월 소득을 넣으면 그 돈이 버크셔라면 얼마를 저축하고 어디에 쓰는지가 나옵니다.</p>
       <div class="cmp-row" style="margin-top:10px">
-        <div class="field"><label for="bh-income">당신의 월 소득 (원)</label><input id="bh-income" class="num-comma" value="2,000,000" style="min-width:160px"></div>
+        <div class="field"><label for="bh-income">당신의 월 소득 (원)</label><input id="bh-income" class="num-comma" value="2,000,000" style="min-width:160px"><span class="hint" id="bh-income-hint" style="font-size:14px;font-weight:600;color:var(--accent)"></span></div>
         <button class="btn primary" type="button" id="bh-run">버크셔처럼 가계부 쓰기</button>
       </div>
       <div id="bh-flow" hidden></div>
@@ -2245,6 +2302,10 @@ function renderMaxPortfolio() {
     const el = $("#pf-brk"); if (el) el.textContent = "버크셔 13F 데이터를 불러오지 못해 현금 비중을 표시할 수 없습니다.";
     const bh = $("#bh-assets"); if (bh) bh.innerHTML = `<div class="empty">버크셔 13F 데이터를 불러오지 못했습니다</div>`;
   });
+  // 월 소득 입력 밑에 "600만원"처럼 읽기 쉬운 형태를 실시간으로 보여준다
+  const bhHint = () => { const el = $("#bh-income-hint"); if (el) el.textContent = bhWonRead(numVal("#bh-income")) ? `= ${bhWonRead(numVal("#bh-income"))}` : ""; };
+  $("#bh-income", body)?.addEventListener("input", bhHint);
+  bhHint();
   runBhFlow();
 }
 function runPortfolioCalc() {
@@ -2523,6 +2584,80 @@ function runJokerCalc() {
     ${jkSensitivityHtml(oe, cash, shares, price, g)}
     <p class="small faint" style="margin-top:8px">색이 칠해진 칸은 현재가 대비 안전마진 30% 이상, 흐린 칸은 현재가가 적정주가보다 비싼 조합입니다. 가정 2%p 차이로 적정주가가 20% 넘게 움직이니 숫자 하나가 아니라 범위로 읽으세요.</p>`;
   out.hidden = false;
+}
+// ── 배당 대시보드 (데모): 보유 배당주의 12개월 예상 배당 · 월별 일정 · 기여도 · 퀄리티 점수 ──
+// 실제 보유 종목(My Page) 연동 전까지는 데모 포트폴리오로 화면 형태를 보여준다. dps = 연간 주당 배당($).
+const DIVI_DEMO = [
+  { sym: "JPM", name: "JP모건", shares: 15, price: 320, cost: 180, dps: 5.6, payMonths: [1, 4, 7, 10], payout: 27, cover: 3.6, streak: 15 },
+  { sym: "XOM", name: "엑슨모빌", shares: 40, price: 115, cost: 95, dps: 3.96, payMonths: [3, 6, 9, 12], payout: 45, cover: 2.2, streak: 43 },
+  { sym: "JNJ", name: "존슨앤드존슨", shares: 12, price: 190, cost: 160, dps: 5.24, payMonths: [3, 6, 9, 12], payout: 60, cover: 1.7, streak: 63 },
+  { sym: "KO", name: "코카콜라", shares: 60, price: 72, cost: 55, dps: 2.04, payMonths: [4, 7, 10, 12], payout: 77, cover: 1.3, streak: 63 },
+  { sym: "O", name: "리얼티인컴", shares: 50, price: 58, cost: 62, dps: 3.16, payMonths: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], payout: 75, cover: 1.3, streak: 30 },
+  { sym: "BAC", name: "뱅크오브아메리카", shares: 80, price: 52, cost: 38, dps: 1.12, payMonths: [3, 6, 9, 12], payout: 25, cover: 3.4, streak: 11 },
+  { sym: "AAPL", name: "애플", shares: 20, price: 260, cost: 170, dps: 1.04, payMonths: [2, 5, 8, 11], payout: 15, cover: 6.9, streak: 13 },
+  { sym: "MO", name: "알트리아", shares: 30, price: 60, cost: 48, dps: 4.12, payMonths: [1, 4, 7, 10], payout: 85, cover: 1.1, streak: 56 },
+  { sym: "NVDA", name: "엔비디아", shares: 10, price: 190, cost: 45, dps: 0.04, payMonths: [3, 6, 9, 12], payout: 1, cover: 25, streak: 2 },
+];
+// 배당 퀄리티 점수 0~6: 배당성향(여유) + 이익 커버리지(배) + 연속 증가 기록, 각 0~2점
+const diviScore = (h) =>
+  (h.payout <= 60 ? 2 : h.payout <= 80 ? 1 : 0) + (h.cover >= 2 ? 2 : h.cover >= 1.2 ? 1 : 0) + (h.streak >= 10 ? 2 : h.streak >= 3 ? 1 : 0);
+function renderMaxDivi() {
+  const body = $("#max-body");
+  body.dataset.screen = "divi";
+  const hs = DIVI_DEMO.map((h) => ({ ...h, income: h.dps * h.shares, value: h.price * h.shares, costV: h.cost * h.shares, score: diviScore(h) }));
+  const total = hs.reduce((s, h) => s + h.income, 0);
+  const value = hs.reduce((s, h) => s + h.value, 0);
+  const costV = hs.reduce((s, h) => s + h.costV, 0);
+  // 월별 예상 배당: 분기 배당은 지급월에 4분의 1씩, 월 배당은 매달 12분의 1씩
+  const months = Array.from({ length: 12 }, (_, i) => hs.reduce((s, h) => s + (h.payMonths.includes(i + 1) ? h.income / h.payMonths.length : 0), 0));
+  const maxM = Math.max(...months);
+  const sorted = [...hs].sort((a, b) => b.income - a.income);
+  const topBar = (list) => list.map((h) => `<div class="bh-row">
+      <span class="lbl">${h.sym}</span>
+      <span class="bar"><i style="--c:var(--c4);width:${(h.income / sorted[0].income) * 100}%"></i></span>
+      <span class="amt">$${fmt.n(h.income, h.income < 10 ? 1 : 0)}</span>
+      <span class="names">${h.name}</span></div>`).join("");
+  const tiers = [
+    { k: "높음 (5~6점)", c: "#2E9E5B", list: hs.filter((h) => h.score >= 5) },
+    { k: "중간 (3~4점)", c: "#D9A400", list: hs.filter((h) => h.score >= 3 && h.score <= 4) },
+    { k: "낮음 (0~2점)", c: "var(--up)", list: hs.filter((h) => h.score <= 2) },
+  ].map((t) => ({ ...t, sum: t.list.reduce((s, h) => s + h.income, 0) }));
+  const nowM = new Date().getMonth() + 1;
+  const nextPay = (h) => { for (let d = 0; d < 12; d++) { const m = ((nowM - 1 + d) % 12) + 1; if (h.payMonths.includes(m)) return m; } return null; };
+  body.innerHTML = [
+    maxBackBtn,
+    `<p class="desc"><strong>배당 대시보드</strong>입니다: 보유한 배당주가 앞으로 12개월 동안 얼마를, 몇 월에 주는지, 어떤 종목이 배당을 끌고 가는지, 그리고 각 종목의 배당이 <strong>끊길 걱정 없는 배당인지(퀄리티 점수 0~6)</strong>를 한 화면에 보여줍니다. 지금은 <strong>데모 포트폴리오</strong>로 화면 형태를 보여드리며, My Page 보유 종목 연동은 준비 중입니다.</p>`,
+    `<div class="card">
+      <div class="card-head"><h3>다음 12개월 예상 배당</h3><span class="small faint">데모 포트폴리오 · ${hs.length}종목</span></div>
+      <div class="kpis">
+        ${kpi("다음 12개월 합계", `$${fmt.n(total, 0)}`, `약 ${bhWon(total * 1450)} · 환율 1,450원 가정`)}
+        ${kpi("월평균", `$${fmt.n(total / 12, 0)}`, "매달 들어오는 돈으로 환산")}
+        ${kpi("현재 수익률", `${fmt.n((total / value) * 100, 1)}%`, "연 배당 ÷ 현재 평가액")}
+        ${kpi("매입가 기준 수익률", `${fmt.n((total / costV) * 100, 1)}%`, "연 배당 ÷ 산 가격 (YOC)")}
+      </div>
+      <div class="eyebrow" style="margin-top:18px">월별 예상 배당 ($)</div>
+      <div class="divi-chart">${months.map((v, i) => `<div class="col" title="${i + 1}월 $${fmt.n(v, 0)}"><span class="peak">${maxM && v >= maxM * 0.99 ? fmt.n(v, 0) : ""}</span><span class="bar" style="height:${maxM ? Math.max((v / maxM) * 100, 2) : 2}%"></span><span class="m">${i + 1}월</span></div>`).join("")}</div>
+      <p class="small faint" style="margin-top:8px">분기 배당은 지급월에 4분의 1씩, 월 배당(리얼티인컴)은 매달 12분의 1씩 나눠 계산한 예상치입니다. 막대를 누르면 금액이 보입니다.</p>
+    </div>`,
+    `<div class="card">
+      <div class="card-head"><h3>배당 기여 종목</h3><span class="small faint">연간 기준 · 데모</span></div>
+      <div class="two">
+        <div><div class="eyebrow">배당을 끌고 가는 종목</div>${topBar(sorted.slice(0, 5))}</div>
+        <div><div class="eyebrow">기여가 작은 종목</div>${topBar(sorted.slice(-4).reverse())}</div>
+      </div>
+    </div>`,
+    `<div class="card">
+      <div class="card-head"><h3>배당 퀄리티</h3><span class="small faint">점수 0~6 · 높을수록 안 끊길 배당</span></div>
+      <p class="desc">배당 수익률이 높아도 <strong>번 돈에 비해 배당을 무리하게 주는 회사</strong>는 배당이 깎일 수 있습니다. 그래서 각 종목을 배당성향(번 돈 중 배당으로 주는 비율) · 이익 커버리지(이익 ÷ 배당) · 연속 증가 기록 세 가지로 0~6점 채점하고, 내 배당 수입이 어떤 등급에서 나오는지 보여드립니다.</p>
+      <div class="bh-split" style="height:16px;margin-top:14px">${tiers.filter((t) => t.sum > 0).map((t) => `<i style="--c:${t.c};width:${(t.sum / total) * 100}%" title="${t.k}"></i>`).join("")}</div>
+      <div class="bh-legend">${tiers.map((t) => `<span><span class="sw" style="--c:${t.c}"></span>${t.k} <b>$${fmt.n(t.sum, 0)}</b> (${fmt.n((t.sum / total) * 100, 0)}% · ${t.list.length}종목)</span>`).join("")}</div>
+      <div class="tablewrap" style="margin-top:14px"><table><thead><tr><th>종목</th><th>연 배당</th><th>기여 비중</th><th>수익률 / 매입가 기준</th><th>다음 지급</th><th>점수</th></tr></thead><tbody>
+        ${sorted.map((h) => `<tr><td class="txt"><strong>${h.sym}</strong><span class="nm">${h.name}</span></td><td>$${fmt.n(h.income, h.income < 10 ? 1 : 0)}</td><td>${fmt.n((h.income / total) * 100, 1)}%</td><td>${fmt.n((h.dps / h.price) * 100, 1)}% / ${fmt.n((h.dps / h.cost) * 100, 1)}%</td><td class="txt">${nextPay(h) ?? "–"}월</td><td class="txt">${h.score >= 5 ? '<span class="tag inc">' : h.score >= 3 ? '<span class="tag new">' : '<span class="tag exit">'}${h.score}/6</span></td></tr>`).join("")}
+      </tbody></table></div>
+      <p class="small faint" style="margin-top:8px">점수 기준: 배당성향 60% 이하 2점(80% 이하 1점) · 이익 커버리지 2배 이상 2점(1.2배 이상 1점) · 10년 연속 증가 2점(3년 이상 1점). 수치는 데모용 근사값입니다.</p>
+    </div>`,
+    `<p class="small faint">이 화면은 데모 데이터로 형태를 보여주는 예시이며, 특정 종목의 매수·매도를 권유하지 않습니다. 배당은 회사 사정에 따라 언제든 줄거나 끊길 수 있습니다.</p>`,
+  ].join("");
 }
 function maxAlerts() { return cacheGet("md:alerts") || []; }
 // 매수 가격 따라가기 화면 하단에 들어가는 매입 가격 알림 카드
