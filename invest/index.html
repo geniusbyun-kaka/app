@@ -408,12 +408,17 @@ html.gated,html.gated body{overflow:hidden}
 .bh-ledger td:first-child,.bh-ledger th:first-child{white-space:normal;max-width:none!important;overflow:visible;text-overflow:clip}
 .bh-ledger tr.sub td{color:var(--ink-3);font-size:13px;border-bottom-style:dashed}
 .bh-ledger tr.sub td:first-child{padding-left:24px}
+.bh-ledger tr.pile td{border-top:2px solid var(--line);background:color-mix(in srgb,var(--accent) 7%,transparent)}
 /* 배당 대시보드: 월별 배당 막대 (각 달에 금액을 글자로도 보여주는 미니 차트) */
 .divi-chart{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;margin-top:12px}
 .divi-chart .col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;height:150px}
 .divi-chart .peak{font-size:10.5px;color:var(--ink-3);font-family:var(--mono)}
 .divi-chart .bar{width:70%;max-width:26px;min-height:2px;border-radius:4px 4px 0 0;background:var(--c4)}
 .divi-chart .m{font-size:10.5px;color:var(--ink-3);white-space:nowrap}
+.divi-tabs .chip{font-size:14px;font-weight:600;padding:7px 14px}
+.divi-tabs .chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.divi-tabs .chip[disabled]{opacity:.5;cursor:default}
+#divi-editor input{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 8px;font-size:14px;font-family:var(--mono)}
 .gu-pick{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
 .gu-pick .top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .gu-pick .tk2{font-family:var(--mono);font-weight:700;font-size:16px;color:var(--accent);cursor:pointer}
@@ -2234,12 +2239,13 @@ function runBhFlow() {
       ${fl.buyback > 0 ? row("└ 자기 회사 주식(자사주) 매입", mWonV(fl.buyback), mB(fl.buyback), { sub: true }) : ""}
       ${row("주식 판 돈", mWonV(fl.sell), mB(fl.sell), { sign: 1 })}
       ${row("→ 저축 (현금·단기 국채)", Math.abs(save), Math.abs(brkSaveM), { sign: save >= 0 ? 1 : -1, bold: true })}
+      <tr class="pile"><td class="txt"><strong>통장에 쌓여 있는 실탄 (현금·단기 국채 잔고)</strong></td><td class="pos"><strong>${bhWon(cash * k)}</strong></td><td>$${fmt.n(cash / 1e9, 0)}B</td></tr>
     </tbody></table></div>
-    <p class="small faint" style="margin-top:8px">'버크셔 실제'는 ${escHtml(fl.label)}(${fl.months}개월) 10-Q 합계를 ${fl.months}으로 나눈 월평균이고, '당신이라면'은 같은 비율을 당신의 월 소득에 적용한 값입니다.</p>
+    <p class="small faint" style="margin-top:8px">'버크셔 실제'는 ${escHtml(fl.label)}(${fl.months}개월) 10-Q 합계를 ${fl.months}으로 나눈 월평균이고, '당신이라면'은 같은 비율을 당신의 월 소득에 적용한 값입니다. 맨 아래 <strong>실탄 잔고는 월 흐름이 아니라 지금 쌓여 있는 돈</strong>입니다${stocks ? `: 투자 계좌 전체 약 ${bhWon((cash + stocks) * k)} 중 ${fmt.n(cashPct * 100, 0)}%` : ""}.</p>
     <div class="jk-verdict"><span class="tag inc">${saving ? "실탄을 모으는 중" : "실탄을 쓰기 시작"}</span><span><strong>${escHtml(fl.label)}</strong> 기준, 버크셔가 월 <strong>${bhWon(income)}</strong> 버는 사람이라면 ${save >= 0
       ? `매달 <strong>${bhWon(save)}</strong>씩 현금·단기 국채 통장에 ${saving ? "번 돈보다 더 많이 " : ""}저축했습니다.${saving ? " 주식을 산 것보다 판 돈이 많아, 번 돈에 그만큼을 보태 저축한 것입니다." : ""}`
       : `번 돈보다 쓴 돈이 많아, 모아둔 통장에서 매달 <strong>${bhWon(-save)}</strong>씩 꺼내 썼습니다. 몇 년간 신중하게 쌓아 온 실탄을 드디어 꺼내 쓰기 시작한 것입니다.`}
-      ${cashPct != null ? `그래도 통장(현금·단기 국채)에는 여전히 투자자산의 <strong>${fmt.n(cashPct * 100, 0)}%</strong>가 남아 있어, 시장을 신중하게 보는 자세는 그대로입니다.` : ""}${mult ? ` 참고로 이 사람의 투자 계좌 잔고는 연 소득의 약 <strong>${fmt.n(mult, 0)}배</strong>로, 당신이라면 약 <strong>${bhWon(income * 12 * mult)}</strong>인 셈입니다.` : ""}</span></div>`;
+      ${cashPct != null ? `그래도 통장에는 투자 계좌 전체(약 <strong>${bhWon((cash + stocks) * k)}</strong>, 연 소득의 약 ${fmt.n(mult, 0)}배)의 <strong>${fmt.n(cashPct * 100, 0)}%</strong>인 <strong>${bhWon(cash * k)}</strong>이 비상 실탄으로 쌓여 있어, 시장을 신중하게 보는 자세는 그대로입니다.` : ""}</span></div>`;
   out.hidden = false;
 }
 function renderMaxPortfolio() {
@@ -2247,7 +2253,7 @@ function renderMaxPortfolio() {
   body.dataset.screen = "portfolio";
   body.innerHTML = [
     maxBackBtn,
-    `<div class="card">
+    `<div class="card" id="pf-card">
       <div class="card-head"><h3>버핏식 현금 비중 원칙</h3><span class="small faint">현금 30~40% 원칙</span></div>
       <p class="desc">버핏과 멍거는 닷컴 버블과 2008년 금융위기의 한복판에서 남들이 팔 때 살 수 있었던 비결을 <strong>"항상 장전된 실탄"</strong>이라고 말해 왔습니다. 현금은 수익률이 낮아 보여도, 위기가 왔을 때 가장 좋은 자산을 가장 싸게 사게 해 주는 옵션입니다. 그래서 버크셔는 지금도 투자자산의 절반 가까이를 현금성 자산으로 쌓아 두고 기다립니다. 개인도 <strong>여유 자금의 30~40%를 현금으로</strong> 남겨 두면, 시장이 흔들리는 날 공포가 아니라 기회가 보입니다.</p>
       <div class="cmp-row" style="margin-top:12px">
@@ -2285,6 +2291,8 @@ function renderMaxPortfolio() {
       </div>
     </div>`,
   ].join("");
+  // 화면 순서: 버핏식 매월 월급 관리 → VOO 적립 → 현금 비중 원칙 (David 2026-10-07)
+  body.appendChild($("#pf-card", body));
   initCommaInputs(body);
   // 버크셔 현금 비중: 현금성 자산 ÷ (현금성 자산 + 13F 상장주식 평가액)
   ensureFilings().then((f) => {
@@ -2585,79 +2593,168 @@ function runJokerCalc() {
     <p class="small faint" style="margin-top:8px">색이 칠해진 칸은 현재가 대비 안전마진 30% 이상, 흐린 칸은 현재가가 적정주가보다 비싼 조합입니다. 가정 2%p 차이로 적정주가가 20% 넘게 움직이니 숫자 하나가 아니라 범위로 읽으세요.</p>`;
   out.hidden = false;
 }
-// ── 배당 대시보드 (데모): 보유 배당주의 12개월 예상 배당 · 월별 일정 · 기여도 · 퀄리티 점수 ──
-// 실제 보유 종목(My Page) 연동 전까지는 데모 포트폴리오로 화면 형태를 보여준다. dps = 연간 주당 배당($).
+// ── 배당 대시보드: My Page 관심 종목(보유 수량 입력) 또는 데모 포트폴리오로
+//    다음 12개월 예상 배당 · 월별 일정 · 기여도 · 배당 퀄리티 점수를 보여준다 ──
+// 데모 포트폴리오 (dps = 연간 주당 배당 $ · 수치는 데모용 근사값)
 const DIVI_DEMO = [
-  { sym: "JPM", name: "JP모건", shares: 15, price: 320, cost: 180, dps: 5.6, payMonths: [1, 4, 7, 10], payout: 27, cover: 3.6, streak: 15 },
-  { sym: "XOM", name: "엑슨모빌", shares: 40, price: 115, cost: 95, dps: 3.96, payMonths: [3, 6, 9, 12], payout: 45, cover: 2.2, streak: 43 },
-  { sym: "JNJ", name: "존슨앤드존슨", shares: 12, price: 190, cost: 160, dps: 5.24, payMonths: [3, 6, 9, 12], payout: 60, cover: 1.7, streak: 63 },
-  { sym: "KO", name: "코카콜라", shares: 60, price: 72, cost: 55, dps: 2.04, payMonths: [4, 7, 10, 12], payout: 77, cover: 1.3, streak: 63 },
-  { sym: "O", name: "리얼티인컴", shares: 50, price: 58, cost: 62, dps: 3.16, payMonths: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], payout: 75, cover: 1.3, streak: 30 },
-  { sym: "BAC", name: "뱅크오브아메리카", shares: 80, price: 52, cost: 38, dps: 1.12, payMonths: [3, 6, 9, 12], payout: 25, cover: 3.4, streak: 11 },
-  { sym: "AAPL", name: "애플", shares: 20, price: 260, cost: 170, dps: 1.04, payMonths: [2, 5, 8, 11], payout: 15, cover: 6.9, streak: 13 },
-  { sym: "MO", name: "알트리아", shares: 30, price: 60, cost: 48, dps: 4.12, payMonths: [1, 4, 7, 10], payout: 85, cover: 1.1, streak: 56 },
-  { sym: "NVDA", name: "엔비디아", shares: 10, price: 190, cost: 45, dps: 0.04, payMonths: [3, 6, 9, 12], payout: 1, cover: 25, streak: 2 },
+  { sym: "JPM", name: "JP모건", shares: 15, price: 320, cost: 180, dps: 5.6, payMonths: [1, 4, 7, 10] },
+  { sym: "XOM", name: "엑슨모빌", shares: 40, price: 115, cost: 95, dps: 3.96, payMonths: [3, 6, 9, 12] },
+  { sym: "JNJ", name: "존슨앤드존슨", shares: 12, price: 190, cost: 160, dps: 5.24, payMonths: [3, 6, 9, 12] },
+  { sym: "KO", name: "코카콜라", shares: 60, price: 72, cost: 55, dps: 2.04, payMonths: [4, 7, 10, 12] },
+  { sym: "O", name: "리얼티인컴", shares: 50, price: 58, cost: 62, dps: 3.16, payMonths: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] },
+  { sym: "BAC", name: "뱅크오브아메리카", shares: 80, price: 52, cost: 38, dps: 1.12, payMonths: [3, 6, 9, 12] },
+  { sym: "AAPL", name: "애플", shares: 20, price: 260, cost: 170, dps: 1.04, payMonths: [2, 5, 8, 11] },
+  { sym: "MO", name: "알트리아", shares: 30, price: 60, cost: 48, dps: 4.12, payMonths: [1, 4, 7, 10] },
+  { sym: "NVDA", name: "엔비디아", shares: 10, price: 190, cost: 45, dps: 0.04, payMonths: [3, 6, 9, 12] },
 ];
+// 배당 퀄리티 수기 데이터: 배당성향(%) · 이익 커버리지(배) · 연속 증가(년). 여기 없는 종목은 "자료 준비 중".
+const DIVI_QUALITY = {
+  JPM: { payout: 27, cover: 3.6, streak: 15 }, XOM: { payout: 45, cover: 2.2, streak: 43 },
+  JNJ: { payout: 60, cover: 1.7, streak: 63 }, KO: { payout: 77, cover: 1.3, streak: 63 },
+  O: { payout: 75, cover: 1.3, streak: 30 }, BAC: { payout: 25, cover: 3.4, streak: 11 },
+  AAPL: { payout: 15, cover: 6.9, streak: 13 }, MO: { payout: 85, cover: 1.1, streak: 56 },
+  NVDA: { payout: 1, cover: 25, streak: 2 }, MSFT: { payout: 25, cover: 4.0, streak: 20 },
+  V: { payout: 22, cover: 4.5, streak: 17 }, PG: { payout: 65, cover: 1.5, streak: 68 },
+  PEP: { payout: 80, cover: 1.25, streak: 53 }, ABBV: { payout: 60, cover: 1.7, streak: 12 },
+  VZ: { payout: 62, cover: 1.6, streak: 19 }, CVX: { payout: 70, cover: 1.4, streak: 38 },
+};
 // 배당 퀄리티 점수 0~6: 배당성향(여유) + 이익 커버리지(배) + 연속 증가 기록, 각 0~2점
-const diviScore = (h) =>
-  (h.payout <= 60 ? 2 : h.payout <= 80 ? 1 : 0) + (h.cover >= 2 ? 2 : h.cover >= 1.2 ? 1 : 0) + (h.streak >= 10 ? 2 : h.streak >= 3 ? 1 : 0);
-function renderMaxDivi() {
-  const body = $("#max-body");
-  body.dataset.screen = "divi";
-  const hs = DIVI_DEMO.map((h) => ({ ...h, income: h.dps * h.shares, value: h.price * h.shares, costV: h.cost * h.shares, score: diviScore(h) }));
+const diviScore = (q) => q == null ? null :
+  (q.payout <= 60 ? 2 : q.payout <= 80 ? 1 : 0) + (q.cover >= 2 ? 2 : q.cover >= 1.2 ? 1 : 0) + (q.streak >= 10 ? 2 : q.streak >= 3 ? 1 : 0);
+// 배당락 월과 지급 주기로 지급월을 추정한다 (실제 입금은 보통 배당락 몇 주 뒤)
+function diviPayMonths(d) {
+  const ref = d.nextEx || d.lastEx;
+  if (!ref) return [];
+  const step = d.freq === "monthly" ? 1 : d.freq === "quarterly" ? 3 : d.freq === "semiannual" ? 6 : 12;
+  const out = [];
+  for (let m = +ref.slice(5, 7), i = 0; i < 12 / step; i++, m = ((m - 1 + step) % 12) + 1) out.push(m);
+  return out.sort((a, b) => a - b);
+}
+const diviQty = () => cacheGet("md:diviQty") || {}; // { SYM: { sh: 보유 수량, cost: 매입단가(종목 통화) } }
+// My Page 관심 종목(☆) 중 종목 스냅샷에 배당 이력이 있는 종목. 금액은 전부 달러로 환산한다.
+function diviMyStocks() {
+  const idx = state.stockIndex?.items || [], fx = dvFx(), qty = diviQty();
+  return favStocks().map((s) => idx.find((x) => x.symbol === s))
+    .filter((x) => x && x.div && x.div.ttm > 0 && x.price > 0 && (!isKRSym(x.symbol) || fx))
+    .map((x) => {
+      const kr = isKRSym(x.symbol), toUsd = (v) => (kr ? v / fx : v);
+      const q = qty[x.symbol] || {};
+      const rawCost = Number(q.cost) || x.price;
+      return { sym: x.symbol, name: x.name, shares: Number(q.sh) || 0, price: toUsd(x.price), cost: toUsd(rawCost), rawPrice: x.price, rawCost: Number(q.cost) || 0, kr, dps: toUsd(x.div.ttm), payMonths: diviPayMonths(x.div) };
+    });
+}
+function saveDiviInputs() {
+  const qty = diviQty();
+  $$("#divi-editor [data-divi-sh]").forEach((el) => {
+    const sym = el.dataset.diviSh;
+    const cost = $(`#divi-editor [data-divi-cost="${CSS.escape(sym)}"]`)?.value;
+    qty[sym] = { sh: Number(el.value) || 0, cost: Number(cost) || 0 };
+  });
+  cacheSet("md:diviQty", qty);
+}
+// 대시보드 본문 (hs: 달러 기준 보유 목록)
+function diviSectionsHtml(raw, demo) {
+  const fx = dvFx() || 1450;
+  const hs = raw.map((h) => ({ ...h, income: h.dps * h.shares, value: h.price * h.shares, costV: h.cost * h.shares, q: DIVI_QUALITY[h.sym] || null }))
+    .map((h) => ({ ...h, score: diviScore(h.q) }));
   const total = hs.reduce((s, h) => s + h.income, 0);
   const value = hs.reduce((s, h) => s + h.value, 0);
   const costV = hs.reduce((s, h) => s + h.costV, 0);
+  if (!(total > 0)) return `<div class="card"><div class="empty">배당이 나오는 보유 종목이 없습니다.</div></div>`;
+  const srcLabel = demo ? "데모 포트폴리오" : "내 관심 종목 기준";
   // 월별 예상 배당: 분기 배당은 지급월에 4분의 1씩, 월 배당은 매달 12분의 1씩
-  const months = Array.from({ length: 12 }, (_, i) => hs.reduce((s, h) => s + (h.payMonths.includes(i + 1) ? h.income / h.payMonths.length : 0), 0));
+  const months = Array.from({ length: 12 }, (_, i) => hs.reduce((s, h) => s + (h.payMonths.length && h.payMonths.includes(i + 1) ? h.income / h.payMonths.length : 0), 0));
   const maxM = Math.max(...months);
   const sorted = [...hs].sort((a, b) => b.income - a.income);
+  const amt$ = (v) => `$${fmt.n(v, v < 10 ? 1 : 0)}`;
   const topBar = (list) => list.map((h) => `<div class="bh-row">
       <span class="lbl">${h.sym}</span>
       <span class="bar"><i style="--c:var(--c4);width:${(h.income / sorted[0].income) * 100}%"></i></span>
-      <span class="amt">$${fmt.n(h.income, h.income < 10 ? 1 : 0)}</span>
-      <span class="names">${h.name}</span></div>`).join("");
+      <span class="amt">${amt$(h.income)}</span>
+      <span class="names">${escHtml(h.name)}</span></div>`).join("");
+  const scored = hs.filter((h) => h.score != null), unscored = hs.filter((h) => h.score == null);
+  const scoredTotal = scored.reduce((s, h) => s + h.income, 0);
   const tiers = [
-    { k: "높음 (5~6점)", c: "#2E9E5B", list: hs.filter((h) => h.score >= 5) },
-    { k: "중간 (3~4점)", c: "#D9A400", list: hs.filter((h) => h.score >= 3 && h.score <= 4) },
-    { k: "낮음 (0~2점)", c: "var(--up)", list: hs.filter((h) => h.score <= 2) },
+    { k: "높음 (5~6점)", c: "#2E9E5B", list: scored.filter((h) => h.score >= 5) },
+    { k: "중간 (3~4점)", c: "#D9A400", list: scored.filter((h) => h.score >= 3 && h.score <= 4) },
+    { k: "낮음 (0~2점)", c: "var(--up)", list: scored.filter((h) => h.score <= 2) },
   ].map((t) => ({ ...t, sum: t.list.reduce((s, h) => s + h.income, 0) }));
   const nowM = new Date().getMonth() + 1;
-  const nextPay = (h) => { for (let d = 0; d < 12; d++) { const m = ((nowM - 1 + d) % 12) + 1; if (h.payMonths.includes(m)) return m; } return null; };
-  body.innerHTML = [
-    maxBackBtn,
-    `<p class="desc"><strong>배당 대시보드</strong>입니다: 보유한 배당주가 앞으로 12개월 동안 얼마를, 몇 월에 주는지, 어떤 종목이 배당을 끌고 가는지, 그리고 각 종목의 배당이 <strong>끊길 걱정 없는 배당인지(퀄리티 점수 0~6)</strong>를 한 화면에 보여줍니다. 지금은 <strong>데모 포트폴리오</strong>로 화면 형태를 보여드리며, My Page 보유 종목 연동은 준비 중입니다.</p>`,
+  const nextPay = (h) => { if (!h.payMonths.length) return null; for (let d = 0; d < 12; d++) { const m = ((nowM - 1 + d) % 12) + 1; if (h.payMonths.includes(m)) return m; } return null; };
+  return [
     `<div class="card">
-      <div class="card-head"><h3>다음 12개월 예상 배당</h3><span class="small faint">데모 포트폴리오 · ${hs.length}종목</span></div>
+      <div class="card-head"><h3>다음 12개월 예상 배당</h3><span class="small faint">${srcLabel} · ${hs.length}종목</span></div>
       <div class="kpis">
-        ${kpi("다음 12개월 합계", `$${fmt.n(total, 0)}`, `약 ${bhWon(total * 1450)} · 환율 1,450원 가정`)}
+        ${kpi("다음 12개월 합계", `$${fmt.n(total, 0)}`, `약 ${bhWon(total * fx)} · 환율 ${fmt.n(fx, 0)}원 기준`)}
         ${kpi("월평균", `$${fmt.n(total / 12, 0)}`, "매달 들어오는 돈으로 환산")}
         ${kpi("현재 수익률", `${fmt.n((total / value) * 100, 1)}%`, "연 배당 ÷ 현재 평가액")}
-        ${kpi("매입가 기준 수익률", `${fmt.n((total / costV) * 100, 1)}%`, "연 배당 ÷ 산 가격 (YOC)")}
+        ${kpi("매입가 기준 수익률", costV > 0 ? `${fmt.n((total / costV) * 100, 1)}%` : "–", "연 배당 ÷ 산 가격 (YOC)")}
       </div>
       <div class="eyebrow" style="margin-top:18px">월별 예상 배당 ($)</div>
       <div class="divi-chart">${months.map((v, i) => `<div class="col" title="${i + 1}월 $${fmt.n(v, 0)}"><span class="peak">${maxM && v >= maxM * 0.99 ? fmt.n(v, 0) : ""}</span><span class="bar" style="height:${maxM ? Math.max((v / maxM) * 100, 2) : 2}%"></span><span class="m">${i + 1}월</span></div>`).join("")}</div>
-      <p class="small faint" style="margin-top:8px">분기 배당은 지급월에 4분의 1씩, 월 배당(리얼티인컴)은 매달 12분의 1씩 나눠 계산한 예상치입니다. 막대를 누르면 금액이 보입니다.</p>
+      <p class="small faint" style="margin-top:8px">분기 배당은 지급월에 4분의 1씩, 월 배당은 매달 12분의 1씩 나눠 계산한 예상치입니다${demo ? "" : ". 지급월은 배당락 월 기준 추정이라 실제 입금 월과 1개월 정도 차이 날 수 있습니다"}. 막대를 누르면 금액이 보입니다.</p>
     </div>`,
     `<div class="card">
-      <div class="card-head"><h3>배당 기여 종목</h3><span class="small faint">연간 기준 · 데모</span></div>
+      <div class="card-head"><h3>배당 기여 종목</h3><span class="small faint">연간 기준 · ${srcLabel}</span></div>
       <div class="two">
         <div><div class="eyebrow">배당을 끌고 가는 종목</div>${topBar(sorted.slice(0, 5))}</div>
-        <div><div class="eyebrow">기여가 작은 종목</div>${topBar(sorted.slice(-4).reverse())}</div>
+        ${sorted.length > 5 ? `<div><div class="eyebrow">기여가 작은 종목</div>${topBar(sorted.slice(-Math.min(4, sorted.length - 5)).reverse())}</div>` : ""}
       </div>
     </div>`,
     `<div class="card">
       <div class="card-head"><h3>배당 퀄리티</h3><span class="small faint">점수 0~6 · 높을수록 안 끊길 배당</span></div>
       <p class="desc">배당 수익률이 높아도 <strong>번 돈에 비해 배당을 무리하게 주는 회사</strong>는 배당이 깎일 수 있습니다. 그래서 각 종목을 배당성향(번 돈 중 배당으로 주는 비율) · 이익 커버리지(이익 ÷ 배당) · 연속 증가 기록 세 가지로 0~6점 채점하고, 내 배당 수입이 어떤 등급에서 나오는지 보여드립니다.</p>
-      <div class="bh-split" style="height:16px;margin-top:14px">${tiers.filter((t) => t.sum > 0).map((t) => `<i style="--c:${t.c};width:${(t.sum / total) * 100}%" title="${t.k}"></i>`).join("")}</div>
-      <div class="bh-legend">${tiers.map((t) => `<span><span class="sw" style="--c:${t.c}"></span>${t.k} <b>$${fmt.n(t.sum, 0)}</b> (${fmt.n((t.sum / total) * 100, 0)}% · ${t.list.length}종목)</span>`).join("")}</div>
+      ${scoredTotal > 0 ? `<div class="bh-split" style="height:16px;margin-top:14px">${tiers.filter((t) => t.sum > 0).map((t) => `<i style="--c:${t.c};width:${(t.sum / scoredTotal) * 100}%" title="${t.k}"></i>`).join("")}</div>
+      <div class="bh-legend">${tiers.map((t) => `<span><span class="sw" style="--c:${t.c}"></span>${t.k} <b>${amt$(t.sum)}</b> (${fmt.n((t.sum / scoredTotal) * 100, 0)}% · ${t.list.length}종목)</span>`).join("")}</div>` : ""}
+      ${unscored.length ? `<p class="small faint" style="margin-top:8px">점수 자료가 아직 없는 종목(${unscored.map((h) => h.sym).join(", ")} · ${amt$(unscored.reduce((s, h) => s + h.income, 0))})은 등급 막대에서 뺐습니다.</p>` : ""}
       <div class="tablewrap" style="margin-top:14px"><table><thead><tr><th>종목</th><th>연 배당</th><th>기여 비중</th><th>수익률 / 매입가 기준</th><th>다음 지급</th><th>점수</th></tr></thead><tbody>
-        ${sorted.map((h) => `<tr><td class="txt"><strong>${h.sym}</strong><span class="nm">${h.name}</span></td><td>$${fmt.n(h.income, h.income < 10 ? 1 : 0)}</td><td>${fmt.n((h.income / total) * 100, 1)}%</td><td>${fmt.n((h.dps / h.price) * 100, 1)}% / ${fmt.n((h.dps / h.cost) * 100, 1)}%</td><td class="txt">${nextPay(h) ?? "–"}월</td><td class="txt">${h.score >= 5 ? '<span class="tag inc">' : h.score >= 3 ? '<span class="tag new">' : '<span class="tag exit">'}${h.score}/6</span></td></tr>`).join("")}
+        ${sorted.map((h) => `<tr><td class="txt"><strong>${h.sym}</strong><span class="nm">${escHtml(h.name)}</span></td><td>${amt$(h.income)}</td><td>${fmt.n((h.income / total) * 100, 1)}%</td><td>${fmt.n((h.dps / h.price) * 100, 1)}% / ${h.cost > 0 ? fmt.n((h.dps / h.cost) * 100, 1) + "%" : "–"}</td><td class="txt">${nextPay(h) ?? "–"}월</td><td class="txt">${h.score == null ? '<span class="tag">자료 준비 중</span>' : `${h.score >= 5 ? '<span class="tag inc">' : h.score >= 3 ? '<span class="tag new">' : '<span class="tag exit">'}${h.score}/6</span>`}</td></tr>`).join("")}
       </tbody></table></div>
-      <p class="small faint" style="margin-top:8px">점수 기준: 배당성향 60% 이하 2점(80% 이하 1점) · 이익 커버리지 2배 이상 2점(1.2배 이상 1점) · 10년 연속 증가 2점(3년 이상 1점). 수치는 데모용 근사값입니다.</p>
+      <p class="small faint" style="margin-top:8px">점수 기준: 배당성향 60% 이하 2점(80% 이하 1점) · 이익 커버리지 2배 이상 2점(1.2배 이상 1점) · 10년 연속 증가 2점(3년 이상 1점). 퀄리티 수치는 수기 관리하는 근사값입니다.</p>
     </div>`,
-    `<p class="small faint">이 화면은 데모 데이터로 형태를 보여주는 예시이며, 특정 종목의 매수·매도를 권유하지 않습니다. 배당은 회사 사정에 따라 언제든 줄거나 끊길 수 있습니다.</p>`,
   ].join("");
+}
+function renderDiviScreen(mode) {
+  const body = $("#max-body");
+  const my = diviMyStocks();
+  if (mode === "my" && !my.length) mode = "demo";
+  cacheSet("md:diviMode", mode);
+  let editor = "", hs;
+  if (mode === "my") {
+    editor = `<div class="card" id="divi-editor">
+      <div class="card-head"><h3>보유 수량 입력</h3><span class="small faint">이 브라우저에 저장</span></div>
+      <p class="desc">종목 탭에서 ☆로 등록한 관심 종목 중 <strong>배당 이력이 있는 종목</strong>입니다. <strong>보유 수량</strong>과 <strong>매입단가</strong>(비우면 현재가로 계산)를 넣고 아래 버튼을 누르면 대시보드가 내 계좌 기준으로 바뀝니다.</p>
+      <div class="tablewrap" style="margin-top:10px"><table><thead><tr><th>종목</th><th>현재가</th><th>연 배당/주</th><th>보유 수량</th><th>매입단가 (종목 통화)</th></tr></thead><tbody>
+      ${my.map((h) => `<tr><td class="txt"><strong>${h.sym}</strong><span class="nm">${escHtml(h.name)}</span></td><td>${h.kr ? fmt.krw(h.rawPrice) : "$" + fmt.n(h.rawPrice, 2)}</td><td>${h.kr ? fmt.krw(Math.round(h.dps * (dvFx() || 0))) : "$" + fmt.n(h.dps, 2)}</td>
+        <td><input data-divi-sh="${h.sym}" type="number" min="0" step="1" value="${h.shares || ""}" placeholder="0" style="width:84px"></td>
+        <td><input data-divi-cost="${h.sym}" type="number" min="0" value="${h.rawCost || ""}" placeholder="${fmt.n(h.rawPrice, h.kr ? 0 : 2)}" style="width:110px"></td></tr>`).join("")}
+      </tbody></table></div>
+      <div class="form-actions"><button class="btn primary" type="button" id="divi-calc">대시보드 계산</button><span class="small faint">한국 종목은 현재 환율로 달러 환산해 합산합니다</span></div>
+      ${!dvFx() && favStocks().some((s) => isKRSym(s)) ? `<p class="small faint" style="margin-top:8px">환율 데이터를 아직 받지 못해 한국 관심 종목은 잠시 빠져 있습니다. 새로고침하면 반영됩니다.</p>` : ""}
+    </div>`;
+    hs = my.filter((h) => h.shares > 0);
+  } else hs = DIVI_DEMO;
+  body.innerHTML = [
+    maxBackBtn,
+    `<p class="desc"><strong>배당 대시보드</strong>입니다: 보유한 배당주가 앞으로 12개월 동안 얼마를, 몇 월에 주는지, 어떤 종목이 배당을 끌고 가는지, 그리고 각 종목의 배당이 <strong>끊길 걱정 없는 배당인지(퀄리티 점수 0~6)</strong>를 한 화면에 보여줍니다.</p>
+    <div class="chips divi-tabs" style="margin-top:2px">
+      <button class="chip" type="button" data-divi-mode="my" aria-pressed="${mode === "my"}" ${my.length ? "" : "disabled"}>내 관심 종목${my.length ? ` (${my.length})` : ""}</button>
+      <button class="chip" type="button" data-divi-mode="demo" aria-pressed="${mode === "demo"}">데모 포트폴리오</button>
+      ${my.length ? "" : `<span class="small faint" style="align-self:center">종목 탭에서 배당주를 ☆ 관심 등록하면 "내 관심 종목" 모드가 열립니다</span>`}
+    </div>`,
+    editor,
+    hs.length ? diviSectionsHtml(hs, mode === "demo")
+      : `<div class="card"><div class="empty">위 표에서 보유 수량을 입력하고 "대시보드 계산"을 누르면 이 자리에 내 배당 대시보드가 채워집니다.</div></div>`,
+    `<p class="small faint">${mode === "demo" ? "이 화면은 데모 데이터로 형태를 보여주는 예시이며, 특정" : "이 화면은 계산 도구이며, 특정"} 종목의 매수·매도를 권유하지 않습니다. 배당은 회사 사정에 따라 언제든 줄거나 끊길 수 있습니다.</p>`,
+  ].filter(Boolean).join("");
+}
+async function renderMaxDivi() {
+  const body = $("#max-body");
+  body.dataset.screen = "divi";
+  body.innerHTML = maxBackBtn + `<div class="card"><div class="empty">종목 스냅샷을 불러오는 중…</div></div>`;
+  try { await ensureStockIndex(); } catch {}
+  if ($("#max-page").hidden || body.dataset.screen !== "divi") return;
+  renderDiviScreen(cacheGet("md:diviMode") || (diviMyStocks().some((h) => h.shares > 0) ? "my" : diviMyStocks().length ? "my" : "demo"));
 }
 function maxAlerts() { return cacheGet("md:alerts") || []; }
 // 매수 가격 따라가기 화면 하단에 들어가는 매입 가격 알림 카드
@@ -2694,6 +2791,9 @@ $("#max-page").addEventListener("click", (e) => {
   if (e.target.closest("#max-lev-bt")) return runLevBacktest();
   if (e.target.closest("#pf-run")) return runPortfolioCalc();
   if (e.target.closest("#bh-run")) return runBhFlow();
+  if (e.target.closest("#divi-calc")) { saveDiviInputs(); return renderDiviScreen("my"); }
+  const dm = e.target.closest("[data-divi-mode]");
+  if (dm && !dm.disabled) return renderDiviScreen(dm.dataset.diviMode);
   if (e.target.closest("#sc-run")) return runStarterCalc();
   if (e.target.closest("#pf-to-voo")) {
     const total = numVal("#pf-total"), monthly = Math.max(10000, Math.round((total * 0.65) / 24 / 10000) * 10000);
