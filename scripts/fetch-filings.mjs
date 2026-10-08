@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // 투자 대가들의 13F-HR 보고서를 SEC EDGAR 에서 받아 분기별 보유 종목으로 정리한다.
-// GitHub Actions 에서 매주 실행되어 `filings` 브랜치에 올라간다 (13F 는 분기 종료 45일 뒤에 나온다).
+// GitHub Actions 에서 매일 오전 6시대(KST)에 실행되어 `filings` 브랜치에 올라간다
+// (13F 는 분기 종료 45일 뒤에 나오지만, Form 4 는 매매 후 2영업일 안에 나와 매일 확인한다).
 //
 // 결과물 (출력 폴더 기준): FILERS 에 등록된 투자자마다 JSON 하나
 //   berkshire.json 버핏 · pershing.json 애크먼 · baupost.json 클라르만
@@ -318,7 +319,14 @@ async function readSched13(ev) {
   const pm = xml.match(/<(?:[a-zA-Z0-9]+:)?[a-zA-Z]*[pP]ercent[a-zA-Z]*>[^<0-9]*([\d.]+)/);
   return { form: ev.form, filed: ev.filed, url: folder, ticker: null, issuer, side: "stake", percent: pm ? Number(pm[1]) : null };
 }
-async function collectEvents(results) {
+async function collectEvents(results, prevEvents = []) {
+  // 매일 실행 대비: 지난 실행(events.json)에서 이미 파싱한 공시는 EDGAR 를 다시 받지 않고 그대로 쓴다
+  const prevByKey = new Map();
+  for (const e of prevEvents) {
+    const k = `${e.guru}|${e.url}|${e.form}`;
+    if (!prevByKey.has(k)) prevByKey.set(k, []);
+    prevByKey.get(k).push(e);
+  }
   const out = [];
   for (const r of results) {
     // 발행사 이름이 filer 자신을 가리키면(예: 버크셔 주식에 대한 내부자 13D) 대가의 매매가 아니다.
@@ -326,6 +334,9 @@ async function collectEvents(results) {
     const selfWords = r.filer.expect || [];
     const isSelf = (e) => selfWords.some((w) => `${e.issuer || ""} ${e.ticker || ""}`.toLowerCase().includes(w));
     for (const ev of (r.rawEvents || []).slice(0, 12)) { // filer 당 최근 12건이면 충분
+      const folder = `${EDGAR_WWW}/Archives/edgar/data/${ev.cik}/${ev.accession.replace(/-/g, "")}`;
+      const cached = prevByKey.get(`${r.filer.file}|${folder}|${ev.form}`);
+      if (cached) { out.push(...cached); continue; }
       try {
         if (/^4/.test(ev.form)) out.push(...(await readForm4(ev)).filter((e) => !isSelf(e)).map((e) => ({ guru: r.filer.file, ...e })));
         else { const s = await readSched13(ev); if (s && !isSelf(s)) out.push({ guru: r.filer.file, ...s }); }
@@ -359,7 +370,8 @@ async function main() {
   await writeFile(path.join(OUT_DIR, "cusips.json"), JSON.stringify(tickerMap));
   // 13F 사이의 매매 공시(Form 4 · 13D/G) → events.json
   try {
-    const events = await collectEvents(results);
+    const prevEvents = (await loadCache("events.json"))?.events || [];
+    const events = await collectEvents(results, prevEvents);
     await writeFile(path.join(OUT_DIR, "events.json"), JSON.stringify({ updated: new Date().toISOString(), source: "SEC EDGAR Form 4 · Schedule 13D/G", events }));
     console.log(`[13f] 13F 밖 매매 공시 ${events.length}건 → events.json`);
   } catch (err) {
