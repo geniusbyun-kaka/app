@@ -268,6 +268,10 @@ tr.hl3 td{background:color-mix(in srgb,var(--up) 5%,transparent)}
 .tag.inc{background:color-mix(in srgb,var(--up) 12%,transparent);color:var(--up)}
 .tag.dec{background:color-mix(in srgb,var(--down) 12%,transparent);color:var(--down)}
 .tag.exit{background:color-mix(in srgb,var(--down) 20%,transparent);color:var(--down)}
+/* 라운지 요금제 배지: 모픽 로고 산 3색(초록 Plus · 파랑 Pro · 빨강 Max)을 단색으로 채워 또렷하게 */
+.tag.plan-plus{background:#1E6B52;color:#fff}
+.tag.plan-pro{background:#1F4E8C;color:#fff}
+.tag.plan-max{background:#9E2B35;color:#fff}
 
 /* 마이 페이지 · 관심(별표) 버튼 */
 .fav-btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:4px 10px;font-size:16px;line-height:1.3;color:var(--ink-3);cursor:pointer;flex-shrink:0}
@@ -372,7 +376,7 @@ html.gated,html.gated body{overflow:hidden}
 .max-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px 20px;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid var(--line);margin-bottom:16px}
 .max-badge{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.08em;padding:2px 10px;border-radius:999px;background:var(--accent);color:var(--accent-ink);vertical-align:3px;margin-left:8px}
 .max-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
-.max-feat{text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:8px;transition:border-color .15s,transform .15s}
+.max-feat{position:relative;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:8px;transition:border-color .15s,transform .15s}
 .max-feat:hover{border-color:var(--accent);transform:translateY(-1px)}
 .max-feat .t{font-weight:700;font-size:17px;color:var(--ink)}
 .max-feat .d{font-size:14.5px;color:var(--ink-2);line-height:1.65}
@@ -1662,8 +1666,8 @@ function runStarterCalc() {
 // Plus = 레전드 공통 매수 따라하기(구 Pro) · Pro = AI 나스닥 레버리지만 뺀 전 기능 · Max = 전 기능
 const PLANS = [
   { id: "plus", name: "Plus 구독형", month: 29000, feats: ["투자 레전드들의 공통 매수 종목 따라하기"] },
-  { id: "pro", name: "Pro 구독형", month: 59000, hot: true, feats: ["투자 레전드들의 추천종목 받기", "원하는 매입 가격 실시간 알림", "AI 추천 투자 포트폴리오 구성"] },
-  { id: "max", name: "Max 구독형", month: 99000, feats: ["투자 레전드들의 추천종목 받기", "원하는 매입 가격 실시간 알림", "AI 추천 투자 포트폴리오 구성", "AI 나스닥 레버리지 투자법 등 훨씬 더 다양한 투자방안 추천"] },
+  { id: "pro", name: "Pro 구독형", month: 49000, hot: true, feats: ["투자 레전드들의 추천종목 받기", "원하는 매입 가격 실시간 알림", "AI 추천 투자 포트폴리오 구성"] },
+  { id: "max", name: "Max 구독형", month: 89000, feats: ["투자 레전드들의 추천종목 받기", "원하는 매입 가격 실시간 알림", "AI 추천 투자 포트폴리오 구성", "AI 나스닥 레버리지 투자법 등 훨씬 더 다양한 투자방안 추천"] },
 ];
 const YEAR_OFF = 0.15; // 연간 일괄 결제 할인율
 const PLAN_RANK = { plus: 1, pro: 2, max: 3 };
@@ -1794,10 +1798,11 @@ function exitMaxPage() { const d = history.state?.max ? history.state.d || 1 : 0
 // 라운지 화면의 ← 버튼: 히스토리를 되돌려 뒤로가기와 같은 길을 쓴다
 function maxBack() { if (history.state?.max && history.state.max !== "home") history.back(); else renderMaxHome(); }
 const maxBackBtn = `<button class="btn gu-back" type="button" id="max-back">← Max 라운지</button>`;
-// 배지는 제목 아래 줄에 통일: Plus 는 무채색, Pro 는 파란(강조색), Max 는 같은 톤의 은은한 빨강
-const mfPlus = `<span class="plan"><span class="tag">Plus 구독</span></span>`;
-const mfPro = `<span class="plan"><span class="tag new">Pro 구독</span></span>`;
-const mfMax = `<span class="plan"><span class="tag inc">Max 구독 전용</span></span>`;
+// 배지는 제목 아래 줄에 통일, 색은 모픽 로고 산 3색: Plus 초록 · Pro 파랑 · Max 빨강
+const mfPlus = `<span class="plan"><span class="tag plan-plus">Plus 구독</span></span>`;
+const mfPro = `<span class="plan"><span class="tag plan-pro">Pro 구독</span></span>`;
+const mfMax = `<span class="plan"><span class="tag plan-max">Max 구독 전용</span></span>`;
+const mfHot = `<span class="plan-badge">인기</span>`; // 요금제 모달의 인기 배지와 같은 모양
 function renderMaxHome() {
   restoreGuruPanel();
   $("#max-body").dataset.screen = "home";
@@ -1805,13 +1810,13 @@ function renderMaxHome() {
     <div class="card-head"><h3>구독 전용 기능</h3><span class="small faint">데모 화면 · 실제 결제 없음</span></div>
     <p class="desc">Max 구독은 모든 기능을, Pro 구독은 <strong>Max 전용 표시가 없는 기능</strong>을, Plus 구독은 <strong>Plus 구독 표시가 있는 기능</strong>을 사용할 수 있습니다.</p>
     <div class="max-grid" style="margin-top:12px">
-      <button class="max-feat" type="button" data-maxfeat="common"><span class="t">투자 레전드의 공통 매수 종목</span>${mfPlus}<span class="d">여러 레전드가 함께 들고 있거나 이번 분기에 같이 사들인 종목을 한눈에 봅니다.</span><span class="go">열기 →</span></button>
-      <button class="max-feat" type="button" data-maxfeat="gurus"><span class="t">레전드 연속 매수 종목</span>${mfPlus}<span class="d">워렌 버핏, 빌 애크먼 등 투자 레전드 8인의 13F를 분석해, 연속으로 사 모으는 종목과 꾸준히 모으는 종목을 레전드별로 보여드립니다.</span><span class="go">열기 →</span></button>
-      <button class="max-feat" type="button" data-maxfeat="prices"><span class="t">레전드 픽 매수 가격 따라가기</span>${mfPro}<span class="d">레전드들이 연속으로 사 모으는 종목의 분기말 단가와 현재가를 비교해, 레전드보다 싸게 살 수 있는 종목을 찾아드립니다.</span><span class="go" data-mf-go>열기 →</span></button>
+      <button class="max-feat" type="button" data-maxfeat="common">${mfHot}<span class="t">투자 레전드의 공통 매수 종목</span>${mfPlus}<span class="d">여러 레전드가 함께 들고 있거나 이번 분기에 같이 사들인 종목을 한눈에 봅니다.</span><span class="go">열기 →</span></button>
+      <button class="max-feat" type="button" data-maxfeat="gurus"><span class="t">레전드 연속 매수 종목</span>${mfPlus}<span class="d">워렌 버핏, 빌 애크먼 등 투자 레전드 8인이 연속으로 사 모으는 종목과 꾸준히 모으는 종목을 레전드별로 보여드립니다.</span><span class="go">열기 →</span></button>
+      <button class="max-feat" type="button" data-maxfeat="prices">${mfHot}<span class="t">레전드 픽 매수 가격 따라가기</span>${mfPro}<span class="d">레전드들이 연속으로 사 모으는 종목의 분기말 단가와 현재가를 비교해, 레전드보다 싸게 살 수 있는 종목을 찾아드립니다.</span><span class="go" data-mf-go>열기 →</span></button>
       <button class="max-feat" type="button" data-maxfeat="joker"><span class="t">버핏이 한국주식에 투자한다면?</span>${mfPro}<span class="d">버핏·멍거가 2026년 한국 시장에 투자한다면? ROE·부채비율·현금흐름 5가지 기준과 오너 어닝스 DCF로 매주 1종목을 선별합니다. 사업보고서 숫자를 직접 넣는 버핏 계산기 포함.</span><span class="go" data-mf-go>열기 →</span></button>
-      <button class="max-feat" type="button" data-maxfeat="portfolio"><span class="t">포트폴리오 구성 및 적립식 추천 방식</span>${mfPro}<span class="d">여유 자금에서 현금을 얼마나 남길지(버크셔의 현금 비중 참고), 매달 VOO 적립은 얼마가 되는지 계산합니다.</span><span class="go" data-mf-go>열기 →</span></button>
+      <button class="max-feat" type="button" data-maxfeat="portfolio"><span class="t">버핏식 포트폴리오 구성 컨설팅 받기</span>${mfPro}<span class="d">여유 자금에서 현금을 얼마나 남길지(버크셔의 현금 비중 참고), 매달 VOO 적립은 얼마가 되는지 계산합니다.</span><span class="go" data-mf-go>열기 →</span></button>
       <button class="max-feat" type="button" data-maxfeat="divi"><span class="t">배당 대시보드</span>${mfPro}<span class="d">보유 배당주의 다음 12개월 예상 배당과 월별 일정, 종목별 기여도, 그리고 배당이 끊길 걱정이 없는지 보는 배당 퀄리티 점수(0~6)를 한눈에 봅니다.</span><span class="go" data-mf-go>열기 →</span></button>
-      <button class="max-feat" type="button" data-maxfeat="lev"><span class="t">AI 나스닥 레버리지 투자법 따라하기</span>${mfMax}<span class="d">나스닥 100이 200일 이동평균 위에 있을 때만 레버리지(TQQQ)를 보유하는 추세 전략. 오늘의 신호와 백테스트를 제공합니다.</span><span class="go" data-mf-go>열기 →</span></button>
+      <button class="max-feat" type="button" data-maxfeat="lev">${mfHot}<span class="t">AI 나스닥 레버리지 투자법 따라하기</span>${mfMax}<span class="d">나스닥 100이 200일 이동평균 위에 있을 때만 레버리지(TQQQ)를 보유하는 추세 전략. 오늘의 신호와 백테스트를 제공합니다.</span><span class="go" data-mf-go>열기 →</span></button>
     </div></div>`;
   // 지금 요금제로 못 여는 카드는 열기 버튼 자리에 필요한 요금제를 보여준다
   $$("[data-maxfeat]", $("#max-body")).forEach((btn) => {
@@ -2173,7 +2178,7 @@ function runLevBacktest() {
     if (state.history) { refreshSeriesInfo(); setYears(10); runFromForm(); }
   });
 }
-// ── 포트폴리오 구성 및 적립식 추천 ──
+// ── 버핏식 포트폴리오 구성 컨설팅 (구 포트폴리오 구성 및 적립식 추천) ──
 // 버크셔의 분기별 현금성 자산(현금 + 단기 국채, 보험·기타 부문 10-Q/10-K 기준).
 // 새 분기 보고서가 나오면 여기에 한 줄 추가하면 비중이 자동 계산된다.
 const BRK_CASH = { "2025-06-30": 344.1e9, "2025-09-30": 381.7e9, "2025-12-31": 369.0e9, "2026-03-31": 397.4e9, "2026-06-30": 359.2e9 };
