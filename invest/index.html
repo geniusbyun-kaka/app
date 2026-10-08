@@ -2285,15 +2285,25 @@ const SECTOR_OF = {
   "017670.KS": "media", "030200.KS": "media", "015760.KS": "ener", "096770.KS": "ener", "010950.KS": "ener",
 };
 const sectorOf = (sym) => { const t = String(sym || "").toUpperCase(); return SECTOR_OF[t] || SECTOR_OF[myAlias(t)] || "etc"; };
-// 섹터별 비중(주식 부분만)을 표 + 미니 막대 + 판정 코멘트로. mine/brk 는 {섹터키: 비중 0~1}
-function sectorCompareHtml(mine, brk, brkHoldings) {
+// 섹터별 비중(주식 부분만)을 표 + 미니 막대 + 대표 종목 + 판정 코멘트로. mine/brk 는 {섹터키: 비중 0~1}
+// myRows 는 내 보유 종목(평가액 포함), brkHoldings 는 버크셔 최신 13F 보유 목록: 각 칸 아래
+// 그 섹터의 대표 종목(평가액 큰 순 3개)을 작게 보여줘 숫자가 어느 종목에서 나왔는지 바로 보이게 한다.
+function sectorCompareHtml(mine, brk, brkHoldings, myRows) {
   const keys = Object.keys(SECTOR_LABEL).filter((k) => (mine[k] || 0) > 0.001 || (brk[k] || 0) >= 0.01);
   if (!keys.length) return "";
   keys.sort((a, b) => (a === "etc") - (b === "etc") || Math.max(mine[b] || 0, brk[b] || 0) - Math.max(mine[a] || 0, brk[a] || 0));
+  const myTicks = {}, brkTicks = {};
+  for (const r of [...(myRows || [])].sort((a, b) => b.valueKrw - a.valueKrw)) { const k = sectorOf(r.sym); (myTicks[k] = myTicks[k] || []).push(r.sym); }
+  for (const h of [...brkHoldings].sort((a, b) => b.value - a.value)) {
+    if (!h.ticker) continue;
+    const k = sectorOf(h.ticker), t = myAlias(h.ticker), l = (brkTicks[k] = brkTicks[k] || []);
+    if (!l.includes(t)) l.push(t); // 같은 회사의 두 클래스(GOOG·GOOGL 등)는 하나로
+  }
+  const ticks = (list) => list?.length ? `<div class="small faint" style="margin-top:3px">${list.slice(0, 3).map(escHtml).join(" · ")}${list.length > 3 ? ` 외 ${list.length - 3}` : ""}</div>` : "";
   const bar = (v, c) => `<span class="sec-bar"><i style="${c ? `--c:${c};` : ""}width:${Math.min(100, v * 100)}%"></i></span>${fmt.n(v * 100, 0)}%`;
   const rows = keys.map((k) => {
     const m = mine[k] || 0, b = brk[k] || 0, d = (m - b) * 100;
-    return `<tr><td class="txt"><strong>${SECTOR_LABEL[k]}</strong></td><td>${bar(m)}</td><td>${bar(b, "var(--bench)")}</td><td>${Math.abs(d) < 0.5 ? "–" : `${d > 0 ? "+" : ""}${fmt.n(d, 0)}%p`}</td></tr>`;
+    return `<tr><td class="txt"><strong>${SECTOR_LABEL[k]}</strong></td><td>${bar(m)}${ticks(myTicks[k])}</td><td>${bar(b, "var(--bench)")}${ticks(brkTicks[k])}</td><td>${Math.abs(d) < 0.5 ? "–" : `${d > 0 ? "+" : ""}${fmt.n(d, 0)}%p`}</td></tr>`;
   }).join("");
   // 판정 코멘트: 버크셔에 있는데 나는 없는 섹터, 버크셔보다 크게 쏠린 섹터를 짚는다
   const comments = [];
@@ -2313,7 +2323,7 @@ function sectorCompareHtml(mine, brk, brkHoldings) {
   return `<div class="eyebrow" style="margin-top:18px">섹터 구성 비교 (주식 부분만 · 현금 제외)</div>
     <div class="tablewrap" style="margin-top:6px"><table><thead><tr><th>섹터</th><th>나</th><th>버크셔</th><th>차이</th></tr></thead><tbody>${rows}</tbody></table></div>
     <div class="jk-verdict" style="margin-top:10px">${tag}<span>${comments.length ? comments.join(" ") : "섹터 분포가 버크셔와 비슷한 틀 안에 있습니다. 특정 섹터로 크게 쏠리지 않았는지만 분기마다 확인하면 됩니다."}</span></div>
-    <p class="small faint" style="margin-top:8px">분류는 모픽 내장 분류표 기준이라 보는 눈에 따라 다를 수 있습니다 (아마존·테슬라는 통념대로 기술주). 참고로 버크셔 자체도 애플 한 종목 때문에 기술주 비중이 커 보이는 집중 포트폴리오입니다. 섹터를 버크셔와 똑같이 맞추라는 뜻이 아니라, <strong>내가 모르고 쏠려 있는 곳</strong>과 <strong>버크셔는 담는데 나는 비어 있는 곳</strong>을 알아차리는 용도입니다.</p>`;
+    <p class="small faint" style="margin-top:8px">표의 %는 <strong>주식 부분만의 비중</strong>이라, 현금을 포함한 총자산 기준 비중(아래 종목 표의 "내 비중")보다 큽니다. 분류는 모픽 내장 분류표 기준이라 보는 눈에 따라 다를 수 있습니다 (아마존·테슬라는 통념대로 기술주). 참고로 버크셔 자체도 애플 한 종목 때문에 기술주 비중이 커 보이는 집중 포트폴리오입니다. 섹터를 버크셔와 똑같이 맞추라는 뜻이 아니라, <strong>내가 모르고 쏠려 있는 곳</strong>과 <strong>버크셔는 담는데 나는 비어 있는 곳</strong>을 알아차리는 용도입니다.</p>`;
 }
 async function runBhCompare() {
   const out = $("#bh-cmp"); if (!out) return;
@@ -2382,7 +2392,7 @@ async function runBhCompare() {
     ${splitBar(myCashPct, "나의 구성", bhWon(pf.cash || 0), bhWon(stockTotal))}
     ${brkCashPct != null ? splitBar(brkCashPct, "버크셔의 구성 (투자자산 기준)", `$${fmt.n(brkCash / 1e9, 0)}B`, `$${fmt.n(brkStocks / 1e9, 0)}B`) : ""}
     <div class="jk-verdict" style="margin-top:14px">${myCashPct < 0.3 ? '<span class="tag exit">실탄 부족</span>' : myCashPct > 0.6 ? '<span class="tag new">현금 많음</span>' : '<span class="tag inc">실탄 적정</span>'}<span>내 현금 비중은 <strong>${fmt.n(myCashPct * 100, 0)}%</strong>입니다. 버핏식 원칙은 <strong>여유 자금의 30~40%</strong>를 실탄으로 두는 것이고, 버크셔는 지금 <strong>${brkCashPct != null ? fmt.n(brkCashPct * 100, 0) : "–"}%</strong>를 현금·단기 국채로 들고 있습니다.${myCashPct < 0.3 ? " 시장이 흔들릴 때 살 실탄이 부족한 편이니, 새 돈은 먼저 현금을 채우는 쪽을 생각해 보세요." : myCashPct > 0.6 ? " 실탄은 충분하니 적립식으로 주식 비중을 천천히 늘려도 됩니다." : " 원칙 범위에 들어와 있습니다."}</span></div>
-    ${stockTotal > 0 ? sectorCompareHtml(mySec, brkSec, f.latest.holdings) : ""}
+    ${stockTotal > 0 ? sectorCompareHtml(mySec, brkSec, f.latest.holdings, priced) : ""}
     <div class="eyebrow" style="margin-top:18px">내 보유 종목에 대한 버크셔의 최근 움직임</div>
     <div class="tablewrap" style="margin-top:6px"><table><thead><tr><th>종목</th><th>평가액</th><th>내 비중</th><th>버크셔 비중</th><th>신호</th><th>근거 (최근 13F)</th></tr></thead><tbody>
       ${priced.sort((a, b) => b.valueKrw - a.valueKrw).map((r) => { const s = signal(r.sym); return `<tr><td class="txt"><strong>${escHtml(r.sym)}</strong><span class="nm">${escHtml(r.name)}</span></td><td>${bhWon(r.valueKrw)}</td><td>${fmt.n((r.valueKrw / total) * 100, 1)}%</td><td>${s.bh ? fmt.n(s.bh.weight * 100, 1) + "%" : "–"}</td><td class="txt">${s.tag}</td><td class="txt" style="white-space:normal">${s.why}</td></tr>`; }).join("")}
