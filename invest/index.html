@@ -403,6 +403,9 @@ html.gated,html.gated body{overflow:hidden}
 .bh-split{display:flex;gap:2px;height:30px;border-radius:8px;overflow:hidden;margin-top:12px}
 .bh-split>i{display:block;height:100%;background:var(--c);min-width:3px}
 .bh-legend{display:flex;gap:8px 24px;flex-wrap:wrap;margin-top:10px;font-size:15px}
+/* 섹터 구성 비교의 미니 막대: 나 = 파랑(--nq), 버크셔 = 회색(--bench), 현금·주식 분할 막대와 같은 색 */
+.sec-bar{display:inline-block;width:72px;height:8px;border-radius:4px;background:var(--surface-2);vertical-align:middle;margin-right:7px;overflow:hidden}
+.sec-bar i{display:block;height:100%;border-radius:4px;background:var(--c,var(--nq))}
 .bh-legend .sw{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:7px;vertical-align:-1px;background:var(--c)}
 .bh-legend b{font-family:var(--mono);font-variant-numeric:tabular-nums}
 .bh-row{display:grid;grid-template-columns:minmax(92px,auto) 1fr minmax(0,auto);gap:4px 12px;align-items:center;margin-top:12px}
@@ -2246,6 +2249,72 @@ function bhAssetsHtml(f) {
 }
 // ── 나의 포트폴리오 vs 버크셔: 현금 비중과 종목별 매매 신호를 비교한다 ──
 // 신호 기준: 버크셔 최근 13F에서 그 종목을 늘렸나(매수 후보) 줄였나(확대 비추천) 전량 팔았나.
+// ── 섹터 구성 비교 (나의 포트폴리오 vs 버크셔) ─────────────────────
+// GICS 를 그대로 쓰지 않고 개인 투자자의 통념에 맞춘 7개 묶음을 쓴다 (아마존·테슬라는 기술주로).
+// 분류표에 없는 종목은 "기타·미분류"로 집계되며 판정 코멘트에서는 제외한다.
+const SECTOR_LABEL = { tech: "기술주", fin: "금융·보험", cons: "소비", ener: "에너지·유틸", health: "헬스케어", ind: "산업·주택", media: "통신·미디어", etc: "기타·미분류" };
+const SECTOR_OF = {
+  // 기술주 (버크셔: 애플·아마존·알파벳·버리사인)
+  AAPL: "tech", MSFT: "tech", GOOGL: "tech", AMZN: "tech", META: "tech", NVDA: "tech", TSLA: "tech", TSM: "tech",
+  AVGO: "tech", ORCL: "tech", ADBE: "tech", CRM: "tech", AMD: "tech", INTC: "tech", QCOM: "tech", MU: "tech",
+  PLTR: "tech", UBER: "tech", VRSN: "tech", NOW: "tech", SHOP: "tech", SMCI: "tech", ARM: "tech", STNE: "tech",
+  // 금융·보험 (버크셔: 뱅크오브아메리카·아멕스·무디스·처브 등)
+  "BRK-B": "fin", BAC: "fin", AXP: "fin", JPM: "fin", GS: "fin", MS: "fin", WFC: "fin", C: "fin", COF: "fin",
+  ALLY: "fin", SCHW: "fin", BLK: "fin", V: "fin", MA: "fin", PYPL: "fin", MCO: "fin", CB: "fin", AON: "fin",
+  JEF: "fin", PGR: "fin", NU: "fin", KKR: "fin", BX: "fin",
+  // 소비 (버크셔: 코카콜라·크래프트하인즈·크로거 등)
+  KO: "cons", PEP: "cons", KHC: "cons", KR: "cons", COST: "cons", WMT: "cons", PG: "cons", MCD: "cons",
+  SBUX: "cons", NKE: "cons", STZ: "cons", DPZ: "cons", POOL: "cons", MDLZ: "cons", PM: "cons", MO: "cons",
+  CMG: "cons", QSR: "cons", HLT: "cons", TGT: "cons", HD: "cons", LOW: "cons", LULU: "cons",
+  // 에너지·유틸 (버크셔: 셰브런·옥시덴털)
+  CVX: "ener", OXY: "ener", XOM: "ener", COP: "ener", SLB: "ener", EOG: "ener", PSX: "ener", VLO: "ener", KMI: "ener", NEE: "ener",
+  // 헬스케어 (버크셔: 다비타)
+  UNH: "health", DVA: "health", JNJ: "health", LLY: "health", PFE: "health", MRK: "health", ABBV: "health",
+  AMGN: "health", TMO: "health", ABT: "health", BMY: "health", CVS: "health", NVO: "health", ISRG: "health", GILD: "health",
+  // 산업·주택 (버크셔: 레너·NVR·하이코·루이지애나퍼시픽)
+  LEN: "ind", NVR: "ind", DHI: "ind", PHM: "ind", HEI: "ind", LPX: "ind", UNP: "ind", CSX: "ind", BA: "ind",
+  CAT: "ind", DE: "ind", GE: "ind", LMT: "ind", RTX: "ind", UPS: "ind", FDX: "ind", HON: "ind", MMM: "ind", ETN: "ind", ALLE: "ind", HHH: "ind",
+  // 통신·미디어 (버크셔: 시리우스XM·차터·T모바일·리버티 계열)
+  TMUS: "media", VZ: "media", T: "media", CMCSA: "media", CHTR: "media", SIRI: "media", LILA: "media",
+  LBTYA: "media", LBTYK: "media", DIS: "media", NFLX: "media", SPOT: "media", WBD: "media", PARA: "media", LLYVA: "media",
+  // 한국 주요 종목 (내 포트폴리오용 · 종목 스냅샷 심볼 형식)
+  "005930.KS": "tech", "005935.KS": "tech", "000660.KS": "tech", "035420.KS": "tech", "035720.KS": "tech",
+  "005380.KS": "ind", "000270.KS": "ind", "005490.KS": "ind", "051910.KS": "ind", "006400.KS": "ind", "373220.KS": "ind",
+  "105560.KS": "fin", "055550.KS": "fin", "086790.KS": "fin", "316140.KS": "fin", "323410.KS": "fin",
+  "068270.KS": "health", "207940.KS": "health", "051900.KS": "cons", "097950.KS": "cons", "090430.KS": "cons",
+  "017670.KS": "media", "030200.KS": "media", "015760.KS": "ener", "096770.KS": "ener", "010950.KS": "ener",
+};
+const sectorOf = (sym) => { const t = String(sym || "").toUpperCase(); return SECTOR_OF[t] || SECTOR_OF[myAlias(t)] || "etc"; };
+// 섹터별 비중(주식 부분만)을 표 + 미니 막대 + 판정 코멘트로. mine/brk 는 {섹터키: 비중 0~1}
+function sectorCompareHtml(mine, brk, brkHoldings) {
+  const keys = Object.keys(SECTOR_LABEL).filter((k) => (mine[k] || 0) > 0.001 || (brk[k] || 0) >= 0.01);
+  if (!keys.length) return "";
+  keys.sort((a, b) => (a === "etc") - (b === "etc") || Math.max(mine[b] || 0, brk[b] || 0) - Math.max(mine[a] || 0, brk[a] || 0));
+  const bar = (v, c) => `<span class="sec-bar"><i style="${c ? `--c:${c};` : ""}width:${Math.min(100, v * 100)}%"></i></span>${fmt.n(v * 100, 0)}%`;
+  const rows = keys.map((k) => {
+    const m = mine[k] || 0, b = brk[k] || 0, d = (m - b) * 100;
+    return `<tr><td class="txt"><strong>${SECTOR_LABEL[k]}</strong></td><td>${bar(m)}</td><td>${bar(b, "var(--bench)")}</td><td>${Math.abs(d) < 0.5 ? "–" : `${d > 0 ? "+" : ""}${fmt.n(d, 0)}%p`}</td></tr>`;
+  }).join("");
+  // 판정 코멘트: 버크셔에 있는데 나는 없는 섹터, 버크셔보다 크게 쏠린 섹터를 짚는다
+  const comments = [];
+  for (const k of keys) {
+    if (k === "etc") continue;
+    const m = mine[k] || 0, b = brk[k] || 0;
+    if (m < 0.005 && b >= 0.05) {
+      const picks = brkHoldings.filter((h) => h.ticker && sectorOf(h.ticker) === k).sort((x, y) => y.value - x.value).slice(0, 2).map((h) => h.ticker);
+      comments.push(`버크셔 주식 포트폴리오의 <strong>${fmt.n(b * 100, 0)}%</strong>인 <strong>${SECTOR_LABEL[k]}</strong>가 내 포트폴리오에는 없습니다${picks.length ? ` (버크셔 픽: ${picks.join(" · ")})` : ""}.`);
+    } else if (m - b >= 0.15) {
+      comments.push(`<strong>${SECTOR_LABEL[k]}</strong> 비중이 버크셔보다 <strong>${fmt.n((m - b) * 100, 0)}%p</strong> 높습니다. 이 섹터가 흔들리면 포트폴리오 전체가 같이 흔들리는 폭이 그만큼 큽니다.`);
+    }
+  }
+  if ((mine.etc || 0) >= 0.2) comments.push(`내 포트폴리오의 <strong>${fmt.n(mine.etc * 100, 0)}%</strong>는 모픽 분류표에 없는 종목이라 기타로 묶였습니다. 섹터 판정은 분류된 부분 기준입니다.`);
+  const maxGap = Math.max(0, ...keys.filter((k) => k !== "etc").map((k) => Math.abs((mine[k] || 0) - (brk[k] || 0))));
+  const tag = maxGap >= 0.25 ? '<span class="tag exit">쏠림 주의</span>' : comments.length ? '<span class="tag new">차이 있음</span>' : '<span class="tag inc">균형</span>';
+  return `<div class="eyebrow" style="margin-top:18px">섹터 구성 비교 (주식 부분만 · 현금 제외)</div>
+    <div class="tablewrap" style="margin-top:6px"><table><thead><tr><th>섹터</th><th>나</th><th>버크셔</th><th>차이</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="jk-verdict" style="margin-top:10px">${tag}<span>${comments.length ? comments.join(" ") : "섹터 분포가 버크셔와 비슷한 틀 안에 있습니다. 특정 섹터로 크게 쏠리지 않았는지만 분기마다 확인하면 됩니다."}</span></div>
+    <p class="small faint" style="margin-top:8px">분류는 모픽 내장 분류표 기준이라 보는 눈에 따라 다를 수 있습니다 (아마존·테슬라는 통념대로 기술주). 참고로 버크셔 자체도 애플 한 종목 때문에 기술주 비중이 커 보이는 집중 포트폴리오입니다. 섹터를 버크셔와 똑같이 맞추라는 뜻이 아니라, <strong>내가 모르고 쏠려 있는 곳</strong>과 <strong>버크셔는 담는데 나는 비어 있는 곳</strong>을 알아차리는 용도입니다.</p>`;
+}
 async function runBhCompare() {
   const out = $("#bh-cmp"); if (!out) return;
   out.hidden = false;
@@ -2305,10 +2374,15 @@ async function runBhCompare() {
     <div class="bh-split" style="height:22px;margin-top:8px"><i style="--c:var(--bench);width:${cashPct * 100}%"></i><i style="--c:var(--nq);width:${(1 - cashPct) * 100}%"></i></div>
     <div class="bh-legend" style="font-size:14px"><span><span class="sw" style="--c:var(--bench)"></span>현금 <b>${cashAmt}</b> (${fmt.n(cashPct * 100, 0)}%)</span><span><span class="sw" style="--c:var(--nq)"></span>주식 <b>${stockAmt}</b> (${fmt.n((1 - cashPct) * 100, 0)}%)</span></div>`;
   const decHeld = priced.filter((r) => { const s = signal(r.sym); return /확대 비추천/.test(s.tag); });
+  // 섹터별 비중 (주식 부분만 · 현금 제외): 나는 원화 평가액, 버크셔는 13F weight 합산
+  const mySec = {}, brkSec = {};
+  if (stockTotal > 0) for (const r of priced) { const k = sectorOf(r.sym); mySec[k] = (mySec[k] || 0) + r.valueKrw / stockTotal; }
+  for (const h of f.latest.holdings) { const k = h.ticker ? sectorOf(h.ticker) : "etc"; brkSec[k] = (brkSec[k] || 0) + (h.weight || 0); }
   live.innerHTML = `<div class="eyebrow" style="margin-top:4px">나의 포트폴리오 vs 버크셔 · 총 ${bhWon(total)}</div>
     ${splitBar(myCashPct, "나의 구성", bhWon(pf.cash || 0), bhWon(stockTotal))}
     ${brkCashPct != null ? splitBar(brkCashPct, "버크셔의 구성 (투자자산 기준)", `$${fmt.n(brkCash / 1e9, 0)}B`, `$${fmt.n(brkStocks / 1e9, 0)}B`) : ""}
     <div class="jk-verdict" style="margin-top:14px">${myCashPct < 0.3 ? '<span class="tag exit">실탄 부족</span>' : myCashPct > 0.6 ? '<span class="tag new">현금 많음</span>' : '<span class="tag inc">실탄 적정</span>'}<span>내 현금 비중은 <strong>${fmt.n(myCashPct * 100, 0)}%</strong>입니다. 버핏식 원칙은 <strong>여유 자금의 30~40%</strong>를 실탄으로 두는 것이고, 버크셔는 지금 <strong>${brkCashPct != null ? fmt.n(brkCashPct * 100, 0) : "–"}%</strong>를 현금·단기 국채로 들고 있습니다.${myCashPct < 0.3 ? " 시장이 흔들릴 때 살 실탄이 부족한 편이니, 새 돈은 먼저 현금을 채우는 쪽을 생각해 보세요." : myCashPct > 0.6 ? " 실탄은 충분하니 적립식으로 주식 비중을 천천히 늘려도 됩니다." : " 원칙 범위에 들어와 있습니다."}</span></div>
+    ${stockTotal > 0 ? sectorCompareHtml(mySec, brkSec, f.latest.holdings) : ""}
     <div class="eyebrow" style="margin-top:18px">내 보유 종목에 대한 버크셔의 최근 움직임</div>
     <div class="tablewrap" style="margin-top:6px"><table><thead><tr><th>종목</th><th>평가액</th><th>내 비중</th><th>버크셔 비중</th><th>신호</th><th>근거 (최근 13F)</th></tr></thead><tbody>
       ${priced.sort((a, b) => b.valueKrw - a.valueKrw).map((r) => { const s = signal(r.sym); return `<tr><td class="txt"><strong>${escHtml(r.sym)}</strong><span class="nm">${escHtml(r.name)}</span></td><td>${bhWon(r.valueKrw)}</td><td>${fmt.n((r.valueKrw / total) * 100, 1)}%</td><td>${s.bh ? fmt.n(s.bh.weight * 100, 1) + "%" : "–"}</td><td class="txt">${s.tag}</td><td class="txt" style="white-space:normal">${s.why}</td></tr>`; }).join("")}
