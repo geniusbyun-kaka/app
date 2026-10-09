@@ -545,11 +545,11 @@ try { if (localStorage.getItem("sb-hzzmzpsjuovijtananmf-auth-token")) document.g
     <button class="tab" role="tab" aria-selected="true" data-tab="intro" id="tab-intro">소개</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="starter" id="tab-starter">초보</button>
     <button class="tab" role="tab" aria-selected="false" data-tab="news" id="tab-news">뉴스</button>
-    <button class="tab" role="tab" aria-selected="false" data-tab="stocks" id="tab-stocks">종목</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="buffett" id="tab-buffett">레전드 포트폴리오</button>
     <button class="tab more-toggle" type="button" id="tab-more" aria-expanded="false">더보기 ▾</button>
     <div class="tabs-extra" id="tabs-extra" hidden>
       <button class="tab" role="tab" aria-selected="false" data-tab="backtest" id="tab-backtest">백테스트</button>
-      <button class="tab" role="tab" aria-selected="false" data-tab="buffett" id="tab-buffett">레전드 포트폴리오</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="stocks" id="tab-stocks">종목</button>
       <button class="tab" role="tab" aria-selected="false" data-tab="crypto" id="tab-crypto">코인</button>
       <button class="tab" role="tab" aria-selected="false" data-tab="dividend" id="tab-dividend">배당</button>
     </div>
@@ -1984,9 +1984,11 @@ async function renderMaxPrices() {
     maxBackBtn,
     `<p class="desc"><strong>레전드 실매수 추종 트랙</strong>입니다: 조커픽의 자체 발굴 체크리스트와 별개로, 레전드가 공시로 확인된 가격에 실제로 사고 있다는 사실 자체를 따라갑니다 (펀더멘털 체크리스트 통과 여부와 무관). 추천 대상은 레전드 연속 매수 종목 화면과 같은 기준입니다: <strong>최근 분기까지 연속 매수 중</strong>이거나 <strong>꾸준히 모으는 종목</strong>(최근 8분기 중 2회 이상 매수, 그 사이 매도 없음)만 올립니다. 여기에 더해 <strong>분기말 보유 평가액 $150M 미만</strong>의 소형 포지션은 연속 매수 중이라도 뺍니다 (수백 종목을 들고 있는 기관의 잔챙이 포지션까지 다 올라오면 정작 의미 있는 픽이 묻히기 때문입니다). <strong>추정 평균단가</strong>는 레전드가 매수한 분기마다 그 분기 <strong>종가 최저가에서 5% 오른 가격</strong>을 매수 단가로 보고, 그 분기에 늘린 주식수로 가중평균한 값입니다 (레전드들은 약세 구간에서 분할 매수하는 경향이 있어 저점 부근 체결로 봅니다). <strong>최근 매수가</strong>는 가장 최근에 매수한 분기의 같은 추정가인데, SEC Form 4 · 13D/G 공시나 수기 등록된 매수 뉴스에 <strong>실제 단가</strong>가 있으면(예: 버크셔의 레너 추가 매수, 알파벳 $350 사모 매입) 추정가 대신 그 단가의 주식수 가중평균을 사용하며 태그가 붙습니다 (My Page 와 같은 값). 따라 사기 판단은 이 값을 기준으로 합니다. 현재가가 <strong>최근 매수가보다 낮으면 강력 추천</strong>, <strong>+10% 이내면 추천</strong>, 그보다 높으면 관망입니다. 티커를 누르면 종목 차트로 이동합니다.</p>`,
     gurus.map((g) => `<div class="card" id="mx-follow-${g.id}"><div class="card-head"><h3>${g.name} · ${g.org}</h3></div><div class="empty">분기별 매수와 주가 이력으로 추정 단가를 계산하는 중…</div></div>`).join(""),
+    pushAlertCardHtml(),
     alertsCardHtml(),
     `<p class="small faint">13F는 분기 말 보유분이 45일 뒤에 공개되는 자료이고, 단가는 분기 주가 범위로 계산한 추정치라 실제 체결가와 다를 수 있습니다 (예: 블록딜). 투자 판단과 책임은 본인에게 있습니다.</p>`,
   ].join("");
+  refreshPushCard();
   try { await ensureStockIndex(); } catch {}
   // 대가별로 순서대로 계산해 완료되는 대로 카드를 채운다 (화면을 떠났으면 중단)
   for (const g of gurus) {
@@ -2806,7 +2808,16 @@ const DIVI_DEMO = [
   { sym: "MO", name: "알트리아", shares: 30, price: 60, cost: 48, dps: 4.12, payMonths: [1, 4, 7, 10] },
   { sym: "NVDA", name: "엔비디아", shares: 10, price: 190, cost: 45, dps: 0.04, payMonths: [3, 6, 9, 12] },
 ];
-// 배당 퀄리티 수기 데이터: 배당성향(%) · 이익 커버리지(배) · 연속 증가(년). 여기 없는 종목은 "자료 준비 중".
+// 배당 퀄리티 자동 데이터: stocks 브랜치의 div-quality.json (SEC EPS 로 배당성향·커버리지 자동 계산,
+// 매일 스냅샷과 함께 갱신). 연속 증가 연수는 종목 스냅샷의 div.streakYears (야후 배당 이력).
+let divQualityPromise = null;
+function ensureDivQuality() {
+  if (!divQualityPromise) divQualityPromise = fetch(`${STOCKS_BASE}div-quality.json?t=${Date.now()}`, { cache: "no-store" })
+    .then((r) => (r.ok ? r.json() : null)).catch(() => null).then((d) => (state.divQuality = d || null));
+  return divQualityPromise;
+}
+// 자동 계산이 커버 못 하는 종목의 수기 보강 데이터 (수기가 자동보다 우선: 연속 증가 연수는
+// 야후 이력이 짧게 잡는 장기 기록을 사람이 아는 값으로 적어둔 것). 양쪽 다 없으면 "자료 준비 중".
 const DIVI_QUALITY = {
   JPM: { payout: 27, cover: 3.6, streak: 15 }, XOM: { payout: 45, cover: 2.2, streak: 43 },
   JNJ: { payout: 60, cover: 1.7, streak: 63 }, KO: { payout: 77, cover: 1.3, streak: 63 },
@@ -2854,7 +2865,15 @@ function saveDiviInputs() {
 // 대시보드 본문 (hs: 달러 기준 보유 목록)
 function diviSectionsHtml(raw, demo) {
   const fx = dvFx() || 1450;
-  const hs = raw.map((h) => ({ ...h, income: h.dps * h.shares, value: h.price * h.shares, costV: h.cost * h.shares, q: DIVI_QUALITY[h.sym] || null }))
+  // 퀄리티: 수기 데이터 우선, 없으면 자동 계산(SEC EPS 배당성향·커버리지 + 야후 연속 증가 연수)
+  const dqItems = state.divQuality?.items || {};
+  const idxAll = state.stockIndex?.items || [];
+  const autoQ = (sym) => {
+    const a = dqItems[sym];
+    if (!a || (a.payout == null && !(a.cover > 0))) return null;
+    return { payout: a.payout ?? 999, cover: a.cover || 0, streak: idxAll.find((x) => x.symbol === sym)?.div?.streakYears ?? 0, auto: true };
+  };
+  const hs = raw.map((h) => ({ ...h, income: h.dps * h.shares, value: h.price * h.shares, costV: h.cost * h.shares, q: DIVI_QUALITY[h.sym] || autoQ(h.sym) }))
     .map((h) => ({ ...h, score: diviScore(h.q) }));
   const total = hs.reduce((s, h) => s + h.income, 0);
   const value = hs.reduce((s, h) => s + h.value, 0);
@@ -2909,7 +2928,7 @@ function diviSectionsHtml(raw, demo) {
       <div class="tablewrap" style="margin-top:14px"><table><thead><tr><th>종목</th><th>연 배당</th><th>기여 비중</th><th>수익률 / 매입가 기준</th><th>다음 지급</th><th>점수</th></tr></thead><tbody>
         ${sorted.map((h) => `<tr><td class="txt"><strong>${h.sym}</strong><span class="nm">${escHtml(h.name)}</span></td><td>${amt$(h.income)}</td><td>${fmt.n((h.income / total) * 100, 1)}%</td><td>${fmt.n((h.dps / h.price) * 100, 1)}% / ${h.cost > 0 ? fmt.n((h.dps / h.cost) * 100, 1) + "%" : "–"}</td><td class="txt">${nextPay(h) ?? "–"}월</td><td class="txt">${h.score == null ? '<span class="tag">자료 준비 중</span>' : `${h.score >= 5 ? '<span class="tag inc">' : h.score >= 3 ? '<span class="tag new">' : '<span class="tag exit">'}${h.score}/6</span>`}</td></tr>`).join("")}
       </tbody></table></div>
-      <p class="small faint" style="margin-top:8px">점수 기준: 배당성향 60% 이하 2점(80% 이하 1점) · 이익 커버리지 2배 이상 2점(1.2배 이상 1점) · 10년 연속 증가 2점(3년 이상 1점). 퀄리티 수치는 수기 관리하는 근사값입니다.</p>
+      <p class="small faint" style="margin-top:8px">점수 기준: 배당성향 60% 이하 2점(80% 이하 1점) · 이익 커버리지 2배 이상 2점(1.2배 이상 1점) · 10년 연속 증가 2점(3년 이상 1점). 배당성향·커버리지는 <strong>SEC 공시 주당순이익(최근 4개 분기 합)</strong>으로, 연속 증가 연수는 <strong>야후 배당 이력</strong>으로 매일 자동 계산하고, 일부 종목은 수기 근사값으로 보강합니다. 한국 주식·ETF 는 아직 자동 계산 대상이 아니라 자료 준비 중으로 남을 수 있습니다.</p>
     </div>`,
   ].join("");
 }
@@ -2951,9 +2970,69 @@ async function renderMaxDivi() {
   const body = $("#max-body");
   body.dataset.screen = "divi";
   body.innerHTML = maxBackBtn + `<div class="card"><div class="empty">종목 스냅샷을 불러오는 중…</div></div>`;
-  try { await ensureStockIndex(); } catch {}
+  try { await Promise.all([ensureStockIndex(), ensureDivQuality()]); } catch {}
   if ($("#max-page").hidden || body.dataset.screen !== "divi") return;
   renderDiviScreen(cacheGet("md:diviMode") || (diviMyStocks().some((h) => h.shares > 0) ? "my" : diviMyStocks().length ? "my" : "demo"));
+}
+// ── 강력 추천 매일 푸시 알림 ─────────────────────────────────────
+// push-alerts 워크플로가 매일 아침(미국 장 마감 뒤) 종가 기준 강력 추천을 계산해 웹 푸시로 보낸다.
+// 이 기기의 구독 정보는 Supabase push_subscriptions 에 계정별로 저장되고, 워크플로가 그 목록으로 발송한다.
+const PUSH_VAPID_PUBLIC_KEY = "BAxSwjCfsPh3lfvjdvdn6XMn6YxXF5tEBwwd-yRToWpta1MvN5jKaHovg_fLT9zAatoV4ccU1bYNXJkXnSHm02E";
+const pushSupported = () => "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+let swRegPromise = null;
+function ensureSw() {
+  if (!pushSupported()) return Promise.resolve(null);
+  if (!swRegPromise) swRegPromise = navigator.serviceWorker.register("sw.js").catch(() => null);
+  return swRegPromise;
+}
+if (pushSupported() && Notification.permission === "granted") ensureSw(); // 이미 허용한 기기는 워커를 미리 살려둔다
+function vapidKeyBytes(b64u) {
+  const pad = "=".repeat((4 - (b64u.length % 4)) % 4);
+  const raw = atob((b64u + pad).replace(/-/g, "+").replace(/_/g, "/"));
+  return Uint8Array.from(raw, (c) => c.charCodeAt(0));
+}
+async function pushCurrentSub() {
+  const reg = await ensureSw(); if (!reg) return null;
+  try { return await reg.pushManager.getSubscription(); } catch { return null; }
+}
+function pushAlertCardHtml() {
+  return `<div class="card" id="push-card">
+    <div class="card-head"><h3>강력 추천 매일 알림</h3><span class="small faint">매일 아침 8:30 (한국시간) · 뉴욕 종가 기준</span></div>
+    <p class="desc">미국 장이 마감되면 그날 종가로 따라 사기 판단을 다시 계산해, <strong>강력 추천</strong>(레전드 최근 매수가보다 싼 종목)이 있을 때만 이 기기로 알림을 보냅니다. 예: "강력 추천: GOOGL 종가 $329.52 · 버핏 최근 매수가 대비 -5.8%".</p>
+    <div id="push-body" class="small faint">알림 상태 확인 중…</div></div>`;
+}
+async function refreshPushCard() {
+  const el = $("#push-body"); if (!el) return;
+  if (!pushSupported()) { el.innerHTML = `이 브라우저는 푸시 알림을 지원하지 않습니다. 아이폰·아이패드는 Safari 공유 → <strong>홈 화면에 추가</strong>로 설치한 뒤 그 아이콘으로 열면 알림을 받을 수 있습니다 (iOS 16.4 이상).`; return; }
+  if (!sb || !auth.user) { el.innerHTML = `알림은 계정 단위로 관리됩니다. 먼저 <strong>로그인</strong>해 주세요.`; return; }
+  if (Notification.permission === "denied") { el.innerHTML = `브라우저에서 알림이 차단되어 있습니다. 주소창의 자물쇠(사이트 설정)에서 알림을 허용으로 바꾼 뒤 다시 시도해 주세요.`; return; }
+  const sub = await pushCurrentSub();
+  el.innerHTML = sub
+    ? `<span class="tag inc">이 기기에서 알림 켜짐</span> <button class="btn" type="button" id="push-off" style="margin-left:8px">알림 끄기</button>`
+    : `<div class="form-actions" style="margin:0"><button class="btn primary" type="button" id="push-on">이 기기에서 알림 켜기</button></div>`;
+}
+async function pushSubscribe() {
+  if (!sb || !auth.user) return alert("알림을 받으려면 먼저 로그인하세요.");
+  const reg = await ensureSw(); if (!reg) return alert("이 브라우저는 푸시 알림을 지원하지 않습니다.");
+  if ((await Notification.requestPermission()) !== "granted") return refreshPushCard();
+  try {
+    const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: vapidKeyBytes(PUSH_VAPID_PUBLIC_KEY) });
+    const j = sub.toJSON();
+    await sb.from("push_subscriptions").delete().eq("endpoint", j.endpoint); // 같은 기기 재등록 대비
+    const { error } = await sb.from("push_subscriptions").insert({ user_id: auth.user.id, endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth });
+    if (error) throw new Error(error.message);
+  } catch (err) {
+    alert(`알림 등록에 실패했습니다: ${err.message}\n(Supabase 에서 supabase/schema.sql 최신본을 실행했는지 확인해 주세요)`);
+  }
+  refreshPushCard();
+}
+async function pushUnsubscribe() {
+  const sub = await pushCurrentSub();
+  if (sub) {
+    try { if (sb && auth.user) await sb.from("push_subscriptions").delete().eq("endpoint", sub.endpoint); } catch {}
+    try { await sub.unsubscribe(); } catch {}
+  }
+  refreshPushCard();
 }
 function maxAlerts() { return cacheGet("md:alerts") || []; }
 // 매수 가격 따라가기 화면 하단에 들어가는 매입 가격 알림 카드
@@ -3002,6 +3081,8 @@ $("#max-page").addEventListener("click", (e) => {
     $("#sc-results")?.scrollIntoView({ behavior: "smooth", block: "start" });
     return;
   }
+  if (e.target.closest("#push-on")) return pushSubscribe();
+  if (e.target.closest("#push-off")) return pushUnsubscribe();
   if (e.target.closest("#max-al-add")) {
     const sym = normSym($("#max-al-sym").value), p = Number($("#max-al-price").value);
     if (!sym || !(p > 0)) return alert("티커와 목표 매입가를 입력하세요.");
@@ -3057,7 +3138,8 @@ $("#panel-gurus").addEventListener("click", (e) => {
 
 // ───────────────────────── 탭 · 이벤트 ─────────────────────────
 // 더보기 줄에 들어 있는 탭들. 이 중 하나가 선택되면 접힌 줄을 자동으로 펼친다
-const EXTRA_TABS = ["backtest", "buffett", "crypto", "dividend"];
+// (2026-10-09 레전드 포트폴리오를 기본 줄로 올리고 종목을 더보기 줄로 내림)
+const EXTRA_TABS = ["backtest", "stocks", "crypto", "dividend"];
 function toggleMoreTabs(open) {
   const x = $("#tabs-extra"), open2 = open ?? x.hidden;
   x.hidden = !open2;
