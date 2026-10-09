@@ -91,3 +91,31 @@ create policy "delete own push subscriptions" on public.push_subscriptions
 
 revoke all on public.push_subscriptions from anon, authenticated;
 grant select, insert, delete on public.push_subscriptions to authenticated;
+
+-- ── 문의 및 건의사항 ──────────────────────────────────────────────
+-- 문의 탭에서 보낸 글. 회원은 자기 문의만 보고 쓸 수 있고,
+-- 답변(answer)과 상태(status)는 관리자가 대시보드 Table Editor 에서 적습니다.
+create table if not exists public.inquiries (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  email text,
+  title text not null,
+  body text not null,
+  status text not null default 'open' check (status in ('open', 'answered', 'closed')),
+  answer text,
+  created_at timestamptz not null default now()
+);
+
+alter table public.inquiries enable row level security;
+
+drop policy if exists "read own inquiries" on public.inquiries;
+create policy "read own inquiries" on public.inquiries
+  for select to authenticated using ((select auth.uid()) = user_id);
+
+drop policy if exists "insert own inquiries" on public.inquiries;
+create policy "insert own inquiries" on public.inquiries
+  for insert to authenticated with check ((select auth.uid()) = user_id);
+
+revoke all on public.inquiries from anon, authenticated;
+grant select on public.inquiries to authenticated;
+grant insert (user_id, email, title, body) on public.inquiries to authenticated;

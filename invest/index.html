@@ -190,7 +190,8 @@ td.txt{font-family:var(--font)}
 .form{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px 14px}
 .field{display:flex;flex-direction:column;gap:5px;min-width:0}
 .field label{font-size:13.5px;font-weight:600;color:var(--ink-2)}
-.field select,.field input{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 10px;font-size:14px;min-width:0;width:100%}
+.field select,.field input,.field textarea{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 10px;font-size:14px;min-width:0;width:100%;color:var(--ink);font-family:inherit}
+.field textarea{resize:vertical;line-height:1.6}
 .field input[type=number]{font-family:var(--mono)}
 .field .hint{font-size:12.5px;color:var(--ink-3)}
 .form-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px}
@@ -567,6 +568,7 @@ try { if (localStorage.getItem("sb-hzzmzpsjuovijtananmf-auth-token")) document.g
       <button class="tab" role="tab" aria-selected="false" data-tab="stocks" id="tab-stocks">종목</button>
       <button class="tab" role="tab" aria-selected="false" data-tab="crypto" id="tab-crypto">코인</button>
       <button class="tab" role="tab" aria-selected="false" data-tab="dividend" id="tab-dividend">배당</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="support" id="tab-support">문의</button>
     </div>
   </div>
 
@@ -914,6 +916,8 @@ try { if (localStorage.getItem("sb-hzzmzpsjuovijtananmf-auth-token")) document.g
     </div>
   </section>
 
+  <!-- 문의 및 건의사항 (내용은 renderSupport 가 채운다) -->
+  <section class="panel" id="panel-support" role="tabpanel" hidden></section>
 
   <footer>데이터: Yahoo Finance (지연 시세). NQ 1계약 = 지수 × $20, 마이크로(MNQ) = 지수 × $2. 화면 색상은 한국식(상승 빨강, 하락 파랑)입니다.</footer>
 </div>
@@ -3181,7 +3185,7 @@ $("#panel-gurus").addEventListener("click", (e) => {
 // ───────────────────────── 탭 · 이벤트 ─────────────────────────
 // 더보기 줄에 들어 있는 탭들. 이 중 하나가 선택되면 접힌 줄을 자동으로 펼친다
 // (2026-10-09 레전드 포트폴리오를 기본 줄로 올리고 종목을 더보기 줄로 내림)
-const EXTRA_TABS = ["backtest", "stocks", "crypto", "dividend"];
+const EXTRA_TABS = ["backtest", "stocks", "crypto", "dividend", "support"];
 function toggleMoreTabs(open) {
   const x = $("#tabs-extra"), open2 = open ?? x.hidden;
   x.hidden = !open2;
@@ -3199,9 +3203,10 @@ function selectTab(name, fromPop) {
   $$("#bottom-nav [data-bn]").forEach((b) => b.setAttribute("aria-current", String(b.dataset.bn === name)));
   if (EXTRA_TABS.includes(name) && $("#tabs-extra").hidden) toggleMoreTabs(true);
   // 투자 레전드(panel-gurus)는 탭이 아니라 Max 라운지 안에서 보여준다
-  ["intro", "starter", "buffett", "news", "backtest", "stocks", "dividend", "crypto", "my"].forEach((p) => { $(`#panel-${p}`).hidden = p !== name; });
+  ["intro", "starter", "buffett", "news", "backtest", "stocks", "dividend", "crypto", "my", "support"].forEach((p) => { $(`#panel-${p}`).hidden = p !== name; });
   $("#my-open").setAttribute("aria-pressed", String(name === "my"));
   if (name === "my") renderMyPage();
+  if (name === "support") renderSupport();
   if (name === "dividend") ensureStockIndex().then(renderDividend).catch(() => {});
   if (name === "buffett") ensurePortfolio().catch(() => {});
   if (name === "starter") ensureLessons();
@@ -3244,6 +3249,58 @@ document.addEventListener("keydown", (e) => {
 $$(".tab[data-tab]").forEach((t) => t.addEventListener("click", () => selectTab(t.dataset.tab)));
 $("#tab-more").addEventListener("click", () => toggleMoreTabs());
 $("#my-open").addEventListener("click", () => selectTab("my"));
+// ── 문의 및 건의사항 탭 ─────────────────────────────────────────
+// 문의는 Supabase inquiries 테이블에 저장된다 (본인 것만 읽기·쓰기 가능, 답변·상태는 관리자가
+// 대시보드 Table Editor 에서). 아이디 칸은 가입 이메일을 자동으로 채운다.
+const SP_STATUS = { open: '<span class="tag new">접수됨</span>', answered: '<span class="tag inc">답변 완료</span>', closed: '<span class="tag">종료</span>' };
+function renderSupport() {
+  const p = $("#panel-support");
+  const email = auth.user?.email || "";
+  p.innerHTML = `<div class="card">
+    <div class="card-head"><h3>문의 및 건의사항</h3><span class="small faint">가입 이메일로 답변드립니다</span></div>
+    <p class="desc">기능 오류 신고, 개선 아이디어, 구독·계정 관련 문의를 남겨주세요.</p>
+    <form id="sp-form" style="display:grid;gap:12px;max-width:620px;margin-top:4px">
+      <div class="field"><label for="sp-id">아이디 (가입 이메일)</label><input id="sp-id" value="${escHtml(email)}" ${email ? "readonly" : ""} placeholder="로그인하면 자동으로 채워집니다"></div>
+      <div class="field"><label for="sp-title">제목</label><input id="sp-title" maxlength="120" placeholder="예: 배당 대시보드에 이런 기능이 있으면 좋겠어요"></div>
+      <div class="field"><label for="sp-body">내용</label><textarea id="sp-body" rows="6" maxlength="4000" placeholder="문의하실 내용이나 건의사항을 자세히 적어주세요"></textarea></div>
+      <div class="form-actions"><button class="btn primary" type="submit" id="sp-send">보내기</button><span class="small faint" id="sp-msg" role="status"></span></div>
+    </form>
+    <p class="small faint" style="margin-top:14px">안내: 모픽은 공시 숫자에 정해진 산식을 적용해 보여주는 <strong>계산 도구</strong>이며, <strong>개인 맞춤형 종목 추천이나 개인 투자 자문은 제공하지 않습니다</strong>. "제 상황에서 이 종목을 사도 될까요?" 같은 개별 투자 판단 문의에는 답변드리지 못하는 점 양해 부탁드립니다. 투자 판단과 책임은 본인에게 있습니다.</p>
+  </div>
+  <div class="card" id="sp-list"><div class="card-head"><h3>내 문의 내역</h3></div><div class="empty">불러오는 중…</div></div>`;
+  renderSupportList();
+}
+async function renderSupportList() {
+  const box = $("#sp-list"); if (!box) return;
+  const head = `<div class="card-head"><h3>내 문의 내역</h3><span class="small faint">최근 20건</span></div>`;
+  if (!sb || !auth.user) { box.innerHTML = `${head}<div class="empty">로그인하면 내가 보낸 문의와 답변이 여기에 보입니다.</div>`; return; }
+  const { data, error } = await sb.from("inquiries").select("title, body, status, answer, created_at").order("created_at", { ascending: false }).limit(20);
+  if ($("#sp-list") !== box) return;
+  if (error) {
+    box.innerHTML = `${head}<div class="empty">${/does not exist|schema cache|relation/i.test(error.message) ? "문의 테이블이 아직 없습니다. Supabase 에서 supabase/schema.sql 최신본을 실행해 주세요." : escHtml(`문의 내역을 불러오지 못했습니다: ${error.message}`)}</div>`;
+    return;
+  }
+  box.innerHTML = head + (data?.length
+    ? data.map((q) => `<div style="padding:10px 0;border-bottom:1px solid var(--line-2)">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><strong>${escHtml(q.title)}</strong>${SP_STATUS[q.status] || ""}<span class="small faint">${String(q.created_at).slice(0, 10)}</span></div>
+        <p class="small" style="margin:6px 0 0;white-space:pre-wrap;color:var(--ink-2)">${escHtml(q.body)}</p>
+        ${q.answer ? `<p class="small" style="margin:8px 0 0;padding:8px 10px;border-radius:8px;background:var(--surface-2);white-space:pre-wrap"><strong>모픽 답변</strong> · ${escHtml(q.answer)}</p>` : ""}
+      </div>`).join("")
+    : `<div class="empty">아직 보낸 문의가 없습니다.</div>`);
+}
+$("#panel-support").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!sb || !auth.user) return alert("문의를 보내려면 먼저 로그인해 주세요.");
+  const title = $("#sp-title").value.trim(), body = $("#sp-body").value.trim();
+  if (!title || !body) return alert("제목과 내용을 입력해 주세요.");
+  const btn = $("#sp-send"); btn.disabled = true; $("#sp-msg").textContent = "보내는 중…";
+  const { error } = await sb.from("inquiries").insert({ user_id: auth.user.id, email: $("#sp-id").value.trim() || auth.user.email, title, body });
+  btn.disabled = false;
+  if (error) { $("#sp-msg").textContent = ""; return alert(`보내지 못했습니다: ${error.message}\n(Supabase 에서 supabase/schema.sql 최신본을 실행했는지 확인해 주세요)`); }
+  $("#sp-title").value = ""; $("#sp-body").value = "";
+  $("#sp-msg").textContent = "접수되었습니다. 가입 이메일로 답변드리겠습니다.";
+  renderSupportList();
+});
 // 모바일 하단 탭바: 라운지는 탭이 아니라 구독 화면이라 따로 처리 (구독 중이면 바로, 아니면 요금제부터)
 $("#bottom-nav").addEventListener("click", (e) => {
   const b = e.target.closest("[data-bn]"); if (!b) return;
@@ -4167,12 +4224,15 @@ $$("#panel-intro strong").forEach((el, i) => el.classList.add(["mt-g", "mt-b", "
 const cachedLatest = cacheGet("md:latest"), cachedIntraday = cacheGet("md:intraday");
 if (cachedLatest) { state.latest = cachedLatest; state.intraday = cachedIntraday; renderQuotes(); }
 try { state.stockRange = localStorage.getItem("md:range") || "1Y"; const ss = localStorage.getItem("md:stock"); if (ss) state.stockSel = ss; } catch {}
-const TABS = ["intro", "starter", "buffett", "news", "backtest", "stocks", "dividend", "crypto", "my"];
+const TABS = ["intro", "starter", "buffett", "news", "backtest", "stocks", "dividend", "crypto", "my", "support"];
 let savedTab = "intro"; try { savedTab = localStorage.getItem("md:tab") || "intro"; } catch {}
 const hashTab = location.hash.slice(1);
 if (TABS.includes(hashTab)) savedTab = hashTab; // #stocks 처럼 해시로 열면 그 탭부터
 if (!TABS.includes(savedTab)) savedTab = "intro";
 selectTab(savedTab);
+// 접속 직후에는 더보기 줄을 항상 접어 간단하게 보여준다 (마지막에 보던 탭은 그대로 열린 채,
+// 더보기를 누르거나 그 줄의 탭을 고르면 다시 펼쳐진다 · 2026-10-09 David 결정)
+toggleMoreTabs(false);
 loadAll().then(() => { if (!$("#panel-stocks").hidden && !state.cmpLast) runCompare(true); });
 })();
 </script>
