@@ -33,6 +33,13 @@ jobs:
       - name: Fetch stocks and ETFs
         run: node scripts/fetch-stocks.mjs out
 
+      # 배당 퀄리티: 미국 배당주의 EPS 를 SEC 에서 받아 배당성향·커버리지 계산 (실패해도 시세 스냅샷은 올린다)
+      - name: Compute dividend quality (SEC EPS)
+        continue-on-error: true
+        env:
+          EDGAR_USER_AGENT: ${{ secrets.EDGAR_USER_AGENT }}
+        run: node scripts/fetch-div-quality.mjs out
+
       - name: Publish to stocks branch
         env:
           TOKEN: ${{ secrets.GITHUB_TOKEN }}

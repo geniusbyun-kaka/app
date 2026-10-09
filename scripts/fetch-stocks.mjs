@@ -132,6 +132,22 @@ async function retry(fn, label) {
   }
 }
 
+// 연속 증가 연수: 연간 배당 합계(배당락일 기준)가 전년보다 늘어난 해가 몇 년 이어졌는지.
+// 진행 중인 올해는 아직 다 안 줬으므로 제외. 야후 배당 금액은 액면분할 반영값이라 해끼리 비교 가능.
+// 합산 오차·동결 구분을 위해 0.5% 이상 늘었을 때만 증가로 센다. 배당 퀄리티 점수의 "연속 증가" 입력값.
+function divStreakYears(divs, tz) {
+  const byYear = new Map();
+  for (const d of divs) { const y = dateInTz(d.t, tz).slice(0, 4); byYear.set(y, (byYear.get(y) || 0) + d.amount); }
+  const thisYear = String(new Date().getFullYear());
+  const years = [...byYear.keys()].filter((y) => y < thisYear).sort();
+  let streak = 0;
+  for (let i = years.length - 1; i > 0; i--) {
+    if (Number(years[i]) - Number(years[i - 1]) === 1 && byYear.get(years[i]) > byYear.get(years[i - 1]) * 1.005) streak++;
+    else break;
+  }
+  return streak;
+}
+
 // 배당 이력 요약: 지급 주기, 최근 12개월 합계, 최근 1회 금액, 다음 배당락 예상일 (과거 간격으로 추정)
 function summarizeDividends(divs, tz, price) {
   const items = divs.map((d) => ({ d: dateInTz(d.t, tz), a: round(d.amount, 4) })).filter((x) => x.a > 0);
@@ -162,6 +178,7 @@ function summarizeDividends(divs, tz, price) {
     lastEx: last.d, lastAmount: last.a, freq, perYear, regular: round(regular, 4), ttm, count12: ttmItems.length,
     yieldTtm: price ? round(ttm / price, 5) : null, yieldFwd: price ? round((regular * perYear) / price, 5) : null,
     nextEx, gapDays: gap == null ? null : Math.round(gap),
+    streakYears: divStreakYears(divs, tz), // 연속 증가 연수 (전체 야후 이력 기준)
   };
 }
 
