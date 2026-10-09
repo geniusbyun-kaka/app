@@ -350,6 +350,21 @@ html.gated,html.gated body{overflow:hidden}
 .gate-input.code{font-family:var(--mono);letter-spacing:.25em;text-align:center}
 .gate-input.code::placeholder{font-family:var(--font);letter-spacing:normal}
 .gate-note{margin:0;font-size:13px;line-height:1.55;color:var(--gate-ink-2)}
+/* 카카오 로그인: 카카오 디자인 가이드 색 (노랑 #FEE500 · 검정 라벨) */
+.gate-or{display:flex;align-items:center;gap:12px;color:var(--gate-ink-2);font-size:13px}
+.gate-or::before,.gate-or::after{content:"";flex:1;height:1px;background:var(--gate-field-line)}
+.gate-btn.kakao{background:#FEE500;color:#181600;display:flex;align-items:center;justify-content:center;gap:8px}
+.gate-btn.kakao svg{width:20px;height:20px;flex:none}
+/* 모바일 하단 고정 탭바: 640px 이하에서만. z-index 는 모달(50)·라운지(60)·첫 화면(90)보다 낮아
+   그 화면들이 열리면 자연스럽게 덮인다. 홈 인디케이터(iOS)만큼 safe-area 패딩을 더한다. */
+.bottom-nav{display:none}
+@media (max-width:640px){
+  .bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:45;display:flex;background:var(--surface);border-top:1px solid var(--line);padding:5px 2px calc(5px + env(safe-area-inset-bottom));box-shadow:0 -4px 12px rgba(0,0,0,.06)}
+  .bottom-nav button{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:0;padding:4px 0 2px;font-family:inherit;font-size:10.5px;font-weight:600;color:var(--ink-3)}
+  .bottom-nav button svg{width:22px;height:22px}
+  .bottom-nav button[aria-current="true"]{color:var(--accent)}
+  body{padding-bottom:calc(66px + env(safe-area-inset-bottom))}
+}
 .gate-msg{margin:0;font-size:13.5px;color:var(--gate-ink-2)}
 .gate-msg.error{color:#F0625F}
 .gate-btn{height:58px;border:0;border-radius:29px;background:var(--gate-btn);color:var(--gate-btn-ink);font-size:17px;font-weight:700;margin-top:6px;transition:filter .15s}
@@ -554,6 +569,15 @@ try { if (localStorage.getItem("sb-hzzmzpsjuovijtananmf-auth-token")) document.g
       <button class="tab" role="tab" aria-selected="false" data-tab="dividend" id="tab-dividend">배당</button>
     </div>
   </div>
+
+  <!-- 모바일 전용 하단 고정 탭바 (640px 이하에서만 표시 · 위의 탭 줄은 그대로 유지) -->
+  <nav class="bottom-nav" id="bottom-nav" aria-label="주요 화면 바로가기">
+    <button type="button" data-bn="intro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></svg><span>홈</span></button>
+    <button type="button" data-bn="news"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="15" rx="2"/><path d="M7 9.5h6M7 13h10M7 16.5h10"/></svg><span>뉴스</span></button>
+    <button type="button" data-bn="buffett"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.5 5.3 5.5.7-4 4 1 5.7-5-2.8-5 2.8 1-5.7-4-4 5.5-.7Z"/></svg><span>레전드</span></button>
+    <button type="button" data-bn="my"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c.8-3.4 3.6-5 7-5s6.2 1.6 7 5"/></svg><span>My</span></button>
+    <button type="button" data-bn="lounge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17 3 7l5 3.5L12 4l4 6.5L21 7l-1 10Z"/><path d="M4.5 20h15"/></svg><span>라운지</span></button>
+  </nav>
 
   <!-- 뉴스 -->
   <!-- 소개 탭: 회사 소개와 투자 인증. 글은 계속 추가됩니다 -->
@@ -1046,7 +1070,24 @@ function renderGate() {
       <p class="gate-note">입력한 이메일로 로그인 링크를 보내드립니다. 처음이면 자동으로 계정이 만들어집니다.</p>
       ${msg}
       <button class="gate-btn" type="submit" ${dis}>${auth.busy ? "보내는 중…" : "계속"}</button>
-    </form>`;
+    </form>
+    <div class="gate-or"><span>또는</span></div>
+    <button class="gate-btn kakao" type="button" id="gate-kakao" ${dis}>
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3C6.75 3 2.5 6.36 2.5 10.5c0 2.64 1.73 4.96 4.35 6.3l-.9 3.37c-.08.3.26.54.52.37l3.97-2.64c.5.06 1.02.1 1.56.1 5.25 0 9.5-3.36 9.5-7.5S17.25 3 12 3Z"/></svg>
+      카카오로 계속하기
+    </button>`;
+}
+// 카카오 OAuth: Supabase 의 카카오 공급자를 쓴다. 성공하면 카카오 동의 화면으로 이동했다가
+// 돌아오고, 세션은 supabase-js 가 주소의 토큰으로 자동 복원한다 (onAuthStateChange 가 받음).
+// 공급자가 아직 연결 전이면(대시보드 설정 필요) 에러가 돌아오므로 안내만 보여준다.
+async function signInKakao() {
+  const error = await authCall(() => sb.auth.signInWithOAuth({ provider: "kakao", options: { redirectTo: location.origin + location.pathname } }));
+  if (error) {
+    setAuthMsg(/not enabled|unsupported provider/i.test(String(error?.message || error))
+      ? "카카오 로그인이 아직 연결되지 않았습니다. 관리자가 Supabase → Authentication → Sign In / Providers 에서 Kakao 를 켜면 사용할 수 있습니다."
+      : authErrText(error), true);
+  }
+  renderAuthUI();
 }
 function openAuth() {
   if (!sb) return alert("로그인 모듈을 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요.");
@@ -1136,6 +1177,7 @@ function initAuth() {
     if (auth.busy) return;
     if (e.target.closest("#gate-back")) { auth.step = "email"; setAuthMsg(""); renderGate(); return $("#gate-email")?.focus(); }
     if (e.target.closest("#gate-resend")) return sendAuthCode();
+    if (e.target.closest("#gate-kakao")) return signInKakao();
   });
   $("#gate").addEventListener("submit", (e) => {
     e.preventDefault();
@@ -3154,6 +3196,7 @@ function gotoStock(sym) {
 }
 function selectTab(name, fromPop) {
   $$(".tab[data-tab]").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.tab === name)));
+  $$("#bottom-nav [data-bn]").forEach((b) => b.setAttribute("aria-current", String(b.dataset.bn === name)));
   if (EXTRA_TABS.includes(name) && $("#tabs-extra").hidden) toggleMoreTabs(true);
   // 투자 레전드(panel-gurus)는 탭이 아니라 Max 라운지 안에서 보여준다
   ["intro", "starter", "buffett", "news", "backtest", "stocks", "dividend", "crypto", "my"].forEach((p) => { $(`#panel-${p}`).hidden = p !== name; });
@@ -3201,6 +3244,13 @@ document.addEventListener("keydown", (e) => {
 $$(".tab[data-tab]").forEach((t) => t.addEventListener("click", () => selectTab(t.dataset.tab)));
 $("#tab-more").addEventListener("click", () => toggleMoreTabs());
 $("#my-open").addEventListener("click", () => selectTab("my"));
+// 모바일 하단 탭바: 라운지는 탭이 아니라 구독 화면이라 따로 처리 (구독 중이면 바로, 아니면 요금제부터)
+$("#bottom-nav").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-bn]"); if (!b) return;
+  if (b.dataset.bn === "lounge") return planRank() ? openMaxPage() : openGuruModal();
+  selectTab(b.dataset.bn);
+  window.scrollTo({ top: 0 });
+});
 $("#refresh").addEventListener("click", loadAll);
 $("#bt-asset2-add").addEventListener("click", () => { $("#bt-asset2-wrap").hidden = false; $("#bt-asset2-add-wrap").hidden = true; $("#bt-asset2").focus(); });
 $("#bt-asset2-remove").addEventListener("click", () => { $("#bt-asset2-wrap").hidden = true; $("#bt-asset2-add-wrap").hidden = false; $("#bt-asset2").value = ""; });
