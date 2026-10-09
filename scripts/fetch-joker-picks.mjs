@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // 조커픽: "버핏·멍거가 한국 시장에서 고른다면" 주간 자동 스크리닝.
 // DART OpenAPI 에서 상장사들의 연간 사업보고서 재무제표 10년치를 받아
-//   1) 정량 체크리스트 (펀더멘털): ROE 10년 평균 15%+, 부채 2단 구조(부채비율 85% 이하
-//      1차 안전판 + 이자보상배율 5배 이상 실질 검증), 영업이익률 변동성 5%p 이하,
-//      FCF 플러스 9/10년 이상, 순이익 CAGR 7%+
+//   1) 정량 체크리스트 (펀더멘털): ROE 10년 평균 15%+, 이자보상배율 5배 이상,
+//      영업이익률 변동성 5%p 이하, FCF 플러스 9/10년 이상, 순이익 CAGR 7%+
+//      (부채비율은 산업별 적정 수준이 달라 판정 기준에서 제외 · 참고 지표로만 수집)
 //   2) 밸류 트랩 필터: 최근 순이익이 직전 3년 고점 대비 15% 넘게 줄었고 전년 대비로도
 //      감소 중이면(이익 방향 꺾임 · 회복 국면은 제외 안 함), 또는 ROE 가 최근 3년 연속
 //      하락 중이면 제외 — 10년 평균이 좋아도 방향이 나쁘면 시장은 안 산다
@@ -74,9 +74,10 @@ const YEARS = Array.from({ length: 10 }, (_, i) => LAST_YEAR - 9 + i);
 
 // 프론트(JK_SCN)와 같은 기본 시나리오: 성장 8% · 할인 10% · 영구 2%
 const BASE = { g: 0.08, r: 0.1, tg: 0.02 };
-// 부채비율 85% 는 1차 안전판 (분자에 매입채무 등 이자 없는 부채까지 들어가는 구조적 왜곡 때문에
-// 산업별 적정 수준이 다르다). 실질 상환능력은 이자보상배율(영업이익 ÷ 이자비용) 5배로 판정한다.
-const CHECK = { roe10: 15, debt: 85, intCov: 5, opStd: 5, fcfYears: 9, epsCagr: 7 };
+// 부채비율은 판정 기준에서 제외 (분자에 매입채무 등 이자 없는 부채까지 들어가 산업별 적정
+// 수준이 달라 일괄 커트라인으로 쓰기 어렵다 — David 결정 2026-10-09). metrics.debt 는 참고용으로만
+// 계속 내보내고, 실질 상환능력은 이자보상배율(영업이익 ÷ 이자비용) 5배로 판정한다.
+const CHECK = { roe10: 15, intCov: 5, opStd: 5, fcfYears: 9, epsCagr: 7 };
 const VAL_KTB_MULT = 2; // 밸류에이션 커트라인 = 국고채 10년물 × 2 (2배가 안전마진)
 let KTB10Y = Number(process.env.KTB10Y || 4.3); // 국고채 10년물 % · scripts/kr-topcap.json 의 ktb10y 로 갱신
 const MARGIN_MIN = 0.3; // 안전마진 30% 이상만 픽 후보
@@ -259,7 +260,7 @@ function screenCorp(years) {
     fcfYears: ys.filter((v) => v.cfo - v.capex > 0).length,
     epsCagr: firstNi > 0 && lastNi > 0 ? ((lastNi / firstNi) ** (1 / (ys.length - 1)) - 1) * 100 : -999,
   };
-  const pass = metrics.roe10 >= CHECK.roe10 && metrics.debt <= CHECK.debt
+  const pass = metrics.roe10 >= CHECK.roe10
     && (metrics.intCov == null || metrics.intCov >= CHECK.intCov)
     && metrics.opStd <= CHECK.opStd
     && metrics.fcfYears >= CHECK.fcfYears && metrics.epsCagr >= CHECK.epsCagr
@@ -550,7 +551,6 @@ async function main() {
       const m = { ...s.metrics, majorHolder: mh ?? null, avgValueEok: quote?.avgValueEok ?? null, divCut: div?.cut ?? null };
       const failKeys = [];
       if (m.roe10 < CHECK.roe10) failKeys.push("roe10");
-      if (m.debt > CHECK.debt) failKeys.push("debt");
       if (m.intCov != null && m.intCov < CHECK.intCov) failKeys.push("intCov");
       if (m.opStd > CHECK.opStd) failKeys.push("opStd");
       if (m.fcfYears < CHECK.fcfYears) failKeys.push("fcfYears");
