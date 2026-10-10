@@ -153,22 +153,50 @@ function unzipEntry(buf, nameRe) {
 
 // ── 상장사 목록: corpCode.xml (stock_code 가 있는 회사만) ──
 // universe 는 스크리닝 대상 (금융·지주 등 제외), byStock 은 판정 시리즈용 전체 (제외 업종은 excluded 표시)
+// DART 가 200 으로 ZIP 이 아닌 본문(점검 페이지, 한도 초과 XML 등)을 주면 unzip 에서 죽는데,
+// 여기서 실행 전체가 죽으면 그 주의 스크리닝이 통째로 빠진다 (8차 실행에서 실제 발생).
+// ZIP 이 아니면 몇 차례 다시 받고, 끝내 못 받으면 지난 실행이 캐시해 둔 기업목록으로 진행한다.
 async function fetchUniverse() {
-  const res = await dart("corpCode.xml");
-  if (!res) throw new Error("corpCode.xml 을 받지 못했습니다");
-  const xml = unzipEntry(Buffer.from(await res.arrayBuffer()), /corpcode\.xml/i).toString("utf8");
-  const tag = (s, t) => (s.match(new RegExp(`<${t}>([^<]*)</${t}>`)) || [])[1]?.trim() || "";
-  const out = [], byStock = new Map();
-  for (const m of xml.matchAll(/<list>([\s\S]*?)<\/list>/g)) {
-    const s = m[1];
-    const stock = tag(s, "stock_code");
-    if (!/^\d{6}$/.test(stock)) continue;
-    const name = tag(s, "corp_name");
-    const corp = { code: tag(s, "corp_code"), stock, name, excluded: EXCLUDE_NAME.test(name) };
-    byStock.set(stock, corp);
-    if (!corp.excluded) out.push(corp);
+  const cachePath = path.join(OUT_DIR, "dart", "corpcode.json");
+  const build = (corps) => {
+    const out = [], byStock = new Map();
+    for (const c of corps) {
+      const corp = { ...c, excluded: EXCLUDE_NAME.test(c.name) };
+      byStock.set(corp.stock, corp);
+      if (!corp.excluded) out.push(corp);
+    }
+    return { universe: out, byStock };
+  };
+  for (let i = 0; i < 3; i++) {
+    if (i) await sleep(5000 * i);
+    const res = await dart("corpCode.xml");
+    if (!res) break; // 한도·시간·지속 네트워크 오류 — 재시도해도 소용없다
+    const buf = Buffer.from(await res.arrayBuffer());
+    let xml;
+    try { xml = unzipEntry(buf, /corpcode\.xml/i).toString("utf8"); }
+    catch (err) {
+      const head = buf.subarray(0, 160).toString("utf8").replace(/\s+/g, " ").trim();
+      console.warn(`[joker] corpCode.xml 응답이 ZIP 이 아닙니다 (${err.message}) — 본문 시작: ${head}`);
+      continue;
+    }
+    const tag = (s, t) => (s.match(new RegExp(`<${t}>([^<]*)</${t}>`)) || [])[1]?.trim() || "";
+    const corps = [];
+    for (const m of xml.matchAll(/<list>([\s\S]*?)<\/list>/g)) {
+      const s = m[1];
+      const stock = tag(s, "stock_code");
+      if (!/^\d{6}$/.test(stock)) continue;
+      corps.push({ code: tag(s, "corp_code"), stock, name: tag(s, "corp_name") });
+    }
+    if (!corps.length) { console.warn("[joker] corpCode.xml 에 상장사가 없습니다 — 다시 받습니다"); continue; }
+    await writeFile(cachePath, JSON.stringify({ updated: new Date().toISOString(), corps }));
+    return build(corps);
   }
-  return { universe: out, byStock };
+  const cached = await readJson(cachePath, null);
+  if (cached?.corps?.length) {
+    console.warn(`[joker] 기업목록을 새로 받지 못해 ${cached.updated?.slice(0, 10)} 캐시(${cached.corps.length}개 회사)로 진행합니다`);
+    return build(cached.corps);
+  }
+  throw new Error("corpCode.xml 을 받지 못했고 캐시된 기업목록도 없습니다");
 }
 
 // ── 연간 재무제표 한 해치 → 필요한 숫자만 추출 ──
