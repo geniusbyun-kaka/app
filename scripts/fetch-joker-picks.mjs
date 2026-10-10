@@ -125,6 +125,9 @@ async function dartJson(pathname, params) {
   let j;
   try { j = await res.json(); } catch { return null; } // 본문이 끊긴 응답은 이 호출만 건너뛴다 (캐시에 기록 안 함)
   if (j.status === "020" || j.status === "021") { console.warn(`[joker] DART 사용 한도 도달 (status ${j.status}) — 남은 조회는 다음 실행으로 미룹니다`); budgetOut = true; return null; }
+  // 800 = 시스템 점검 (2026-10-10 에 실제 발생). 이걸 "데이터 없음"으로 오인해 캐시에 null 을
+  // 영구 기록하면 안 되므로, 한도 소진과 같이 수집을 멈추고 다음 실행으로 미룬다
+  if (j.status === "800") { console.warn(`[joker] DART 시스템 점검 중 (status 800: ${j.message || ""}) — 남은 조회는 다음 실행으로 미룹니다`); budgetOut = true; return null; }
   return j;
 }
 
