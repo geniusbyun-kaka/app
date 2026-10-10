@@ -1989,8 +1989,8 @@ async function guruFollowRows(g, f) {
     recent = applyPricedEvents(recent, pricedBuyEvents(evs, g, h.ticker)); // 실단가 공시·뉴스 우선 (My Page 와 동일)
     const cur = idxPrice(h.ticker) ?? stock.quote?.price ?? null;
     const rel = cur != null ? cur / recent.mid - 1 : null;
-    // 판단: 최근 매수가 아래면 강력 추천, +10% 이내면 추천, 그 위는 관망
-    const grade = rel == null ? -1 : rel <= 0 ? 2 : rel <= 0.1 ? 1 : 0;
+    // 판단: 최근 매수가 +5% 이내면 강력 추천, +12.5% 이내면 추천, 그 위는 관망 (David 2026-10-10)
+    const grade = rel == null ? -1 : rel <= 0.05 ? 2 : rel <= 0.125 ? 1 : 0;
     rows.push({ h, nBuys: buys.length, avg: cost / sh, recent, cur, rel, grade });
   }
   rows.sort((a, b) => b.grade - a.grade || (a.rel ?? 9) - (b.rel ?? 9) || b.h.weight - a.h.weight);
@@ -2042,7 +2042,7 @@ async function renderMaxPrices() {
   const gurus = GURUS.filter((g) => g.ready);
   body.innerHTML = [
     maxBackBtn,
-    `<p class="desc"><strong>레전드 실매수 추종 트랙</strong>입니다: 조커픽의 자체 발굴 체크리스트와 별개로, 레전드가 공시로 확인된 가격에 실제로 사고 있다는 사실 자체를 따라갑니다 (펀더멘털 체크리스트 통과 여부와 무관). 추천 대상은 레전드 연속 매수 종목 화면과 같은 기준입니다: <strong>최근 분기까지 연속 매수 중</strong>이거나 <strong>꾸준히 모으는 종목</strong>(최근 8분기 중 2회 이상 매수, 그 사이 매도 없음)만 올립니다. 여기에 더해 <strong>분기말 보유 평가액 $150M 미만</strong>의 소형 포지션은 연속 매수 중이라도 뺍니다 (수백 종목을 들고 있는 기관의 잔챙이 포지션까지 다 올라오면 정작 의미 있는 픽이 묻히기 때문입니다). <strong>추정 평균단가</strong>는 레전드가 매수한 분기마다 그 분기 <strong>종가 최저가에서 5% 오른 가격</strong>을 매수 단가로 보고, 그 분기에 늘린 주식수로 가중평균한 값입니다 (레전드들은 약세 구간에서 분할 매수하는 경향이 있어 저점 부근 체결로 봅니다). <strong>최근 매수가</strong>는 가장 최근에 매수한 분기의 같은 추정가인데, SEC Form 4 · 13D/G 공시나 수기 등록된 매수 뉴스에 <strong>실제 단가</strong>가 있으면(예: 버크셔의 레너 추가 매수, 알파벳 $350 사모 매입) 추정가 대신 그 단가의 주식수 가중평균을 사용하며 태그가 붙습니다 (My Page 와 같은 값). 따라 사기 판단은 이 값을 기준으로 합니다. 현재가가 <strong>최근 매수가보다 낮으면 강력 추천</strong>, <strong>+10% 이내면 추천</strong>, 그보다 높으면 관망입니다. 티커를 누르면 종목 차트로 이동합니다.</p>`,
+    `<p class="desc"><strong>레전드 실매수 추종 트랙</strong>입니다: 조커픽의 자체 발굴 체크리스트와 별개로, 레전드가 공시로 확인된 가격에 실제로 사고 있다는 사실 자체를 따라갑니다 (펀더멘털 체크리스트 통과 여부와 무관). 추천 대상은 레전드 연속 매수 종목 화면과 같은 기준입니다: <strong>최근 분기까지 연속 매수 중</strong>이거나 <strong>꾸준히 모으는 종목</strong>(최근 8분기 중 2회 이상 매수, 그 사이 매도 없음)만 올립니다. 여기에 더해 <strong>분기말 보유 평가액 $150M 미만</strong>의 소형 포지션은 연속 매수 중이라도 뺍니다 (수백 종목을 들고 있는 기관의 잔챙이 포지션까지 다 올라오면 정작 의미 있는 픽이 묻히기 때문입니다). <strong>추정 평균단가</strong>는 레전드가 매수한 분기마다 그 분기 <strong>종가 최저가에서 5% 오른 가격</strong>을 매수 단가로 보고, 그 분기에 늘린 주식수로 가중평균한 값입니다 (레전드들은 약세 구간에서 분할 매수하는 경향이 있어 저점 부근 체결로 봅니다). <strong>최근 매수가</strong>는 가장 최근에 매수한 분기의 같은 추정가인데, SEC Form 4 · 13D/G 공시나 수기 등록된 매수 뉴스에 <strong>실제 단가</strong>가 있으면(예: 버크셔의 레너 추가 매수, 알파벳 $350 사모 매입) 추정가 대신 그 단가의 주식수 가중평균을 사용하며 태그가 붙습니다 (My Page 와 같은 값). 따라 사기 판단은 이 값을 기준으로 합니다. 현재가가 <strong>최근 매수가 +5% 이내면 강력 추천</strong>(더 낮은 경우 포함), <strong>+12.5% 이내면 추천</strong>, 그보다 높으면 관망입니다. 티커를 누르면 종목 차트로 이동합니다.</p>`,
     gurus.map((g) => `<div class="card" id="mx-follow-${g.id}"><div class="card-head"><h3>${g.name} · ${g.org}</h3></div><div class="empty">분기별 매수와 주가 이력으로 추정 단가를 계산하는 중…</div></div>`).join(""),
     pushAlertCardHtml(),
     alertsCardHtml(),
@@ -3040,7 +3040,7 @@ async function pushCurrentSub() {
 function pushAlertCardHtml() {
   return `<div class="card" id="push-card">
     <div class="card-head"><h3>강력 추천 매일 알림</h3><span class="small faint">매일 아침 8:30 (한국시간) · 뉴욕 종가 기준</span></div>
-    <p class="desc">미국 장이 마감되면 그날 종가로 따라 사기 판단을 다시 계산해, <strong>강력 추천</strong>(레전드 최근 매수가보다 싼 종목)이 있을 때만 이 기기로 알림을 보냅니다. 예: "강력 추천: GOOGL 종가 $329.52 · 버핏 최근 매수가 대비 -5.8%".</p>
+    <p class="desc">미국 장이 마감되면 그날 종가로 따라 사기 판단을 다시 계산해, <strong>강력 추천</strong>(레전드 최근 매수가 +5% 이내인 종목)이 있을 때만 이 기기로 알림을 보냅니다. 예: "강력 추천: GOOGL 종가 $329.52 · 버핏 최근 매수가 대비 -5.8%".</p>
     <div id="push-body" class="small faint">알림 상태 확인 중…</div></div>`;
 }
 async function refreshPushCard() {
@@ -3863,7 +3863,7 @@ async function myStockRows(stocks, cmpGurus) {
       if (rec) {
         cur = (holdSym ? idx.find((x) => x.symbol === holdSym)?.price : null) ?? item?.price ?? null;
         rel = cur != null ? cur / rec.mid - 1 : null;
-        grade = rel == null ? -1 : rel <= 0 ? 2 : rel <= 0.1 ? 1 : 0;
+        grade = rel == null ? -1 : rel <= 0.05 ? 2 : rel <= 0.125 ? 1 : 0; // 레전드 따라가기 화면과 같은 기준
       }
       matches.push({ g, h, rec, cur, rel, grade });
     }
@@ -3891,7 +3891,7 @@ function myStockTableHtml(rows) {
     });
   });
   return `<div class="tablewrap"><table><thead><tr><th>종목</th><th>현재가</th><th>전일비</th><th>관심 레전드</th><th>마지막 매수</th><th>최근 매수가 (추정)</th><th>최근 매수가 대비</th><th>판단</th><th>관리</th></tr></thead><tbody>${trs.join("")}</tbody></table></div>
-    <p class="small faint" style="margin-top:8px">최근 매수가는 레전드가 마지막으로 매수한 분기의 <strong>종가 최저가에서 5% 오른 가격</strong>으로 계산한 추정치입니다. 다만 SEC Form 4 · 13D/G 공시나 수기 등록된 매수 뉴스에 <strong>실제 단가</strong>가 있으면(마지막 13F 매수 분기 안의 거래 포함 · 예: 버크셔의 레너 추가 매수, 알파벳 $350 사모 매입) 추정가 대신 그 공시들의 주식수 가중평균 단가를 최근 매수가로 사용하며 <span class="tag new">Form 4</span> 또는 <span class="tag new">매입 공시·뉴스</span> 표시가 붙습니다. 현재가가 최근 매수가보다 낮으면 <strong>강력 추천</strong>, +10% 이내면 <strong>추천</strong>입니다. 티커를 누르면 종목 차트로 이동합니다.</p>`;
+    <p class="small faint" style="margin-top:8px">최근 매수가는 레전드가 마지막으로 매수한 분기의 <strong>종가 최저가에서 5% 오른 가격</strong>으로 계산한 추정치입니다. 다만 SEC Form 4 · 13D/G 공시나 수기 등록된 매수 뉴스에 <strong>실제 단가</strong>가 있으면(마지막 13F 매수 분기 안의 거래 포함 · 예: 버크셔의 레너 추가 매수, 알파벳 $350 사모 매입) 추정가 대신 그 공시들의 주식수 가중평균 단가를 최근 매수가로 사용하며 <span class="tag new">Form 4</span> 또는 <span class="tag new">매입 공시·뉴스</span> 표시가 붙습니다. 현재가가 최근 매수가 +5% 이내면(더 낮은 경우 포함) <strong>강력 추천</strong>, +12.5% 이내면 <strong>추천</strong>입니다. 티커를 누르면 종목 차트로 이동합니다.</p>`;
 }
 async function myGuruCardHtml(g) {
   const headBtn = `<button class="btn" type="button" data-port-open="${g.id}" style="margin-left:auto">상세 보기 →</button>`;
