@@ -42,7 +42,7 @@
 //   ROE 는 연말 지배주주지분 기준, 순이익 CAGR 은 주식수 변동을 무시한 근사치
 //   금융사(은행·증권·보험 등)와 스팩·리츠·지주사는 이 산식이 맞지 않아 이름 기준으로 제외
 
-import { mkdir, writeFile, readFile } from "node:fs/promises";
+import { mkdir, writeFile, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import zlib from "node:zlib";
 import { yahooChart, withRetry } from "./yahoo.mjs";
@@ -153,22 +153,70 @@ function unzipEntry(buf, nameRe) {
 
 // ── 상장사 목록: corpCode.xml (stock_code 가 있는 회사만) ──
 // universe 는 스크리닝 대상 (금융·지주 등 제외), byStock 은 판정 시리즈용 전체 (제외 업종은 excluded 표시)
+// DART 접속 장애(2026-10-10 의 UND_ERR_CONNECT_TIMEOUT 처럼)로 목록을 못 받으면 실행 전체가
+// 죽는 대신 캐시로 계속한다: 지난 실행이 저장한 corp-code.json, 그것도 없으면 회사별 재무
+// 캐시(dart/*.json)에서 목록을 재구성한다 (제외 업종·신규 상장사는 빠지는 축소 모드).
+// 상장사 목록은 주 단위로 거의 안 변하므로, 재무 수집은 멈추더라도 기존 캐시와 야후 시세로
+// 주간 픽·판정 시리즈는 그대로 나온다.
+const UNIVERSE_RETRY_WAIT_MS = Number(process.env.UNIVERSE_RETRY_WAIT_MS || 90000);
 async function fetchUniverse() {
-  const res = await dart("corpCode.xml");
-  if (!res) throw new Error("corpCode.xml 을 받지 못했습니다");
-  const xml = unzipEntry(Buffer.from(await res.arrayBuffer()), /corpcode\.xml/i).toString("utf8");
-  const tag = (s, t) => (s.match(new RegExp(`<${t}>([^<]*)</${t}>`)) || [])[1]?.trim() || "";
+  const cachePath = path.join(OUT_DIR, "corp-code.json");
+  let corps = null;
+  for (let attempt = 0; attempt < 2 && !corps; attempt++) {
+    if (attempt) {
+      if (timeOut) break; // 시간 예산 도달이면 재시도해도 소용없다
+      console.warn(`[joker] ${Math.round(UNIVERSE_RETRY_WAIT_MS / 1000)}초 뒤 상장사 목록 조회를 한 번 더 시도합니다`);
+      await sleep(UNIVERSE_RETRY_WAIT_MS);
+      budgetOut = false; // 네트워크 오류로 내려간 수집 플래그를 풀고 재시도 (또 실패하면 다시 내려간다)
+    }
+    const res = await dart("corpCode.xml");
+    if (!res) continue;
+    try {
+      const xml = unzipEntry(Buffer.from(await res.arrayBuffer()), /corpcode\.xml/i).toString("utf8");
+      const tag = (s, t) => (s.match(new RegExp(`<${t}>([^<]*)</${t}>`)) || [])[1]?.trim() || "";
+      const rows = [];
+      for (const m of xml.matchAll(/<list>([\s\S]*?)<\/list>/g)) {
+        const s = m[1];
+        const stock = tag(s, "stock_code");
+        if (!/^\d{6}$/.test(stock)) continue;
+        rows.push({ code: tag(s, "corp_code"), stock, name: tag(s, "corp_name") });
+      }
+      if (rows.length) corps = rows;
+    } catch (err) {
+      console.warn(`[joker] corpCode.xml 파싱 실패 (${err?.message || err}) — 캐시로 폴백합니다`);
+    }
+  }
+  let universeSource = "live";
+  if (corps) {
+    await writeFile(cachePath, JSON.stringify({ updated: now.toISOString(), corps }));
+  } else {
+    const cached = await readJson(cachePath, null);
+    if (cached?.corps?.length) {
+      console.warn(`[joker] corpCode.xml 을 받지 못해 지난 실행(${String(cached.updated).slice(0, 10)})의 상장사 목록 캐시로 계속합니다`);
+      corps = cached.corps;
+      universeSource = "cache";
+    } else {
+      // corp-code.json 도입 전의 joker 브랜치 캐시에는 목록 파일이 없다 — 재무 캐시에서 재구성
+      corps = [];
+      try {
+        for (const f of await readdir(path.join(OUT_DIR, "dart"))) {
+          if (!f.endsWith(".json")) continue;
+          const c = await readJson(path.join(OUT_DIR, "dart", f), null);
+          if (c?.code && c?.stock && c?.name) corps.push({ code: c.code, stock: c.stock, name: c.name });
+        }
+      } catch {}
+      if (!corps.length) throw new Error("corpCode.xml 을 받지 못했고 폴백할 캐시도 없습니다 (corp-code.json · dart/*.json)");
+      console.warn(`[joker] corpCode.xml 을 받지 못해 재무 캐시에서 상장사 ${corps.length}개 목록을 재구성해 계속합니다 (판정 제외 업종·신규 상장사는 이번 실행에서 빠집니다)`);
+      universeSource = "dart-cache";
+    }
+  }
   const out = [], byStock = new Map();
-  for (const m of xml.matchAll(/<list>([\s\S]*?)<\/list>/g)) {
-    const s = m[1];
-    const stock = tag(s, "stock_code");
-    if (!/^\d{6}$/.test(stock)) continue;
-    const name = tag(s, "corp_name");
-    const corp = { code: tag(s, "corp_code"), stock, name, excluded: EXCLUDE_NAME.test(name) };
+  for (const { code, stock, name } of corps) {
+    const corp = { code, stock, name, excluded: EXCLUDE_NAME.test(name) };
     byStock.set(stock, corp);
     if (!corp.excluded) out.push(corp);
   }
-  return { universe: out, byStock };
+  return { universe: out, byStock, universeSource };
 }
 
 // ── 연간 재무제표 한 해치 → 필요한 숫자만 추출 ──
@@ -371,8 +419,8 @@ async function main() {
   const topcap = await readJson(topcapPath, null);
   if (!process.env.KTB10Y && topcap?.ktb10y > 0) KTB10Y = Number(topcap.ktb10y);
   console.log(`[joker] 밸류에이션 커트라인: 3년 평균 FCF 수익률 ≥ ${(KTB10Y * VAL_KTB_MULT).toFixed(1)}% (국고채 10년물 ${KTB10Y}% × ${VAL_KTB_MULT})`);
-  const { universe, byStock } = await fetchUniverse();
-  console.log(`[joker] 유니버스 ${universe.length}개 회사 (금융·스팩·리츠·지주 제외) · 대상 연도 ${YEARS[0]}~${LAST_YEAR}`);
+  const { universe, byStock, universeSource } = await fetchUniverse();
+  console.log(`[joker] 유니버스 ${universe.length}개 회사 (금융·스팩·리츠·지주 제외${universeSource === "live" ? "" : ` · 목록 출처: ${universeSource}`}) · 대상 연도 ${YEARS[0]}~${LAST_YEAR}`);
 
   // 회사별 캐시를 한 번에 읽어둔다 (조회는 아직 안 함)
   const entries = [];
@@ -587,7 +635,7 @@ async function main() {
     console.log(`[joker] 버핏 판정 시리즈: 코스피 ${verdicts.kospi.length}개 · 코스닥 ${verdicts.kosdaq.length}개 판정 저장`);
   }
 
-  await writeFile(path.join(OUT_DIR, "meta.json"), JSON.stringify({ updated: now.toISOString(), universe: universe.length, complete, coverage: Math.round(cover * 1000) / 1000, calls, budgetOut, timeOut, minutes: Math.round((Date.now() - T0) / 60000), passed, priced: candList.length }, null, 1));
+  await writeFile(path.join(OUT_DIR, "meta.json"), JSON.stringify({ updated: now.toISOString(), universe: universe.length, universeSource, complete, coverage: Math.round(cover * 1000) / 1000, calls, budgetOut, timeOut, minutes: Math.round((Date.now() - T0) / 60000), passed, priced: candList.length }, null, 1));
 }
 
 main().catch((err) => { console.error("[joker] 실패:", err); process.exit(1); });
