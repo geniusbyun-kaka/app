@@ -171,8 +171,10 @@ async function fetchUniverse() {
     }
     const res = await dart("corpCode.xml");
     if (!res) continue;
+    let buf = null;
     try {
-      const xml = unzipEntry(Buffer.from(await res.arrayBuffer()), /corpcode\.xml/i).toString("utf8");
+      buf = Buffer.from(await res.arrayBuffer());
+      const xml = unzipEntry(buf, /corpcode\.xml/i).toString("utf8");
       const tag = (s, t) => (s.match(new RegExp(`<${t}>([^<]*)</${t}>`)) || [])[1]?.trim() || "";
       const rows = [];
       for (const m of xml.matchAll(/<list>([\s\S]*?)<\/list>/g)) {
@@ -183,7 +185,9 @@ async function fetchUniverse() {
       }
       if (rows.length) corps = rows;
     } catch (err) {
-      console.warn(`[joker] corpCode.xml 파싱 실패 (${err?.message || err}) — 캐시로 폴백합니다`);
+      // ZIP 이 아닌 응답은 보통 DART 의 오류 본문(키 만료·한도·점검 안내 등)이다. 원인 파악용으로 머리를 남긴다
+      const head = buf ? buf.subarray(0, 300).toString("utf8").replace(/\s+/g, " ").trim() : "";
+      console.warn(`[joker] corpCode.xml 파싱 실패 (${err?.message || err}) — 캐시로 폴백합니다${head ? ` · 응답 머리: ${head}` : ""}`);
     }
   }
   let universeSource = "live";
