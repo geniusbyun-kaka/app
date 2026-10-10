@@ -1,0 +1,217 @@
+{
+ "updated": "2026-10-10T10:02:25.625Z",
+ "lastYear": 2025,
+ "coverage": 1,
+ "candidates": [
+  {
+   "name": "SOOP",
+   "ticker": "067160",
+   "market": "코스닥",
+   "price": 37650,
+   "shares": 10656904,
+   "netCash": 2470,
+   "ownerEarnings": 1018,
+   "metrics": {
+    "roe10": 25,
+    "debt": 81.7,
+    "intCov": null,
+    "opStd": 4.3,
+    "fcfYears": 10,
+    "epsCagr": 29.1,
+    "niTrend": 0.6,
+    "niBroken": false,
+    "roeDown": false,
+    "roe3": [
+     25.6,
+     26.5,
+     21.8
+    ],
+    "capexCfo": 15.4,
+    "majorHolder": 25.8,
+    "avgValueEok": 13.3,
+    "divCut": false
+   },
+   "valuation": {
+    "fcfYield": 29.4,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 1.2,
+    "pass": true,
+    "shYield": 9,
+    "pos52w": 3,
+    "basisYear": 2025
+   },
+   "fair": 211029,
+   "margin": 0.822,
+   "source": "DART 2025 사업보고서 (연결)"
+  },
+  {
+   "name": "JYP Ent.",
+   "ticker": "035900",
+   "market": "코스닥",
+   "price": 39550,
+   "shares": 33133059,
+   "netCash": 2945,
+   "ownerEarnings": 1688,
+   "metrics": {
+    "roe10": 20.9,
+    "debt": 36.4,
+    "intCov": null,
+    "opStd": 4.7,
+    "fcfYears": 9,
+    "epsCagr": 38.6,
+    "niTrend": 52.2,
+    "niBroken": false,
+    "roeDown": false,
+    "roe3": [
+     26.8,
+     20.4,
+     25.9
+    ],
+    "capexCfo": 32.6,
+    "majorHolder": 15.8,
+    "avgValueEok": 81,
+    "divCut": false
+   },
+   "valuation": {
+    "fcfYield": 5.5,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 6.5,
+    "pass": false,
+    "shYield": 2.2,
+    "pos52w": 5,
+    "basisYear": 2025
+   },
+   "fair": 109075,
+   "margin": 0.637,
+   "source": "DART 2025 사업보고서 (연결)"
+  },
+  {
+   "name": "NICE평가정보",
+   "ticker": "030190",
+   "market": "코스피",
+   "price": 16790,
+   "shares": 58487373,
+   "netCash": 911,
+   "ownerEarnings": 942,
+   "metrics": {
+    "roe10": 17.6,
+    "debt": 38.2,
+    "intCov": null,
+    "opStd": 1.8,
+    "fcfYears": 10,
+    "epsCagr": 11.8,
+    "niTrend": 1.4,
+    "niBroken": false,
+    "roeDown": false,
+    "roe3": [
+     15.2,
+     18.5,
+     16.6
+    ],
+    "capexCfo": 20.5,
+    "majorHolder": 44.3,
+    "avgValueEok": 10.2,
+    "divCut": false
+   },
+   "valuation": {
+    "fcfYield": 8,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 8.5,
+    "pass": false,
+    "shYield": 3.2,
+    "pos52w": 73,
+    "basisYear": 2025
+   },
+   "fair": 33230,
+   "margin": 0.495,
+   "source": "DART 2025 사업보고서 (연결)"
+  },
+  {
+   "name": "NAVER",
+   "ticker": "035420",
+   "market": "코스피",
+   "price": 183800,
+   "shares": 149579777,
+   "netCash": 69324,
+   "ownerEarnings": 19532,
+   "metrics": {
+    "roe10": 16.6,
+    "debt": 44,
+    "intCov": null,
+    "opStd": 4.7,
+    "fcfYears": 10,
+    "epsCagr": 11.2,
+    "niTrend": 1.6,
+    "niBroken": false,
+    "roeDown": false,
+    "roe3": [
+     4.4,
+     7.6,
+     7.1
+    ],
+    "capexCfo": 41.4,
+    "majorHolder": 9.3,
+    "avgValueEok": 1140.7,
+    "divCut": false
+   },
+   "valuation": {
+    "fcfYield": 6.2,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 9.3,
+    "pass": false,
+    "shYield": 1.4,
+    "pos52w": 1,
+    "basisYear": 2025
+   },
+   "fair": 303132,
+   "margin": 0.394,
+   "source": "DART 2025 사업보고서 (연결)"
+  },
+  {
+   "name": "네오팜",
+   "ticker": "092730",
+   "market": "코스닥",
+   "price": 23150,
+   "shares": 15641256000,
+   "netCash": 268,
+   "ownerEarnings": 296,
+   "metrics": {
+    "roe10": 17.1,
+    "debt": 11.5,
+    "intCov": null,
+    "opStd": 2.5,
+    "fcfYears": 10,
+    "epsCagr": 15.3,
+    "niTrend": 19.6,
+    "niBroken": false,
+    "roeDown": false,
+    "roe3": [
+     14.6,
+     12.9,
+     14.3
+    ],
+    "capexCfo": 18.5,
+    "majorHolder": 41.3,
+    "avgValueEok": 11.9,
+    "divCut": null
+   },
+   "valuation": {
+    "fcfYield": 0,
+    "cut": 8.6,
+    "ktb10y": 4.3,
+    "evEbit": 12571.8,
+    "pass": false,
+    "shYield": 0,
+    "pos52w": 76,
+    "basisYear": 2025
+   },
+   "fair": 39,
+   "margin": -593.681,
+   "source": "DART 2025 사업보고서 (연결)"
+  }
+ ]
+}

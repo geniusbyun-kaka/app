@@ -1,0 +1,13 @@
+{
+ "updated": "2026-10-10T10:02:25.625Z",
+ "universe": 3467,
+ "universeSource": "dart-cache",
+ "complete": 3467,
+ "coverage": 1,
+ "calls": 2,
+ "budgetOut": false,
+ "timeOut": false,
+ "minutes": 10,
+ "passed": 7,
+ "priced": 5
+}
