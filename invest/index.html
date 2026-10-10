@@ -679,6 +679,20 @@ try { if (localStorage.getItem("sb-hzzmzpsjuovijtananmf-auth-token")) document.g
       <p class="desc">워렌 버핏, 빌 애크먼, 세스 클라르만 등 투자 레전드들이 실제로 사 모으는 종목을 분기 공시(13F) 기준으로 받아보는 프리미엄 기능입니다.</p>
       <div class="form-actions" style="margin-top:10px"><button class="btn primary" id="sc-buffett" type="button">시작하기</button></div>
     </div>
+    <div class="card">
+      <div class="card-head"><h3>VOO (S&amp;P 500) 매달 적립하면</h3><span class="small faint">매월 일정 금액 적립 시뮬레이션</span></div>
+      <p class="desc">투자 자산의 기본은 미국 대표 500개 기업에 나눠 담는 <strong>VOO(S&amp;P 500 ETF)</strong> 적립입니다. 수익률 <strong>연 7%</strong>는 S&amp;P 500의 지난 100년 평균에서 물가상승률을 뺀 실질 수익률입니다.</p>
+      <div class="cmp-row" style="margin-top:12px">
+        <div class="field"><label for="sc-monthly">매월 적립액 (원)</label><input id="sc-monthly" class="num-comma" value="1,000,000"></div>
+        <div class="field"><label for="sc-years">기간 (년)</label><select id="sc-years"><option>1</option><option>2</option><option>3</option><option>5</option><option selected>10</option><option>15</option><option>20</option><option>30</option></select></div>
+        <button class="btn primary" id="sc-run" type="button">계산</button>
+      </div>
+      <div id="sc-results" hidden>
+        <div class="kpis" id="sc-kpis" style="margin-top:12px"></div>
+        <div class="chart" style="margin-top:12px"><canvas id="chart-sc"></canvas></div>
+        <p class="desc" style="margin-top:8px">매월 초 적립, 월 복리 가정. 실제 수익률은 해마다 크게 다르며 7%는 장기 평균입니다.</p>
+      </div>
+    </div>
   </section>
 
   <!-- 백테스트 -->
@@ -2248,8 +2262,6 @@ const BRK_SECTORS = [
   { label: "소비·음식료", c: "--fx", names: "코카콜라 · 크래프트하인즈 · 크로거 · 메이시스", set: ["KO", "KHC", "KR", "M"] },
   { label: "에너지", c: "--c4", names: "셰브런 · 옥시덴털", set: ["CVX", "OXY"] },
 ];
-// 배당을 주지 않는 보유 종목 (배당주 비중 계산용 · 나머지 보유 종목은 전부 배당 지급)
-const BRK_NO_DIV = new Set(["DVA", "VRSN", "NVR", "LLYVA", "LLYVK"]);
 // 원 단위 금액을 "x,xxx만원 / x.x억원"으로
 const bhWon = (v) => (Math.abs(v) >= 1e8 ? `${fmt.n(v / 1e8, 1)}억원` : `${fmt.n(Math.round(v / 1e4), 0)}만원`);
 // 입력 힌트용: 12,345,678 → "1,234만 5,678원" 처럼 소리 내어 읽는 형태
@@ -2269,15 +2281,13 @@ function bhAssetsHtml(f) {
   const cashW = (cash / total) * SCALE, stockW = (stocks / total) * SCALE;
   // 업종별 합산 (매핑 밖 티커는 '그 외')
   const sectors = BRK_SECTORS.map((s) => ({ ...s, v: 0 }));
-  let other = 0, noDiv = 0;
+  let other = 0;
   for (const h of latest.holdings) {
     const s = sectors.find((x) => x.set.includes(h.ticker));
     if (s) s.v += h.value; else other += h.value;
-    if (BRK_NO_DIV.has(h.ticker)) noDiv += h.value;
   }
   const rows = [...sectors, { label: "그 외", c: "--bench", names: "다비타 · 델타항공 · 시리우스XM · 건설주 등", v: other }];
   const maxV = Math.max(...rows.map((r) => r.v));
-  const divPct = (1 - noDiv / stocks) * 100;
   return `<div class="eyebrow" style="margin-top:16px">투자 계좌가 1억원이라면 · ${escHtml(latest.period.slice(0, 7))} 기준</div>
     <div class="bh-split"><i style="--c:var(--bench);width:${(cash / total) * 100}%" title="현금·단기국채"></i><i style="--c:var(--nq);width:${(stocks / total) * 100}%" title="주식"></i></div>
     <div class="bh-legend">
@@ -2291,7 +2301,6 @@ function bhAssetsHtml(f) {
       <span class="amt">${bhWon((r.v / stocks) * stockW)} · ${fmt.n((r.v / stocks) * 100, 0)}%</span>
       <span class="names">${r.names}</span>
     </div>`).join("")}
-    <div class="jk-verdict" style="margin-top:16px"><span class="tag inc">배당주 비중</span><span>주식 계좌의 <strong>약 ${fmt.n(divPct, 0)}%</strong>가 배당을 주는 종목입니다. 버크셔는 자신은 배당을 주지 않지만, 보유 주식 대부분에서 배당을 꼬박꼬박 받아 다시 투자 실탄으로 씁니다.</span></div>
     <div class="form-actions" style="margin-top:16px"><button class="btn primary" type="button" id="bh-compare">나의 포트폴리오와 비교하기</button><span class="small faint">My Page 맨 아래에 기록한 포트폴리오 기준</span></div>
     <div id="bh-cmp" hidden style="margin-top:12px"></div>`;
 }
@@ -2489,10 +2498,10 @@ function runBhFlow() {
       <tr class="pile"><td class="txt"><strong>통장에 쌓여 있는 실탄 (현금·단기 국채 잔고)</strong></td><td class="pos"><strong>${bhWon(cash * k)}</strong></td><td>$${fmt.n(cash / 1e9, 0)}B</td></tr>
     </tbody></table></div>
     <p class="small faint" style="margin-top:8px">'버크셔 실제'는 ${escHtml(fl.label)}(${fl.months}개월) 10-Q 합계를 ${fl.months}으로 나눈 월평균이고, '당신이라면'은 같은 비율을 당신의 월 소득에 적용한 값입니다. 맨 아래 <strong>실탄 잔고는 월 흐름이 아니라 지금 쌓여 있는 돈</strong>입니다${stocks ? `: 투자 계좌 전체 약 ${bhWon((cash + stocks) * k)} 중 ${fmt.n(cashPct * 100, 0)}%` : ""}.</p>
-    <div class="jk-verdict"><span class="tag inc">${saving ? "실탄을 모으는 중" : "실탄을 쓰기 시작"}</span><span><strong>${escHtml(fl.label)}</strong> 기준, 버크셔가 월 <strong>${bhWon(income)}</strong> 버는 사람이라면 ${save >= 0
-      ? `매달 <strong>${bhWon(save)}</strong>씩 현금·단기 국채 통장에 ${saving ? "번 돈보다 더 많이 " : ""}저축했습니다.${saving ? " 주식을 산 것보다 판 돈이 많아, 번 돈에 그만큼을 보태 저축한 것입니다." : ""}`
-      : `번 돈보다 쓴 돈이 많아, 모아둔 통장에서 매달 <strong>${bhWon(-save)}</strong>씩 꺼내 썼습니다. 몇 년간 신중하게 쌓아 온 실탄을 드디어 꺼내 쓰기 시작한 것입니다.`}
-      ${cashPct != null ? `그래도 통장에는 투자 계좌 전체(약 <strong>${bhWon((cash + stocks) * k)}</strong>, 연 소득의 약 ${fmt.n(mult, 0)}배)의 <strong>${fmt.n(cashPct * 100, 0)}%</strong>인 <strong>${bhWon(cash * k)}</strong>이 비상 실탄으로 쌓여 있어, 시장을 신중하게 보는 자세는 그대로입니다.` : ""}</span></div>`;
+    <div class="jk-verdict"><span class="tag inc">${saving ? "실탄을 모으는 중" : "신중한 실탄 운용"}</span><span><strong>${escHtml(fl.label)}</strong> 기준, 버크셔가 월 <strong>${bhWon(income)}</strong> 버는 사람이라면 ${save >= 0
+      ? `매달 <strong>${bhWon(save)}</strong>씩 현금·단기 국채 통장에 ${saving ? "번 돈보다 더 많이 " : ""}저축했습니다.${saving ? " 주식을 산 것보다 판 돈이 많아, 번 돈에 그만큼을 보태 저축한 것입니다." : ""} ` : ""}${cashPct != null
+      ? `통장에는 투자 계좌 전체(약 <strong>${bhWon((cash + stocks) * k)}</strong>, 연 소득의 약 ${fmt.n(mult, 0)}배)의 <strong>${fmt.n(cashPct * 100, 0)}%</strong>인 <strong>${bhWon(cash * k)}</strong>이 비상 실탄으로 쌓여 있습니다. <strong>버크셔가 그만큼 신중한 자세로 시장을 대하고 있다</strong>는 것이 가장 중요한 사실입니다.`
+      : `통장에 <strong>${bhWon(cash * k)}</strong>이 비상 실탄으로 쌓여 있습니다. <strong>버크셔가 그만큼 신중한 자세로 시장을 대하고 있다</strong>는 것이 가장 중요한 사실입니다.`}</span></div>`;
   out.hidden = false;
 }
 function renderMaxPortfolio() {
@@ -2523,22 +2532,9 @@ function renderMaxPortfolio() {
       <div id="bh-flow" hidden></div>
       <p class="small faint" style="margin-top:12px">출처: 버크셔 해서웨이 10-Q(현금성 자산·영업이익·주식 매매)와 13F(상장주식 구성). 영업이익·매매 금액은 약식 수치이고 업종 구분은 모픽이 임의로 묶은 것입니다. 비율을 쉽게 보여주는 예시일 뿐, 특정 비중을 권유하는 것이 아닙니다.</p>
     </div>`,
-    `<div class="card">
-      <div class="card-head"><h3>VOO (S&amp;P 500) 매달 적립하면</h3><span class="small faint">매월 일정 금액 적립 시뮬레이션</span></div>
-      <p class="desc">투자 자산의 기본은 미국 대표 500개 기업에 나눠 담는 <strong>VOO(S&amp;P 500 ETF)</strong> 적립입니다. 수익률 <strong>연 7%</strong>는 S&amp;P 500의 지난 100년 평균에서 물가상승률을 뺀 실질 수익률입니다.</p>
-      <div class="cmp-row" style="margin-top:12px">
-        <div class="field"><label for="sc-monthly">매월 적립액 (원)</label><input id="sc-monthly" class="num-comma" value="1,000,000"></div>
-        <div class="field"><label for="sc-years">기간 (년)</label><select id="sc-years"><option>1</option><option>2</option><option>3</option><option>5</option><option selected>10</option><option>15</option><option>20</option><option>30</option></select></div>
-        <button class="btn primary" id="sc-run" type="button">계산</button>
-      </div>
-      <div id="sc-results" hidden>
-        <div class="kpis" id="sc-kpis" style="margin-top:12px"></div>
-        <div class="chart" style="margin-top:12px"><canvas id="chart-sc"></canvas></div>
-        <p class="desc" style="margin-top:8px">매월 초 적립, 월 복리 가정. 실제 수익률은 해마다 크게 다르며 7%는 장기 평균입니다.</p>
-      </div>
-    </div>`,
   ].join("");
-  // 화면 순서: 버핏식 매월 월급 관리 → VOO 적립 → 현금 비중 원칙 (David 2026-10-07)
+  // 화면 순서: 버핏식 매월 월급 관리 → 현금 비중 원칙 (David 2026-10-07)
+  // VOO 적립 시뮬레이션은 초보 탭 맨 아래로 이동 (David 2026-10-10)
   body.appendChild($("#pf-card", body));
   initCommaInputs(body);
   // 버크셔 현금 비중: 현금성 자산 ÷ (현금성 자산 + 13F 상장주식 평가액)
@@ -2575,7 +2571,7 @@ function runPortfolioCalc() {
       ${kpi("투자 자산 (60~70%)", fmt.krw(Math.round(invLo / 10000) * 10000), `~ ${fmt.krw(Math.round(invHi / 10000) * 10000)} · VOO 적립 + 레전드 추천 종목`)}
       ${kpi("월 적립 제안", fmt.krw(monthly), "투자분을 24개월에 나눠 분할 매수")}
     </div>
-    <p class="desc" style="margin-top:10px">투자분을 한 번에 넣지 않고 24개월에 나누는 것은 매수 시점을 분산해 고점 몰빵을 피하기 위해서입니다. 아래 계산기에 이 금액을 넣어 장기 결과를 확인해 보세요.</p>
+    <p class="desc" style="margin-top:10px">투자분을 한 번에 넣지 않고 24개월에 나누는 것은 매수 시점을 분산해 고점 몰빵을 피하기 위해서입니다. 초보 탭 맨 아래의 VOO 적립 계산기에 이 금액을 넣어 장기 결과를 확인해 보세요.</p>
     <div class="form-actions" style="margin-top:8px"><button class="btn primary" type="button" id="pf-to-voo">이 금액으로 VOO 적립 계산 →</button></div>`;
   r.hidden = false;
 }
@@ -3120,9 +3116,10 @@ $("#max-page").addEventListener("click", (e) => {
   if (e.target.closest("#divi-calc")) { saveDiviInputs(); return renderDiviScreen("my"); }
   const dm = e.target.closest("[data-divi-mode]");
   if (dm && !dm.disabled) return renderDiviScreen(dm.dataset.diviMode);
-  if (e.target.closest("#sc-run")) return runStarterCalc();
   if (e.target.closest("#pf-to-voo")) {
+    // VOO 적립 계산기는 초보 탭 맨 아래에 있으므로, 금액을 채워서 그리로 보낸다
     const total = numVal("#pf-total"), monthly = Math.max(10000, Math.round((total * 0.65) / 24 / 10000) * 10000);
+    closeMaxPage(); selectTab("starter");
     setNumVal("#sc-monthly", monthly); runStarterCalc();
     $("#sc-results")?.scrollIntoView({ behavior: "smooth", block: "start" });
     return;
@@ -3150,6 +3147,7 @@ $("#cm-modal").addEventListener("click", (e) => {
 });
 
 $("#sc-buffett").addEventListener("click", openGuruModal);
+$("#sc-run").addEventListener("click", runStarterCalc);
 // 구독하기는 항상 요금제 선택 모달부터 (Max 구독 중이면 모달 안에 라운지 바로가기 표시)
 $("#sub-open").addEventListener("click", openGuruModal);
 $("#login").addEventListener("click", openAuth);
