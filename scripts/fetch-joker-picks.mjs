@@ -42,7 +42,7 @@
 //   ROE 는 연말 지배주주지분 기준, 순이익 CAGR 은 주식수 변동을 무시한 근사치
 //   금융사(은행·증권·보험 등)와 스팩·리츠·지주사는 이 산식이 맞지 않아 이름 기준으로 제외
 
-import { mkdir, writeFile, readFile } from "node:fs/promises";
+import { mkdir, writeFile, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import zlib from "node:zlib";
 import { yahooChart, withRetry } from "./yahoo.mjs";
@@ -196,6 +196,21 @@ async function fetchUniverse() {
     console.warn(`[joker] 기업목록을 새로 받지 못해 ${cached.updated?.slice(0, 10)} 캐시(${cached.corps.length}개 회사)로 진행합니다`);
     return build(cached.corps);
   }
+  // corpcode.json 캐시가 아직 없던 시절의 실행들이 남긴 회사별 재무 캐시에서 목록을 복원한다.
+  // 제외 업종(금융·지주 등)은 재무 캐시가 없어 이 목록에 빠지므로, 판정 시리즈에서
+  // 그 주만 해당 종목이 '목록에 없음'으로 보일 수 있다 — 실행이 통째로 빠지는 것보다 낫다.
+  try {
+    const files = (await readdir(path.join(OUT_DIR, "dart"))).filter((f) => f.endsWith(".json") && f !== "corpcode.json");
+    const corps = [];
+    for (const f of files) {
+      const c = await readJson(path.join(OUT_DIR, "dart", f), null);
+      if (c?.code && c?.name && /^\d{6}$/.test(c.stock || "")) corps.push({ code: c.code, stock: c.stock, name: c.name });
+    }
+    if (corps.length) {
+      console.warn(`[joker] 기업목록을 회사별 재무 캐시 ${corps.length}개에서 복원해 진행합니다 (제외 업종은 이번 주 판정 시리즈에서 빠질 수 있음)`);
+      return build(corps);
+    }
+  } catch {}
   throw new Error("corpCode.xml 을 받지 못했고 캐시된 기업목록도 없습니다");
 }
 
