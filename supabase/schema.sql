@@ -119,3 +119,24 @@ create policy "insert own inquiries" on public.inquiries
 revoke all on public.inquiries from anon, authenticated;
 grant select on public.inquiries to authenticated;
 grant insert (user_id, email, title, body) on public.inquiries to authenticated;
+
+-- ── 회원 탈퇴 (계정 삭제) ──────────────────────────────────────────
+-- 앱의 내 계정 창에서 "회원 탈퇴"를 누르면 이 함수가 호출됩니다.
+-- auth.users 에서 본인 계정을 지우면 profiles · push_subscriptions · inquiries 는
+-- 전부 on delete cascade 로 함께 지워집니다 (앱스토어 입점 요건: 앱 안에서 계정 삭제 제공).
+create or replace function public.delete_my_account()
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if auth.uid() is null then
+    raise exception '로그인한 회원만 탈퇴할 수 있습니다';
+  end if;
+  delete from auth.users where id = auth.uid();
+end;
+$$;
+
+revoke all on function public.delete_my_account() from public, anon;
+grant execute on function public.delete_my_account() to authenticated;

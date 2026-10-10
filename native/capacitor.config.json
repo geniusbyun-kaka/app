@@ -1,0 +1,17 @@
+{
+  "appId": "kr.mopick.app",
+  "appName": "모픽",
+  "webDir": "www",
+  "backgroundColor": "#F6F2EA",
+  "ios": {
+    "contentInset": "always"
+  },
+  "server": {
+    "allowNavigation": [
+      "*.supabase.co",
+      "kauth.kakao.com",
+      "accounts.kakao.com",
+      "raw.githubusercontent.com"
+    ]
+  }
+}

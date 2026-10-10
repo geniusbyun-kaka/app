@@ -1134,7 +1134,25 @@ function renderAuth() {
     </dl>
     ${auth.profileError ? `<p class="auth-msg error">${escHtml(auth.profileError)}</p>` : ""}
     ${msg}
-    <div class="form-actions"><button class="btn" type="button" id="auth-logout" ${auth.busy ? "disabled" : ""}>로그아웃</button></div>`;
+    <div class="form-actions"><button class="btn" type="button" id="auth-logout" ${auth.busy ? "disabled" : ""}>로그아웃</button></div>
+    <p class="small faint" style="margin-top:14px">더 이상 이용하지 않으시면 계정을 삭제할 수 있습니다. 탈퇴하면 계정과 관심 목록·알림 구독·문의 내역이 모두 지워지며 되돌릴 수 없습니다.
+      <button class="btn" type="button" id="auth-delete" style="margin-left:6px;color:var(--down,#c0392b)" ${auth.busy ? "disabled" : ""}>회원 탈퇴</button></p>`;
+}
+// 회원 탈퇴: 두 번 확인 후 Supabase RPC(delete_my_account)로 계정을 지운다 (앱스토어 입점 요건)
+async function deleteAccount() {
+  if (!confirm("정말 탈퇴하시겠어요?\n계정과 관심 목록·알림 구독·문의 내역이 모두 삭제되며 되돌릴 수 없습니다.")) return;
+  if (prompt('탈퇴를 진행하려면 "탈퇴"라고 입력해 주세요.') !== "탈퇴") return;
+  const error = await authCall(() => sb.rpc("delete_my_account"));
+  if (error) {
+    setAuthMsg(/delete_my_account|function|schema cache/i.test(String(error?.message || error))
+      ? "탈퇴 기능이 아직 준비되지 않았습니다. 관리자가 Supabase 에서 supabase/schema.sql 최신본을 실행하면 사용할 수 있습니다."
+      : authErrText(error), true);
+    renderAuthUI();
+    return;
+  }
+  try { await sb.auth.signOut(); } catch {} // 서버 계정은 이미 삭제됨 · 이 기기의 세션 정리
+  try { localStorage.removeItem("md:plan"); } catch {}
+  alert("탈퇴가 완료되었습니다. 그동안 이용해 주셔서 감사합니다.");
 }
 function renderAuthUI() { renderGate(); if (!$("#auth-modal").hidden) renderAuth(); renderLoginBtn(); }
 async function authCall(fn) {
@@ -1210,6 +1228,7 @@ function initAuth() {
       const error = await authCall(() => sb.auth.signOut());
       if (error) { setAuthMsg(authErrText(error), true); renderAuth(); }
     }
+    if (e.target.closest("#auth-delete")) return deleteAccount();
   });
 }
 

@@ -1,0 +1,20 @@
+{
+  "name": "mopick-native",
+  "private": true,
+  "version": "0.1.0",
+  "description": "모픽 iOS·Android 네이티브 셸 (Capacitor)",
+  "type": "module",
+  "scripts": {
+    "sync-www": "node sync-www.mjs",
+    "ios": "npm run sync-www && npx cap sync ios && npx cap open ios",
+    "android": "npm run sync-www && npx cap sync android && npx cap open android"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.4.0"
+  },
+  "dependencies": {
+    "@capacitor/core": "^7.4.0",
+    "@capacitor/app": "^7.0.0",
+    "@capacitor/browser": "^7.0.0"
+  }
+}
