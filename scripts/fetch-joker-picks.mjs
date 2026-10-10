@@ -125,6 +125,9 @@ async function dartJson(pathname, params) {
   let j;
   try { j = await res.json(); } catch { return null; } // 본문이 끊긴 응답은 이 호출만 건너뛴다 (캐시에 기록 안 함)
   if (j.status === "020" || j.status === "021") { console.warn(`[joker] DART 사용 한도 도달 (status ${j.status}) — 남은 조회는 다음 실행으로 미룹니다`); budgetOut = true; return null; }
+  // 800 = 시스템 점검 (2026-10-10 에 실제 발생). 이걸 "데이터 없음"으로 오인해 캐시에 null 을
+  // 영구 기록하면 안 되므로, 한도 소진과 같이 수집을 멈추고 다음 실행으로 미룬다
+  if (j.status === "800") { console.warn(`[joker] DART 시스템 점검 중 (status 800: ${j.message || ""}) — 남은 조회는 다음 실행으로 미룹니다`); budgetOut = true; return null; }
   return j;
 }
 
@@ -153,65 +156,74 @@ function unzipEntry(buf, nameRe) {
 
 // ── 상장사 목록: corpCode.xml (stock_code 가 있는 회사만) ──
 // universe 는 스크리닝 대상 (금융·지주 등 제외), byStock 은 판정 시리즈용 전체 (제외 업종은 excluded 표시)
-// DART 가 200 으로 ZIP 이 아닌 본문(점검 페이지, 한도 초과 XML 등)을 주면 unzip 에서 죽는데,
-// 여기서 실행 전체가 죽으면 그 주의 스크리닝이 통째로 빠진다 (8차 실행에서 실제 발생).
-// ZIP 이 아니면 몇 차례 다시 받고, 끝내 못 받으면 지난 실행이 캐시해 둔 기업목록으로 진행한다.
+// DART 접속 장애(2026-10-10 의 UND_ERR_CONNECT_TIMEOUT 처럼)로 목록을 못 받으면 실행 전체가
+// 죽는 대신 캐시로 계속한다: 지난 실행이 저장한 corp-code.json, 그것도 없으면 회사별 재무
+// 캐시(dart/*.json)에서 목록을 재구성한다 (제외 업종·신규 상장사는 빠지는 축소 모드).
+// 상장사 목록은 주 단위로 거의 안 변하므로, 재무 수집은 멈추더라도 기존 캐시와 야후 시세로
+// 주간 픽·판정 시리즈는 그대로 나온다.
+const UNIVERSE_RETRY_WAIT_MS = Number(process.env.UNIVERSE_RETRY_WAIT_MS || 90000);
 async function fetchUniverse() {
-  const cachePath = path.join(OUT_DIR, "dart", "corpcode.json");
-  const build = (corps) => {
-    const out = [], byStock = new Map();
-    for (const c of corps) {
-      const corp = { ...c, excluded: EXCLUDE_NAME.test(c.name) };
-      byStock.set(corp.stock, corp);
-      if (!corp.excluded) out.push(corp);
+  const cachePath = path.join(OUT_DIR, "corp-code.json");
+  let corps = null;
+  for (let attempt = 0; attempt < 2 && !corps; attempt++) {
+    if (attempt) {
+      if (timeOut) break; // 시간 예산 도달이면 재시도해도 소용없다
+      console.warn(`[joker] ${Math.round(UNIVERSE_RETRY_WAIT_MS / 1000)}초 뒤 상장사 목록 조회를 한 번 더 시도합니다`);
+      await sleep(UNIVERSE_RETRY_WAIT_MS);
+      budgetOut = false; // 네트워크 오류로 내려간 수집 플래그를 풀고 재시도 (또 실패하면 다시 내려간다)
     }
-    return { universe: out, byStock };
-  };
-  for (let i = 0; i < 3; i++) {
-    if (i) await sleep(5000 * i);
     const res = await dart("corpCode.xml");
-    if (!res) break; // 한도·시간·지속 네트워크 오류 — 재시도해도 소용없다
-    const buf = Buffer.from(await res.arrayBuffer());
-    let xml;
-    try { xml = unzipEntry(buf, /corpcode\.xml/i).toString("utf8"); }
-    catch (err) {
-      const head = buf.subarray(0, 160).toString("utf8").replace(/\s+/g, " ").trim();
-      console.warn(`[joker] corpCode.xml 응답이 ZIP 이 아닙니다 (${err.message}) — 본문 시작: ${head}`);
-      continue;
+    if (!res) continue;
+    let buf = null;
+    try {
+      buf = Buffer.from(await res.arrayBuffer());
+      const xml = unzipEntry(buf, /corpcode\.xml/i).toString("utf8");
+      const tag = (s, t) => (s.match(new RegExp(`<${t}>([^<]*)</${t}>`)) || [])[1]?.trim() || "";
+      const rows = [];
+      for (const m of xml.matchAll(/<list>([\s\S]*?)<\/list>/g)) {
+        const s = m[1];
+        const stock = tag(s, "stock_code");
+        if (!/^\d{6}$/.test(stock)) continue;
+        rows.push({ code: tag(s, "corp_code"), stock, name: tag(s, "corp_name") });
+      }
+      if (rows.length) corps = rows;
+    } catch (err) {
+      // ZIP 이 아닌 응답은 보통 DART 의 오류 본문(키 만료·한도·점검 안내 등)이다. 원인 파악용으로 머리를 남긴다
+      const head = buf ? buf.subarray(0, 300).toString("utf8").replace(/\s+/g, " ").trim() : "";
+      console.warn(`[joker] corpCode.xml 파싱 실패 (${err?.message || err}) — 캐시로 폴백합니다${head ? ` · 응답 머리: ${head}` : ""}`);
     }
-    const tag = (s, t) => (s.match(new RegExp(`<${t}>([^<]*)</${t}>`)) || [])[1]?.trim() || "";
-    const corps = [];
-    for (const m of xml.matchAll(/<list>([\s\S]*?)<\/list>/g)) {
-      const s = m[1];
-      const stock = tag(s, "stock_code");
-      if (!/^\d{6}$/.test(stock)) continue;
-      corps.push({ code: tag(s, "corp_code"), stock, name: tag(s, "corp_name") });
-    }
-    if (!corps.length) { console.warn("[joker] corpCode.xml 에 상장사가 없습니다 — 다시 받습니다"); continue; }
-    await writeFile(cachePath, JSON.stringify({ updated: new Date().toISOString(), corps }));
-    return build(corps);
   }
-  const cached = await readJson(cachePath, null);
-  if (cached?.corps?.length) {
-    console.warn(`[joker] 기업목록을 새로 받지 못해 ${cached.updated?.slice(0, 10)} 캐시(${cached.corps.length}개 회사)로 진행합니다`);
-    return build(cached.corps);
+  let universeSource = "live";
+  if (corps) {
+    await writeFile(cachePath, JSON.stringify({ updated: now.toISOString(), corps }));
+  } else {
+    const cached = await readJson(cachePath, null);
+    if (cached?.corps?.length) {
+      console.warn(`[joker] corpCode.xml 을 받지 못해 지난 실행(${String(cached.updated).slice(0, 10)})의 상장사 목록 캐시로 계속합니다`);
+      corps = cached.corps;
+      universeSource = "cache";
+    } else {
+      // corp-code.json 도입 전의 joker 브랜치 캐시에는 목록 파일이 없다 — 재무 캐시에서 재구성
+      corps = [];
+      try {
+        for (const f of await readdir(path.join(OUT_DIR, "dart"))) {
+          if (!f.endsWith(".json")) continue;
+          const c = await readJson(path.join(OUT_DIR, "dart", f), null);
+          if (c?.code && c?.stock && c?.name) corps.push({ code: c.code, stock: c.stock, name: c.name });
+        }
+      } catch {}
+      if (!corps.length) throw new Error("corpCode.xml 을 받지 못했고 폴백할 캐시도 없습니다 (corp-code.json · dart/*.json)");
+      console.warn(`[joker] corpCode.xml 을 받지 못해 재무 캐시에서 상장사 ${corps.length}개 목록을 재구성해 계속합니다 (판정 제외 업종·신규 상장사는 이번 실행에서 빠집니다)`);
+      universeSource = "dart-cache";
+    }
   }
-  // corpcode.json 캐시가 아직 없던 시절의 실행들이 남긴 회사별 재무 캐시에서 목록을 복원한다.
-  // 제외 업종(금융·지주 등)은 재무 캐시가 없어 이 목록에 빠지므로, 판정 시리즈에서
-  // 그 주만 해당 종목이 '목록에 없음'으로 보일 수 있다 — 실행이 통째로 빠지는 것보다 낫다.
-  try {
-    const files = (await readdir(path.join(OUT_DIR, "dart"))).filter((f) => f.endsWith(".json") && f !== "corpcode.json");
-    const corps = [];
-    for (const f of files) {
-      const c = await readJson(path.join(OUT_DIR, "dart", f), null);
-      if (c?.code && c?.name && /^\d{6}$/.test(c.stock || "")) corps.push({ code: c.code, stock: c.stock, name: c.name });
-    }
-    if (corps.length) {
-      console.warn(`[joker] 기업목록을 회사별 재무 캐시 ${corps.length}개에서 복원해 진행합니다 (제외 업종은 이번 주 판정 시리즈에서 빠질 수 있음)`);
-      return build(corps);
-    }
-  } catch {}
-  throw new Error("corpCode.xml 을 받지 못했고 캐시된 기업목록도 없습니다");
+  const out = [], byStock = new Map();
+  for (const { code, stock, name } of corps) {
+    const corp = { code, stock, name, excluded: EXCLUDE_NAME.test(name) };
+    byStock.set(stock, corp);
+    if (!corp.excluded) out.push(corp);
+  }
+  return { universe: out, byStock, universeSource };
 }
 
 // ── 연간 재무제표 한 해치 → 필요한 숫자만 추출 ──
@@ -414,8 +426,8 @@ async function main() {
   const topcap = await readJson(topcapPath, null);
   if (!process.env.KTB10Y && topcap?.ktb10y > 0) KTB10Y = Number(topcap.ktb10y);
   console.log(`[joker] 밸류에이션 커트라인: 3년 평균 FCF 수익률 ≥ ${(KTB10Y * VAL_KTB_MULT).toFixed(1)}% (국고채 10년물 ${KTB10Y}% × ${VAL_KTB_MULT})`);
-  const { universe, byStock } = await fetchUniverse();
-  console.log(`[joker] 유니버스 ${universe.length}개 회사 (금융·스팩·리츠·지주 제외) · 대상 연도 ${YEARS[0]}~${LAST_YEAR}`);
+  const { universe, byStock, universeSource } = await fetchUniverse();
+  console.log(`[joker] 유니버스 ${universe.length}개 회사 (금융·스팩·리츠·지주 제외${universeSource === "live" ? "" : ` · 목록 출처: ${universeSource}`}) · 대상 연도 ${YEARS[0]}~${LAST_YEAR}`);
 
   // 회사별 캐시를 한 번에 읽어둔다 (조회는 아직 안 함)
   const entries = [];
@@ -630,7 +642,7 @@ async function main() {
     console.log(`[joker] 버핏 판정 시리즈: 코스피 ${verdicts.kospi.length}개 · 코스닥 ${verdicts.kosdaq.length}개 판정 저장`);
   }
 
-  await writeFile(path.join(OUT_DIR, "meta.json"), JSON.stringify({ updated: now.toISOString(), universe: universe.length, complete, coverage: Math.round(cover * 1000) / 1000, calls, budgetOut, timeOut, minutes: Math.round((Date.now() - T0) / 60000), passed, priced: candList.length }, null, 1));
+  await writeFile(path.join(OUT_DIR, "meta.json"), JSON.stringify({ updated: now.toISOString(), universe: universe.length, universeSource, complete, coverage: Math.round(cover * 1000) / 1000, calls, budgetOut, timeOut, minutes: Math.round((Date.now() - T0) / 60000), passed, priced: candList.length }, null, 1));
 }
 
 main().catch((err) => { console.error("[joker] 실패:", err); process.exit(1); });
