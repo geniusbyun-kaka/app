@@ -1,7 +1,10 @@
 {
+  "id": "./",
   "name": "모픽 (Mopick)",
   "short_name": "모픽",
   "description": "워렌 버핏의 가치투자법을 따라가는 투자의 픽",
+  "lang": "ko",
+  "categories": ["finance"],
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
