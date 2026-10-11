@@ -2034,8 +2034,8 @@ function ensureFollowGrades() {
   return followGradesPromise;
 }
 function followSectionHtml(g, f, rows, missing) {
-  const table = rows.length ? `<div class="tablewrap"><table><thead><tr><th>종목</th><th>마지막 매수</th><th>매수 분기</th><th>추정 평균단가</th><th>최근 매수가</th><th>현재가</th><th>최근 매수가 대비</th><th>판단</th></tr></thead><tbody>${rows.map((r) => `<tr>
-      <td class="txt">${tickerHtml(r.h)}</td><td class="txt">${r.recent.period}${r.recent.evLabel ? ` <span class="tag new">${r.recent.evLabel}</span>` : ""}</td><td>${r.nBuys}회</td><td>$${fmt.n(r.avg)}</td><td>$${fmt.n(r.recent.mid)}${r.recent.evLabel && r.recent.shares ? ` <span class="faint small">${fmtSh(r.recent.shares)}주</span>` : ""}</td><td>${r.cur != null ? "$" + fmt.n(r.cur) : "–"}</td><td class="${r.rel == null ? "" : r.rel <= 0 ? "pos" : "neg"}">${r.rel == null ? "–" : fmt.pct(r.rel)}</td><td class="txt">${followGradeHtml(r)}</td>
+  const table = rows.length ? `<div class="tablewrap"><table><thead><tr><th>종목</th><th>판단</th><th>마지막 매수</th><th>매수 분기</th><th>추정 평균단가</th><th>최근 매수가</th><th>현재가</th><th>최근 매수가 대비</th></tr></thead><tbody>${rows.map((r) => `<tr>
+      <td class="txt">${tickerHtml(r.h)}</td><td class="txt">${followGradeHtml(r)}</td><td class="txt">${r.recent.period}${r.recent.evLabel ? ` <span class="tag new">${r.recent.evLabel}</span>` : ""}</td><td>${r.nBuys}회</td><td>$${fmt.n(r.avg)}</td><td>$${fmt.n(r.recent.mid)}${r.recent.evLabel && r.recent.shares ? ` <span class="faint small">${fmtSh(r.recent.shares)}주</span>` : ""}</td><td>${r.cur != null ? "$" + fmt.n(r.cur) : "–"}</td><td class="${r.rel == null ? "" : r.rel <= 0 ? "pos" : "neg"}">${r.rel == null ? "–" : fmt.pct(r.rel)}</td>
     </tr>`).join("")}</tbody></table></div>` : `<div class="empty">지금은 연속 매수 중이거나 꾸준히 모으는 종목이 없습니다</div>`;
   const note = missing.length ? `<p class="small faint" style="margin-top:8px">주가 이력이 없어 계산에서 제외: ${missing.join(", ")}</p>` : "";
   return `<div class="card-head"><h3>${g.name} · ${g.org}</h3><span class="small faint">${f.latest.period} 분기 공시까지 반영</span></div>${table}${note}`;
@@ -3020,8 +3020,8 @@ async function renderMaxDivi() {
   if ($("#max-page").hidden || body.dataset.screen !== "divi") return;
   renderDiviScreen(cacheGet("md:diviMode") || (diviMyStocks().some((h) => h.shares > 0) ? "my" : diviMyStocks().length ? "my" : "demo"));
 }
-// ── 강력 추천 매일 푸시 알림 ─────────────────────────────────────
-// push-alerts 워크플로가 매일 아침(미국 장 마감 뒤) 종가 기준 강력 추천을 계산해 웹 푸시로 보낸다.
+// ── 매수 추천 매일 푸시 알림 ─────────────────────────────────────
+// push-alerts 워크플로가 매일 아침(미국 장 마감 뒤) 종가 기준 강력 추천·추천을 계산해 웹 푸시로 보낸다.
 // 이 기기의 구독 정보는 Supabase push_subscriptions 에 계정별로 저장되고, 워크플로가 그 목록으로 발송한다.
 const PUSH_VAPID_PUBLIC_KEY = "BAxSwjCfsPh3lfvjdvdn6XMn6YxXF5tEBwwd-yRToWpta1MvN5jKaHovg_fLT9zAatoV4ccU1bYNXJkXnSHm02E";
 const pushSupported = () => "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
@@ -3043,8 +3043,8 @@ async function pushCurrentSub() {
 }
 function pushAlertCardHtml() {
   return `<div class="card" id="push-card">
-    <div class="card-head"><h3>강력 추천 매일 알림</h3><span class="small faint">매일 아침 8:30 (한국시간) · 뉴욕 종가 기준</span></div>
-    <p class="desc">미국 장이 마감되면 그날 종가로 따라 사기 판단을 다시 계산해, <strong>강력 추천</strong>(레전드 최근 매수가보다 싼 종목)이 있을 때만 이 기기로 알림을 보냅니다. 예: "강력 추천: GOOGL 종가 $329.52 · 버핏 최근 매수가 대비 -5.8%".</p>
+    <div class="card-head"><h3>매수 추천 매일 알림</h3><span class="small faint">매일 아침 7:30 (한국시간) · 뉴욕 종가 기준</span></div>
+    <p class="desc">미국 장이 마감되면 그날 종가로 따라 사기 판단을 다시 계산해, <strong>강력 추천</strong>(레전드 최근 매수가보다 싼 종목)이나 <strong>추천</strong>(최근 매수가 대비 +10% 이내)이 있을 때만 이 기기로 알림을 보냅니다. 예: "[강력 추천] GOOGL 종가 $329.52 · 버핏 최근 매수가 대비 -5.8%".</p>
     <div id="push-body" class="small faint">알림 상태 확인 중…</div></div>`;
 }
 async function refreshPushCard() {
@@ -3905,22 +3905,22 @@ function myStockTableHtml(rows) {
   const cls = (v) => (v > 0 ? "pos" : v < 0 ? "neg" : "");
   const stockCell = (r) => `<span class="tk${r.item ? "" : " plain"}" ${r.item ? `data-stock="${r.sym}"` : ""}>${r.sym}</span><span class="nm">${r.item?.name || ""}</span>`;
   const trs = rows.flatMap((r) => {
-    const base = `<td class="txt">${stockCell(r)}</td><td>${r.item ? fmt.n(r.item.price) : "–"}</td><td class="${cls(r.item?.changePercent)}">${r.item?.changePercent == null ? "–" : fmt.signed(r.item.changePercent) + "%"}</td>`;
+    const quote = `<td>${r.item ? fmt.n(r.item.price) : "–"}</td><td class="${cls(r.item?.changePercent)}">${r.item?.changePercent == null ? "–" : fmt.signed(r.item.changePercent) + "%"}</td>`;
     const tail = `<td class="txt">${favStarHtml("stock", r.sym, true, true)}</td>`;
-    if (!r.matches.length) return [`<tr>${base}<td class="txt faint" colspan="5">관심 레전드 보유 없음</td>${tail}</tr>`];
+    if (!r.matches.length) return [`<tr><td class="txt">${stockCell(r)}</td><td class="txt faint">–</td>${quote}<td class="txt faint" colspan="4">관심 레전드 보유 없음</td>${tail}</tr>`];
     return r.matches.map((m) => {
       const gname = GURU_SHORT[m.g.id] || m.g.name;
       const holdNote = m.h?.ticker && m.h.ticker !== r.sym ? ` <span class="faint small">(${m.h.ticker} 보유)</span>` : "";
       const weightNote = m.h ? `<span class="faint small">비중 ${fmt.n(m.h.weight * 100, 1)}%</span>` : `<span class="faint small">13F 반영 전 신규 지분</span>`;
-      return `<tr>${base}
+      return `<tr><td class="txt">${stockCell(r)}</td>
+        <td class="txt">${m.grade >= 0 ? followTagHtml(m.grade) : m.rec ? '<span class="faint">현재가 없음</span>' : '<span class="faint">최근 매수 이력 없음</span>'}</td>${quote}
         <td class="txt">${gname}${holdNote} ${weightNote}</td>
         <td class="txt">${m.rec ? m.rec.period + (m.rec.form4 ? ` <span class="tag new">${m.rec.evLabel || "Form 4"}</span>` : "") : "–"}</td>
         <td>${m.rec ? "$" + fmt.n(m.rec.mid) + (m.rec.form4 && m.rec.shares ? ` <span class="faint small">${fmtSh(m.rec.shares)}주</span>` : "") : "–"}</td>
-        <td class="${m.rel == null ? "" : m.rel <= 0 ? "pos" : "neg"}">${m.rel == null ? "–" : fmt.pct(m.rel)}</td>
-        <td class="txt">${m.grade >= 0 ? followTagHtml(m.grade) : m.rec ? '<span class="faint">현재가 없음</span>' : '<span class="faint">최근 매수 이력 없음</span>'}</td>${tail}</tr>`;
+        <td class="${m.rel == null ? "" : m.rel <= 0 ? "pos" : "neg"}">${m.rel == null ? "–" : fmt.pct(m.rel)}</td>${tail}</tr>`;
     });
   });
-  return `<div class="tablewrap"><table><thead><tr><th>종목</th><th>현재가</th><th>전일비</th><th>관심 레전드</th><th>마지막 매수</th><th>최근 매수가 (추정)</th><th>최근 매수가 대비</th><th>판단</th><th>관리</th></tr></thead><tbody>${trs.join("")}</tbody></table></div>
+  return `<div class="tablewrap"><table><thead><tr><th>종목</th><th>판단</th><th>현재가</th><th>전일비</th><th>관심 레전드</th><th>마지막 매수</th><th>최근 매수가 (추정)</th><th>최근 매수가 대비</th><th>관리</th></tr></thead><tbody>${trs.join("")}</tbody></table></div>
     <p class="small faint" style="margin-top:8px">최근 매수가는 레전드가 마지막으로 매수한 분기의 <strong>종가 최저가에서 5% 오른 가격</strong>으로 계산한 추정치입니다. 다만 SEC Form 4 · 13D/G 공시나 수기 등록된 매수 뉴스에 <strong>실제 단가</strong>가 있으면(마지막 13F 매수 분기 안의 거래 포함 · 예: 버크셔의 레너 추가 매수, 알파벳 $350 사모 매입) 추정가 대신 그 공시들의 주식수 가중평균 단가를 최근 매수가로 사용하며 <span class="tag new">Form 4</span> 또는 <span class="tag new">매입 공시·뉴스</span> 표시가 붙습니다. 현재가가 최근 매수가보다 낮으면 <strong>강력 추천</strong>, +10% 이내면 <strong>추천</strong>입니다. 티커를 누르면 종목 차트로 이동합니다.</p>`;
 }
 async function myGuruCardHtml(g) {

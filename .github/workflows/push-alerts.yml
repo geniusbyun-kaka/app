@@ -1,8 +1,9 @@
 name: Strong-buy push alerts
 
-# 매일 아침 8시 30분(KST = 23:30 UTC, 뉴욕 장 마감과 종가 스냅샷 뒤) 종가 기준으로
-# 레전드 픽 따라 사기 판단을 다시 계산해, 강력 추천이 있으면 알림을 켠 기기들로 웹 푸시를 보냅니다.
-# 종가 데이터는 stocks-data 워크플로(22:40 UTC 시작)가 올린 stocks 브랜치 스냅샷을 씁니다.
+# 매일 아침 7시 30분(KST = 22:30 UTC, 뉴욕 장 마감과 종가 스냅샷 뒤) 종가 기준으로
+# 레전드 픽 따라 사기 판단을 다시 계산해, 강력 추천(최근 매수가 이하)이나 추천(+10% 이내)이
+# 있으면 알림을 켠 기기들로 웹 푸시를 보냅니다.
+# 종가 데이터는 stocks-data 워크플로(21:20 UTC 시작)가 올린 stocks 브랜치 스냅샷을 씁니다.
 #
 # 필요한 저장소 Secrets (없으면 계산만 하고 발송은 건너뜁니다):
 #   VAPID_PRIVATE_KEY      웹 푸시 서명 비밀키 (공개키는 invest/index.html 의 PUSH_VAPID_PUBLIC_KEY)
@@ -10,7 +11,7 @@ name: Strong-buy push alerts
 #   SUPABASE_SERVICE_ROLE  Supabase service_role 키 (구독 목록 읽기 전용 용도)
 on:
   schedule:
-    - cron: "30 23 * * 1-5"
+    - cron: "30 22 * * 1-5"
   workflow_dispatch:
 
 permissions:
