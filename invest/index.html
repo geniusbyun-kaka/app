@@ -170,6 +170,10 @@ th:first-child,td:first-child{text-align:left}
 td{font-family:var(--mono);font-variant-numeric:tabular-nums}
 td.txt{font-family:var(--font)}
 .tablewrap{overflow-x:auto}
+/* 옆으로 더 넘길 내용이 있으면(.more) 오른쪽 끝을 투명하게 깎아 "더 있다"는 단서를 준다 */
+.tablewrap.more{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 44px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 44px),transparent)}
+/* 한 번도 밀어본 적 없는 사용자에게만 보이는 안내 문구. 실제로 밀면 영구 해제된다 */
+.tablewrap.showhint::before{content:"옆으로 밀어서 더 보기 ↔";position:sticky;left:0;display:block;text-align:right;padding:0 48px 4px 0;font-size:11px;color:var(--ink-3)}
 /* 표가 화면보다 넓으면 첫 번째 열(종목)이 고정된 채 나머지만 가로 스크롤된다 */
 .tablewrap th:first-child,.tablewrap td:first-child,.stock-list th:first-child,.stock-list td:first-child{position:sticky;left:0;background:var(--surface);z-index:1;border-right:1px solid var(--line-2);box-shadow:6px 0 8px -6px rgba(0,0,0,.3)}
 .stock-list th:first-child{z-index:2}
@@ -3322,11 +3326,37 @@ new MutationObserver(rerenderAll).observe(document.documentElement, { attributes
 // 종목 탭 이벤트
 ["input", "change"].forEach((ev) => { $("#stock-search").addEventListener(ev, renderStockList); });
 $("#stock-list-toggle").addEventListener("click", () => { state.stockListOpen = !state.stockListOpen; renderStockList(); });
-// 표를 옆으로 스크롤하면 종목 칸을 티커만 남기고 얇게 접는다 (scroll 은 버블링이 없어 캡처로 받는다)
+// 표를 옆으로 스크롤하면 종목 칸을 티커만 남기고 얇게 접는다 (scroll 은 버블링이 없어 캡처로 받는다).
+// 아울러 옆으로 더 넘길 수 있는 표에는 오른쪽 페이드(.more)를 깔고, 한 번도 밀어본 적 없는
+// 사용자에게는 안내 문구(.showhint)를 화면에서 처음 만나는 표 하나에만 띄운다.
+const HSCROLL_HINT_KEY = "md:hscrollHint";
+function updateTableHints() {
+  let dismissed = true; try { dismissed = !!localStorage.getItem(HSCROLL_HINT_KEY); } catch {}
+  let hinted = false;
+  for (const w of document.querySelectorAll(".tablewrap")) {
+    const more = w.scrollWidth - w.clientWidth - w.scrollLeft > 6;
+    w.classList.toggle("more", more);
+    const show = more && !dismissed && !hinted && w.scrollLeft < 5;
+    w.classList.toggle("showhint", show);
+    if (show) hinted = true;
+  }
+}
 document.addEventListener("scroll", (e) => {
   const w = e.target;
-  if (w instanceof Element && w.classList.contains("tablewrap")) w.classList.toggle("scrolled", w.scrollLeft > 4);
+  if (!(w instanceof Element) || !w.classList.contains("tablewrap")) return;
+  w.classList.toggle("scrolled", w.scrollLeft > 4);
+  w.classList.toggle("more", w.scrollWidth - w.clientWidth - w.scrollLeft > 6);
+  if (w.scrollLeft >= 5) w.classList.remove("showhint"); // 밀기 시작하면 문구는 바로 치운다
+  if (w.scrollLeft > 24) { // 어느 표든 한 번 제대로 밀어봤으면 안내는 영구 해제
+    try { localStorage.setItem(HSCROLL_HINT_KEY, "1"); } catch {}
+    $$(".tablewrap.showhint").forEach((el) => el.classList.remove("showhint"));
+  }
 }, true);
+let tableHintRaf = 0;
+const queueTableHints = () => { cancelAnimationFrame(tableHintRaf); tableHintRaf = requestAnimationFrame(updateTableHints); };
+new MutationObserver(queueTableHints).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden"] });
+window.addEventListener("resize", queueTableHints);
+queueTableHints();
 $("#stock-search").addEventListener("keydown", (e) => { if (e.key === "Enter") { const first = $("#stock-table tbody tr[data-sym]"); if (first) selectStock(first.dataset.sym); } });
 $("#stock-table").addEventListener("click", (e) => { const tr = e.target.closest("tr[data-sym]"); if (tr) selectStock(tr.dataset.sym); });
 $("#stock-detail").addEventListener("click", (e) => {
