@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-// 강력 추천 매일 푸시 알림: 미국 장 마감 뒤 종가 기준으로 "레전드 픽 매수 가격 따라가기"의
-// 따라 사기 판단을 다시 계산해, 강력 추천(현재가 < 레전드 최근 매수가)이 있으면
+// 매수 추천 매일 푸시 알림: 미국 장 마감 뒤 종가 기준으로 "레전드 픽 매수 가격 따라가기"의
+// 따라 사기 판단을 다시 계산해, 강력 추천이나 추천이 있으면
 // Supabase push_subscriptions 에 등록된 모든 기기로 웹 푸시를 보낸다.
 //
 // 판정 로직은 앱(invest/index.html)의 공용 로직을 그대로 포팅했다:
 //   추종 대상 = 연속 매수 2분기 이상 또는 8분기 중 2회 이상 매수(그 사이 매도 없음), 평가액 $150M 이상
 //   최근 매수가 = 마지막 매수 분기 종가 최저가 +5%, Form 4·수기 뉴스 실단가가 있으면 그 가중평균
-//   강력 추천 = 현재가(종가)가 최근 매수가 이하
+//   강력 추천 = 현재가(종가)가 최근 매수가 이하 · 추천 = 최근 매수가 대비 +10% 이내
 // 로직을 앱에서 바꾸면 여기도 같이 바꿀 것 (docs/mopick-logic.md §2 참조).
 //
 // 필요 환경변수: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT(mailto:...),
@@ -145,12 +145,13 @@ async function strongPicks() {
       const cur = priceOf(h.ticker) ?? stock.close.at(-1);
       if (cur == null || !(recent.mid > 0)) continue;
       const rel = cur / recent.mid - 1;
-      if (rel > 0) continue; // 강력 추천만: 최근 매수가 이하
+      if (rel > 0.10) continue; // 강력 추천(최근 매수가 이하)과 추천(+10% 이내)만 알림
       const key = alias(h.ticker);
       const prev = best.get(key);
-      if (!prev || rel < prev.rel) best.set(key, { ticker: h.ticker, guru: g.short, cur, mid: recent.mid, rel, weight: totalValue ? h.value / totalValue : 0 });
+      if (!prev || rel < prev.rel) best.set(key, { ticker: h.ticker, guru: g.short, cur, mid: recent.mid, rel, strong: rel <= 0, weight: totalValue ? h.value / totalValue : 0 });
     }
   }
+  // 할인 폭 순 정렬이라 강력 추천이 자연히 앞에 온다. 알림이 길어지지 않게 6종목까지만.
   return [...best.values()].sort((a, b) => a.rel - b.rel).slice(0, 6);
 }
 
@@ -165,11 +166,12 @@ async function supabase(pathPart, init = {}) {
 
 async function main() {
   const picks = await strongPicks();
-  if (!picks.length) { console.log("[push] 오늘 종가 기준 강력 추천 없음 → 발송 안 함"); return; }
+  if (!picks.length) { console.log("[push] 오늘 종가 기준 강력 추천·추천 없음 → 발송 안 함"); return; }
   const kst = new Date(Date.now() + 9 * 3600000);
-  const title = `모픽 강력 추천 · ${kst.getUTCMonth() + 1}/${kst.getUTCDate()} 뉴욕 종가 기준`;
+  const anyStrong = picks.some((p) => p.strong);
+  const title = `모픽 ${anyStrong ? "강력 추천" : "매수 추천"} · ${kst.getUTCMonth() + 1}/${kst.getUTCDate()} 뉴욕 종가 기준`;
   const fmt$ = (v) => "$" + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const body = picks.map((p) => `${p.ticker} 종가 ${fmt$(p.cur)} · ${p.guru} 최근 매수가 ${fmt$(p.mid)} 대비 ${(p.rel * 100).toFixed(1)}%`).join("\n");
+  const body = picks.map((p) => `[${p.strong ? "강력 추천" : "추천"}] ${p.ticker} 종가 ${fmt$(p.cur)} · ${p.guru} 최근 매수가 ${fmt$(p.mid)} 대비 ${p.rel > 0 ? "+" : ""}${(p.rel * 100).toFixed(1)}%`).join("\n");
   console.log(`[push] ${title}\n${body}`);
   if (DRY) { console.log("[push] DRY_RUN → 발송 생략"); return; }
 
