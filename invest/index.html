@@ -173,7 +173,17 @@ td.txt{font-family:var(--font)}
 /* 옆으로 더 넘길 내용이 있으면(.more) 오른쪽 끝을 투명하게 깎아 "더 있다"는 단서를 준다 */
 .tablewrap.more{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 44px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 44px),transparent)}
 /* 한 번도 밀어본 적 없는 사용자에게만 보이는 안내 문구. 실제로 밀면 영구 해제된다 */
-.tablewrap.showhint::before{content:"옆으로 밀어서 더 보기 ↔";position:sticky;left:0;display:block;text-align:right;padding:0 48px 4px 0;font-size:11px;color:var(--ink-3)}
+.tablewrap.showhint::before{content:"옆으로 밀어서 더 보기 ↔";position:sticky;left:0;display:block;text-align:right;padding:0 52px 5px 0;font-size:12.5px;font-weight:600;color:var(--accent)}
+/* 옆으로 넘길 내용이 있는 동안 표 오른쪽에 항상 떠 있는 화살표 버튼. 스와이프를 모르는
+   사용자도 이걸 누르면 표가 넘어가고, 끝까지 가면 ‹ 로 바뀌어 처음으로 돌아온다.
+   버튼은 스크롤 영역 밖(.hscroll-shell)에 있어 페이드 마스크에 깎이지 않고 제자리에 뜬다 */
+.hscroll-shell{position:relative}
+.hscroll-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);z-index:3;display:flex;align-items:center;justify-content:center;width:38px;height:38px;padding:0 0 3px;border:1px solid color-mix(in srgb,var(--accent) 45%,var(--line));border-radius:50%;background:color-mix(in srgb,var(--surface) 82%,var(--accent));color:var(--accent);font-size:24px;line-height:1;font-weight:700;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+.hscroll-btn[hidden]{display:none}
+/* 아직 한 번도 밀어보지 않았으면 버튼이 좌우로 가볍게 흔들려 눈길을 끈다 */
+.hscroll-shell:has(.showhint) .hscroll-btn{animation:hscroll-nudge 1.4s ease-in-out infinite}
+@keyframes hscroll-nudge{0%,100%{transform:translateY(-50%) translateX(0)}50%{transform:translateY(-50%) translateX(5px)}}
+@media (prefers-reduced-motion:reduce){.hscroll-shell:has(.showhint) .hscroll-btn{animation:none}}
 /* 표가 화면보다 넓으면 첫 번째 열(종목)이 고정된 채 나머지만 가로 스크롤된다 */
 .tablewrap th:first-child,.tablewrap td:first-child,.stock-list th:first-child,.stock-list td:first-child{position:sticky;left:0;background:var(--surface);z-index:1;border-right:1px solid var(--line-2);box-shadow:6px 0 8px -6px rgba(0,0,0,.3)}
 .stock-list th:first-child{z-index:2}
@@ -3327,25 +3337,70 @@ new MutationObserver(rerenderAll).observe(document.documentElement, { attributes
 ["input", "change"].forEach((ev) => { $("#stock-search").addEventListener(ev, renderStockList); });
 $("#stock-list-toggle").addEventListener("click", () => { state.stockListOpen = !state.stockListOpen; renderStockList(); });
 // 표를 옆으로 스크롤하면 종목 칸을 티커만 남기고 얇게 접는다 (scroll 은 버블링이 없어 캡처로 받는다).
-// 아울러 옆으로 더 넘길 수 있는 표에는 오른쪽 페이드(.more)를 깔고, 한 번도 밀어본 적 없는
-// 사용자에게는 안내 문구(.showhint)를 화면에서 처음 만나는 표 하나에만 띄운다.
+// 옆으로 더 넘길 수 있는 표에는 오른쪽 페이드(.more)와 항상 떠 있는 화살표 버튼(.hscroll-btn)을 달고,
+// 한 번도 밀어본 적 없는 사용자에게는 안내 문구(.showhint)를 띄운 뒤 표를 살짝 밀었다 되돌리는
+// 미리보기(peek)로 "옆으로 넘어간다"는 걸 눈으로 직접 보여준다.
 const HSCROLL_HINT_KEY = "md:hscrollHint";
+let hscrollPeeking = false; // 자동 미리보기 중에는 scroll 핸들러가 안내를 해제하지 않도록 막는다
+const hscrollDismissed = () => { try { return !!localStorage.getItem(HSCROLL_HINT_KEY); } catch { return true; } };
+function syncTableWrap(w) {
+  const more = w.scrollWidth - w.clientWidth - w.scrollLeft > 6;
+  const scrolled = w.scrollLeft > 4;
+  w.classList.toggle("more", more);
+  w.classList.toggle("scrolled", scrolled);
+  // 버튼은 페이드 마스크에 깎이지 않고 스크롤을 따라가지 않도록 스크롤 영역 밖 셸에 둔다
+  let shell = w.parentElement?.classList.contains("hscroll-shell") ? w.parentElement : null;
+  let btn = shell ? shell.querySelector(":scope > .hscroll-btn") : null;
+  if (!btn && (more || scrolled)) {
+    if (!shell) { shell = document.createElement("div"); shell.className = "hscroll-shell"; w.before(shell); shell.append(w); }
+    btn = document.createElement("button");
+    btn.type = "button"; btn.className = "hscroll-btn";
+    btn.addEventListener("click", () => {
+      try { localStorage.setItem(HSCROLL_HINT_KEY, "1"); } catch {}
+      if (w.scrollWidth - w.clientWidth - w.scrollLeft > 6) w.scrollBy({ left: Math.max(140, w.clientWidth * 0.7), behavior: "smooth" });
+      else w.scrollTo({ left: 0, behavior: "smooth" });
+    });
+    shell.append(btn);
+  }
+  if (btn) {
+    btn.hidden = !more && !scrolled;
+    btn.textContent = more ? "›" : "‹";
+    btn.setAttribute("aria-label", more ? "표 옆으로 더 보기" : "표 처음으로 되돌리기");
+  }
+  return more;
+}
 function updateTableHints() {
-  let dismissed = true; try { dismissed = !!localStorage.getItem(HSCROLL_HINT_KEY); } catch {}
+  if (hscrollPeeking) return;
+  const dismissed = hscrollDismissed();
   let hinted = false;
   for (const w of document.querySelectorAll(".tablewrap")) {
-    const more = w.scrollWidth - w.clientWidth - w.scrollLeft > 6;
-    w.classList.toggle("more", more);
+    const more = syncTableWrap(w);
     const show = more && !dismissed && !hinted && w.scrollLeft < 5;
     w.classList.toggle("showhint", show);
-    if (show) hinted = true;
+    if (show) { hinted = true; peekTable(w); }
   }
+}
+// 화면에서 처음 만나는 가로 스크롤 표를 살짝 밀었다 되돌려 "움직인다"는 걸 보여준다 (페이지당 1회,
+// 한 번 밀어봐서 안내가 영구 해제된 사용자에게는 하지 않는다)
+let hscrollPeeked = false;
+function peekTable(w) {
+  if (hscrollPeeked || hscrollDismissed()) return;
+  hscrollPeeked = true;
+  setTimeout(() => {
+    if (!w.isConnected || w.scrollLeft > 0) return;
+    hscrollPeeking = true;
+    w.scrollTo({ left: 56, behavior: "smooth" });
+    setTimeout(() => {
+      w.scrollTo({ left: 0, behavior: "smooth" });
+      setTimeout(() => { hscrollPeeking = false; queueTableHints(); }, 700);
+    }, 800);
+  }, 900);
 }
 document.addEventListener("scroll", (e) => {
   const w = e.target;
   if (!(w instanceof Element) || !w.classList.contains("tablewrap")) return;
-  w.classList.toggle("scrolled", w.scrollLeft > 4);
-  w.classList.toggle("more", w.scrollWidth - w.clientWidth - w.scrollLeft > 6);
+  syncTableWrap(w);
+  if (hscrollPeeking) return; // 자동 미리보기는 사용자가 직접 민 것으로 치지 않는다
   if (w.scrollLeft >= 5) w.classList.remove("showhint"); // 밀기 시작하면 문구는 바로 치운다
   if (w.scrollLeft > 24) { // 어느 표든 한 번 제대로 밀어봤으면 안내는 영구 해제
     try { localStorage.setItem(HSCROLL_HINT_KEY, "1"); } catch {}
