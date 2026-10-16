@@ -106,8 +106,18 @@ header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:spac
 /* tabs */
 .tabs{display:grid;grid-template-columns:repeat(4,1fr) auto;gap:6px;padding:8px;border:1px solid var(--tab-line);border-radius:16px;margin-bottom:16px}
 /* My Page 는 PC·모바일 모두 구독하기 옆 헤더 버튼. 열려 있는 동안은 눌린 상태로 표시 */
-#my-open{font-weight:600;color:var(--accent);border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+#my-open{position:relative;font-weight:600;color:var(--accent);border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
 #my-open[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+/* 관심 레전드 새 소식 알림: My 버튼·탭의 붉은 점 + My Page 상단 하이라이트 카드.
+   최근 7일 안에 관심 레전드의 매수·매도 이벤트가 있을 때만 나타난다 */
+.news-dot{position:absolute;top:-4px;right:-5px;width:10px;height:10px;border-radius:50%;background:#F0625F;border:2px solid var(--surface)}
+.bottom-nav button{position:relative}
+.bottom-nav .news-dot{top:2px;right:calc(50% - 18px)}
+.fresh-card{border-color:color-mix(in srgb,var(--accent) 50%,var(--line));background:color-mix(in srgb,var(--accent) 7%,var(--surface))}
+.fresh-item{display:flex;gap:8px;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--line-2);font-size:14px;line-height:1.55}
+.fresh-item:last-child{border-bottom:0}
+.fresh-item .d{font-family:var(--mono);font-size:12px;color:var(--ink-3);white-space:nowrap}
+.fresh-badge{display:inline-block;padding:1px 7px;border-radius:999px;background:#F0625F;color:#fff;font-size:10.5px;font-weight:700;letter-spacing:.04em;white-space:nowrap}
 @media (max-width:640px){
   #refresh,#login{padding:4px 9px;font-size:12px}
 }
@@ -4033,6 +4043,63 @@ async function myNewsHtml(stocks, guruObjs) {
   parts.push(`<p class="small faint" style="margin-top:10px">종목 뉴스는 매일 한국시간 오전 6시에 수집되고, 레전드 공시(SEC Form 4 · 13D/G)는 매주 월요일 갱신됩니다.</p>`);
   return parts.join("");
 }
+// ── 관심 레전드 새 소식: 최근 7일 안의 매수·매도 이벤트(SEC 자동 수집 + 뉴스 등록)가 있으면
+// My 버튼·하단 탭에 붉은 점을 찍고 My Page 상단에 하이라이트 카드를 띄운다.
+// My Page 를 열어보면 '본 것'으로 기록되어 점은 사라지고, 카드는 7일 동안 유지된다.
+// 이벤트가 없는 평상시에는 아무것도 나타나지 않는다. ──
+const GURU_FRESH_DAYS = 7;
+function freshGuruEvents(evs, gurus) {
+  const cutoff = new Date(Date.now() - GURU_FRESH_DAYS * 86400000).toISOString().slice(0, 10);
+  const items = [];
+  for (const id of gurus) {
+    const g = GURUS.find((x) => x.id === id); if (!g) continue;
+    const file = guruEventFile(g.id), short = GURU_SHORT[g.id] || g.name;
+    for (const e of evs.auto) {
+      if (e.guru !== file) continue;
+      const date = String(e.to || e.from || e.filed || "").slice(0, 10);
+      if (!date || date < cutoff) continue;
+      items.push({
+        date, url: e.url, key: `a|${file}|${e.form}|${e.ticker || ""}|${date}|${e.side}`,
+        html: `<strong>${short}</strong> · ${e.ticker ? `<strong>${escHtml(e.ticker)}</strong> ` : ""}${e.side === "stake"
+          ? `지분 ${e.percent != null ? fmt.n(e.percent, 1) + "% " : ""}공시`
+          : `<strong class="${e.side === "buy" ? "pos" : "neg"}">${e.side === "buy" ? "매수" : "매도"}</strong> ${fmtSh(e.shares)}주${e.priceLow != null ? ` · 단가 $${fmt.n(e.priceLow)}${e.priceHigh > e.priceLow ? "~$" + fmt.n(e.priceHigh) : ""}` : ""}`} <span class="faint">(${escHtml(e.form)})</span>`,
+      });
+    }
+    for (const e of evs.manual) {
+      const date = String(e.date || "").slice(0, 10);
+      if (!date || date < cutoff) continue;
+      if (!(String(e.guru || "").includes(short) || String(e.guru || "").includes(g.name))) continue;
+      items.push({
+        date, url: e.url, key: `m|${short}|${date}|${String(e.title || "").slice(0, 40)}`,
+        html: `<strong>${short}</strong> · ${e.ticker ? `<strong>${escHtml(String(e.ticker))}</strong> ` : ""}${escHtml(e.title || "")}`,
+      });
+    }
+  }
+  const dedup = new Set();
+  return items.filter((x) => !dedup.has(x.key) && dedup.add(x.key)).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8);
+}
+function setMyNewsDot(on) {
+  for (const btn of [$("#my-open"), document.querySelector('.bottom-nav [data-bn="my"]')]) {
+    if (!btn) continue;
+    const dot = btn.querySelector(".news-dot");
+    if (on && !dot) btn.insertAdjacentHTML("beforeend", '<span class="news-dot" aria-hidden="true"></span>');
+    if (!on && dot) dot.remove();
+  }
+}
+async function updateMyNewsDot() {
+  const gurus = favGurus();
+  if (!gurus.length) return setMyNewsDot(false);
+  try {
+    const evs = await ensureGuruEvents();
+    const seen = new Set(cacheGet("md:guruNewsSeen") || []);
+    setMyNewsDot(freshGuruEvents(evs, gurus).some((x) => !seen.has(x.key)));
+  } catch { setMyNewsDot(false); }
+}
+updateMyNewsDot();
+function freshGuruCardHtml(fresh) {
+  return `<div class="card fresh-card"><div class="card-head"><h3>🔔 관심 레전드 새 소식</h3><span class="small faint">최근 ${GURU_FRESH_DAYS}일 매수·매도</span></div>
+    ${fresh.map((x) => `<div class="fresh-item"><span class="d">${escHtml(x.date.slice(5))}</span><span class="fresh-badge">NEW</span><span style="min-width:0">${x.html}${x.url ? ` · <a href="${escHtml(x.url)}" target="_blank" rel="noopener">보기</a>` : ""}</span></div>`).join("")}</div>`;
+}
 // ── 나의 포트폴리오 기록: 실제 보유 종목·주식 수·현금성 자산을 이 브라우저에 저장 ──
 // Max 라운지 "버핏식 매월 월급 관리 방식"의 버크셔 비교하기가 이 기록을 읽는다.
 const myPf = () => cacheGet("md:myPf") || { cash: 0, holdings: [] };
@@ -4081,12 +4148,22 @@ async function renderMyPage() {
   }
   p.innerHTML = [
     head,
+    `<div id="my-fresh" hidden></div>`,
     stocks.length ? `<div class="card"><div class="card-head"><h3>관심 종목</h3><span class="small faint">레전드들의 최근 매수가와 비교</span></div><div id="my-stocks-body"><div class="empty">13F 와 주가 이력으로 추정 단가를 계산하는 중…</div></div></div>` : "",
     guruObjs.map((g) => `<div class="card" id="my-guru-${g.id}"><div class="card-head"><h3>${g.name} · ${g.org}</h3></div><div class="empty">13F 데이터를 불러오는 중…</div></div>`).join(""),
     `<div class="card"><div class="card-head"><h3>뉴스 및 공시</h3><span class="small faint">매일 오전 6시 갱신</span></div><div id="my-news-body"><div class="empty">불러오는 중…</div></div></div>`,
     myPfCardHtml(),
   ].join("");
   initCommaInputs(p);
+  // 관심 레전드의 최근 7일 매수·매도 이벤트가 있으면 맨 위에 하이라이트 카드를 띄우고 '본 것'으로 기록
+  if (gurus.length) ensureGuruEvents().then((evs) => {
+    if (!alive()) return;
+    const fresh = freshGuruEvents(evs, gurus);
+    const holder = $("#my-fresh");
+    if (holder && fresh.length) { holder.outerHTML = freshGuruCardHtml(fresh); }
+    cacheSet("md:guruNewsSeen", fresh.map((x) => x.key));
+    setMyNewsDot(false);
+  }).catch(() => {});
   try { await ensureStockIndex(); } catch {}
   if (!alive()) return;
   // 비교 대상 대가: 관심 대가 + 버핏(버크셔)은 기본 포함
