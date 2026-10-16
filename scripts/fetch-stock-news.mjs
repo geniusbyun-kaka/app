@@ -11,7 +11,7 @@
 //   STOCKNEWS_PER=2    종목당 기사 수 (기본 2)
 //   STOCKNEWS_MAX=250  최대 종목 수 (기본 250)
 
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, writeFile, readFile } from "node:fs/promises";
 import path from "node:path";
 
 const OUT_DIR = process.argv[2] || "news-out";
@@ -104,6 +104,12 @@ async function tickerNews(sym) {
 async function main() {
   const tickers = await guruTickers();
   for (const t of POPULAR) tickers.add(t);
+  // 뉴스로 등록된 종목(invest/guru-news.json)도 관심 종목에 오를 수 있으니 기사를 수집한다 (예: BSP)
+  try {
+    for (const it of JSON.parse(await readFile("invest/guru-news.json", "utf8")).items || [])
+      for (const raw of String(it.ticker || "").split(/[,\s]+/))
+        if (/^[A-Z0-9.-]{1,10}$/.test(raw.trim()) && raw.trim()) tickers.add(raw.trim());
+  } catch (err) { console.warn(`[stock-news] guru-news.json 읽기 실패: ${err.message}`); }
   const list = [...tickers].slice(0, MAX);
   console.log(`[stock-news] 대상 종목 ${list.length}개`);
   const items = {};

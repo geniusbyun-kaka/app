@@ -109,6 +109,25 @@ async function fetchGuruTickers() {
   return tickers;
 }
 
+// 뉴스로 등록된 종목 (invest/guru-news.json 의 ticker). 13F 에 아직 안 잡히는 신규 IPO·사모 매입
+// 종목(예: 버크셔의 밴딩스푼스 BSP)도 다음 스냅샷부터 검색·차트에 나오게 한다.
+// 이 워크플로는 저장소를 체크아웃하므로 파일을 바로 읽는다. 티커는 야후 표기 그대로 적는다.
+async function newsTickers() {
+  try {
+    const items = JSON.parse(await readFile("invest/guru-news.json", "utf8")).items || [];
+    const out = new Set();
+    for (const it of items)
+      for (const raw of String(it.ticker || "").split(/[,\s]+/)) {
+        const t = raw.trim();
+        if (/^[A-Z][A-Z0-9-]{0,6}$/.test(t) || /^\d{6}\.(KS|KQ)$/.test(t)) out.add(t);
+      }
+    return [...out];
+  } catch (err) {
+    console.warn(`[stocks] guru-news.json 읽기 실패 (${err.message}) → 뉴스 등록 종목 없이 진행`);
+    return [];
+  }
+}
+
 async function previousIndex() {
   try {
     return JSON.parse(await readFile(path.join(OUT_DIR, "index.json"), "utf8"));
@@ -276,7 +295,13 @@ async function main() {
     .filter(([symbol]) => !/[0-9]/.test(symbol) && !/(USD|EUR|GBP|JPY|CHF)$/.test(symbol))
     .map(([symbol, name]) => ({ symbol, name, sector: "대가 보유", kind: "stock", preferYahooName: true }));
   console.log(`[stocks] 투자 대가 보유 종목 추가: ${guruItems.length}개${guruItems.length ? ` (${guruItems.slice(0, 12).map((x) => x.symbol).join(", ")}${guruItems.length > 12 ? " …" : ""})` : ""}`);
-  const items = [...baseItems, ...guruItems];
+  // 뉴스로 등록된 매수·매도 종목 중 아직 목록에 없는 티커 추가 (이름은 야후 메타로 교체)
+  const knownAll = new Set([...known, ...guruItems.map((x) => x.symbol)]);
+  const newsItems = (await newsTickers())
+    .filter((symbol) => !knownAll.has(symbol))
+    .map((symbol) => ({ symbol, name: symbol, sector: "대가 보유", kind: "stock", preferYahooName: true }));
+  if (newsItems.length) console.log(`[stocks] 뉴스 등록 종목 추가: ${newsItems.map((x) => x.symbol).join(", ")}`);
+  const items = [...baseItems, ...guruItems, ...newsItems];
 
   const prevItems = new Map((prevIndex?.items || []).map((x) => [x.symbol, x]));
   const results = [];
