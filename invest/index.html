@@ -3361,22 +3361,20 @@ function syncTableWrap(w) {
   // 버튼은 페이드 마스크에 깎이지 않고 스크롤을 따라가지 않도록 스크롤 영역 밖 셸에 둔다
   let shell = w.parentElement?.classList.contains("hscroll-shell") ? w.parentElement : null;
   let btn = shell ? shell.querySelector(":scope > .hscroll-btn") : null;
-  if (!btn && (more || scrolled)) {
+  if (!btn && more) {
     if (!shell) { shell = document.createElement("div"); shell.className = "hscroll-shell"; w.before(shell); shell.append(w); }
     btn = document.createElement("button");
     btn.type = "button"; btn.className = "hscroll-btn";
+    btn.textContent = "›";
+    btn.setAttribute("aria-label", "표 옆으로 더 보기");
     btn.addEventListener("click", () => {
       try { localStorage.setItem(HSCROLL_HINT_KEY, "1"); } catch {}
-      if (w.scrollWidth - w.clientWidth - w.scrollLeft > 6) w.scrollBy({ left: Math.max(140, w.clientWidth * 0.7), behavior: "smooth" });
-      else w.scrollTo({ left: 0, behavior: "smooth" });
+      w.scrollBy({ left: Math.max(140, w.clientWidth * 0.7), behavior: "smooth" });
     });
     shell.append(btn);
   }
-  if (btn) {
-    btn.hidden = !more && !scrolled;
-    btn.textContent = more ? "›" : "‹";
-    btn.setAttribute("aria-label", more ? "표 옆으로 더 보기" : "표 처음으로 되돌리기");
-  }
+  // 버튼은 오른쪽으로 더 넘길 내용이 있을 때만 보인다. 끝까지 가면 사라지고, 왼쪽으로 되밀면 다시 나타난다
+  if (btn) btn.hidden = !more;
   return more;
 }
 function updateTableHints() {

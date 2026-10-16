@@ -13,6 +13,17 @@
  },
  "items": [
   {
+   "date": "2026-10-14",
+   "guru": "버핏",
+   "ticker": "BSP",
+   "side": "buy",
+   "priceLow": 33,
+   "priceHigh": 33,
+   "shares": 10000000,
+   "title": "버크셔, 밴딩스푼스 $3.3억 추가 투자 (사모 증자 주당 $33에 신주 1,000만 주 · 7월 IPO 때 $6억에 이어 지분 약 4%)",
+   "url": "https://www.cnbc.com/2026/10/14/berkshire-hathaway-investment-bending-spoons.html"
+  },
+  {
    "date": "2026-06-01",
    "guru": "버핏",
    "ticker": "GOOGL",
