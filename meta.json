@@ -1,0 +1,13 @@
+{
+ "updated": "2026-10-17T03:55:33.929Z",
+ "universe": 3469,
+ "universeSource": "live",
+ "complete": 3469,
+ "coverage": 1,
+ "calls": 13,
+ "budgetOut": false,
+ "timeOut": false,
+ "minutes": 9,
+ "passed": 7,
+ "priced": 5
+}
