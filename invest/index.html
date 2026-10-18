@@ -2693,39 +2693,52 @@ const jkvWhy = (r) => r.verdict === "fail" ? (r.failKeys || []).map((k) => JK_FA
 const jkvMcap = (v) => (v == null ? "–" : v >= 1e4 ? `${fmt.n(v / 1e4, 1)}조` : `${fmt.n(v, 0)}억`);
 // 한 종목의 판정 근거 전체: 판정 요약 + 기준 11개 체크리스트 + 밸류에이션 문지기
 function jkvDetailHtml(r) {
+  // 판정 제외·이력 부족 종목은 체크리스트 숫자가 없으므로 사유만 보여준다
+  if (r.verdict !== "pass" && r.verdict !== "fail") return `<div class="jk-verdict">${jkvTag(r)}<span>${escHtml(r.note || "판정 제외 종목입니다.")}</span></div>`;
   const summary = r.verdict === "fail"
     ? `탈락 기준: <strong>${(r.failKeys || []).map((k) => JK_FAIL_LABEL[k] || k).join(" · ")}</strong>`
-    : r.verdict === "pass" ? "정량 기준을 모두 통과했습니다. 통과가 곧 추천은 아니며, 실제 조커픽은 안전마진 계산과 주간 검토를 따로 거칩니다."
-    : escHtml(r.note || "판정 제외 종목입니다.");
+    : "정량 기준을 모두 통과했습니다. 통과가 곧 추천은 아니며, 실제 조커픽은 안전마진 계산과 주간 검토를 따로 거칩니다.";
   return `<div class="jk-verdict">${jkvTag(r)}<span>${summary}${r.price ? ` · 판정 시 주가 <strong>${fmt.krw(r.price)}</strong>` : ""}</span></div>
     <div class="eyebrow" style="margin-top:14px">버핏 체크리스트 (펀더멘털 · 기준 11개 + 참고 2개)</div>
     ${jkChecklistHtml(r.metrics)}
     ${jkValuationHtml(r.valuation)}`;
 }
 function jkVerdictSeriesHtml(vd) {
-  const size = vd.batchSize || 10;
-  const chunk = (list) => { const out = []; for (let i = 0; i < (list || []).length; i += size) out.push(list.slice(i, i + size)); return out; };
-  const ko = chunk(vd.kospi), kq = chunk(vd.kosdaq);
-  // 공개 순서: 코스피 1~10위 → 코스닥 1~10위 → 코스피 11~20위 → … 를 한 줄로 펴서 매주 1종목씩 공개
-  const flat = [];
-  for (let i = 0; i < Math.max(ko.length, kq.length); i++) { if (ko[i]) flat.push(...ko[i]); if (kq[i]) flat.push(...kq[i]); }
-  if (!flat.length) return "";
-  const weeks = Math.floor((Date.now() - new Date(vd.seriesStart + "T00:00:00+09:00")) / 6048e5);
-  const visible = Math.min(Math.max(weeks + 1, 1), flat.length);
-  jkvRows = flat.slice(0, visible);
-  const cur = jkvRows[visible - 1];
-  const history = jkvRows.map((r, i) => ({ r, i })).reverse(); // 최신 회차가 위
-  return `<div class="card-head"><h3>버핏 판정 시리즈 · 한국 시총 상위</h3><span class="small faint">매주 월요일 1종목씩 공개 · ${escHtml(vd.updated || "")} 기준</span></div>
-    <p class="desc">통과하는 종목만 소개하는 코너가 아닙니다. 시총이 큰 기업부터 매주 월요일 1종목씩, <strong>버핏 정량 기준 11개를 통과하는지, 탈락이면 어떤 기준에서 왜 탈락하는지</strong>를 판정 근거와 함께 공개합니다. <strong>밸류에이션</strong>(3년 평균 FCF 수익률 ≥ 국고채 10년물 × 2)은 펀더멘털과 독립으로 표기되어, 펀더멘털은 미달이지만 가격이 충분히 싼 상태(버크셔가 레너를 산 이유 같은)도 그대로 보입니다. 공개된 종목은 아래 표에 차곡차곡 쌓이고, <strong>표에서 종목을 누르면</strong> 기준 11개 판정 근거가 펼쳐집니다. 통과가 곧 추천은 아니며, 실제 조커픽은 안전마진 계산과 주간 검토를 따로 거칩니다.</p>
-    <div class="eyebrow" style="margin-top:16px">이번 주 판정 · ${visible}회차 · ${escHtml(cur.market || "")} 시총 ${cur.rank ?? "–"}위</div>
+  // 매주 월요일 코스피 1종목 + 코스닥 1종목을 시총 순서대로 집중분석해 공개한다 (David 로직).
+  // 판정 제외(금융·지주)와 10년 이력 부족 종목은 회차(집중분석)를 소비하지 않고,
+  // 자기 시총 순서가 지나갈 때 기록 표에 라벨로만 끼워 넣는다.
+  const judgeable = (r) => r.verdict === "pass" || r.verdict === "fail";
+  const weeks = Math.max(0, Math.floor((Date.now() - new Date(vd.seriesStart + "T00:00:00+09:00")) / 6048e5));
+  const ep = weeks + 1; // 이번 주 회차
+  // 이번 주까지 공개분: 판정 가능한 종목 ep개와, 그 사이를 지나간 제외·이력 부족 종목
+  const take = (list) => {
+    const out = []; let n = 0;
+    for (const r of list || []) { out.push({ r, ep: Math.min(n + 1, ep) }); if (judgeable(r)) { n++; if (n >= ep) break; } }
+    if (n < 1) return []; // 판정 가능한 종목이 아직 없으면 그 시장은 비워 둔다
+    while (out.length && !judgeable(out.at(-1).r)) out.pop(); // 아직 회차가 안 온 꼬리의 제외 종목은 미공개
+    return out;
+  };
+  const nextOf = (list, taken) => (list || []).slice(taken.length).find(judgeable);
+  const ko = take(vd.kospi), kq = take(vd.kosdaq);
+  if (!ko.length && !kq.length) return "";
+  const curs = [ko.at(-1), kq.at(-1)].filter(Boolean).map((x) => x.r);
+  const epNow = Math.max(ko.at(-1)?.ep || 0, kq.at(-1)?.ep || 0);
+  // 기록 표: 최신 회차가 위, 같은 회차는 코스피 먼저. 제외·이력 부족 종목은 함께 공개된 회차 자리에 붙는다
+  jkvRows = [...ko, ...kq].sort((a, b) => b.ep - a.ep || (a.r.market === "코스피" ? -1 : 1) - (b.r.market === "코스피" ? -1 : 1) || (a.r.rank ?? 0) - (b.r.rank ?? 0)).map((x) => x.r);
+  const epOf = new Map([...ko, ...kq].map((x) => [x.r, x.ep]));
+  const nk = nextOf(vd.kospi, ko), nq = nextOf(vd.kosdaq, kq);
+  const nextNote = [nk && `코스피 시총 ${nk.rank ?? "–"}위`, nq && `코스닥 시총 ${nq.rank ?? "–"}위`].filter(Boolean).join(" · ");
+  return `<div class="card-head"><h3>버핏 판정 시리즈 · 한국 시총 상위</h3><span class="small faint">매주 월요일 코스피·코스닥 1종목씩 공개 · ${escHtml(vd.updated || "")} 기준</span></div>
+    <p class="desc">통과하는 종목만 소개하는 코너가 아닙니다. 시총이 큰 기업부터 매주 월요일 <strong>코스피 1종목과 코스닥 1종목을 집중분석</strong>해, <strong>버핏 정량 기준 11개를 통과하는지, 탈락이면 어떤 기준에서 왜 탈락하는지</strong>를 판정 근거와 함께 공개합니다. <strong>밸류에이션</strong>(3년 평균 FCF 수익률 ≥ 국고채 10년물 × 2)은 펀더멘털과 독립으로 표기되어, 펀더멘털은 미달이지만 가격이 충분히 싼 상태(버크셔가 레너를 산 이유 같은)도 그대로 보입니다. 산식이 맞지 않는 금융·지주사와 10년 이력이 안 되는 종목은 집중분석 대신 기록 표에 사유와 함께 올립니다. 공개된 종목은 아래 표에 차곡차곡 쌓이고, <strong>표에서 종목을 누르면</strong> 기준 11개 판정 근거가 펼쳐집니다. 통과가 곧 추천은 아니며, 실제 조커픽은 안전마진 계산과 주간 검토를 따로 거칩니다.</p>
+    ${curs.map((cur) => `<div class="eyebrow" style="margin-top:16px">이번 주 판정 · ${epNow}회차 · ${escHtml(cur.market || "")} 시총 ${cur.rank ?? "–"}위</div>
     <div class="card-head" style="margin:8px 0 0"><h3>${escHtml(cur.name)} <span class="tk plain">${escHtml(cur.ticker)}</span></h3><span class="small faint">시총 ${jkvMcap(cur.mcapEok)}</span></div>
-    ${jkvDetailHtml(cur)}
+    ${jkvDetailHtml(cur)}`).join("")}
     <div class="eyebrow" style="margin-top:20px">지금까지의 판정 기록 · 종목을 누르면 근거가 펼쳐집니다</div>
     <div class="tablewrap" style="margin-top:6px"><table><thead><tr><th>회차</th><th>종목</th><th>시장 · 순위</th><th>시총</th><th>펀더멘털</th><th>밸류에이션</th><th>탈락 사유 · 비고</th></tr></thead><tbody>
-    ${history.map(({ r, i }) => `<tr class="jkv-row" data-jkv="${i}"><td class="txt">${i + 1}회차</td><td class="txt"><strong>${escHtml(r.name)}</strong> <span class="tk plain">${escHtml(r.ticker)}</span></td><td class="txt">${escHtml(r.market || "")} ${r.rank ?? "–"}위</td><td>${jkvMcap(r.mcapEok)}</td><td class="txt">${jkvTag(r)}</td><td class="txt">${r.valuation ? `${r.valuation.pass ? '<span class="tag inc">통과</span>' : '<span class="tag exit">미달</span>'} <span class="faint small">FCF ${fmt.n(r.valuation.fcfYield, 1)}%</span>` : "–"}</td><td class="txt" style="white-space:normal">${jkvWhy(r)} <span class="jkv-more">근거 ▾</span></td></tr>
+    ${jkvRows.map((r, i) => `<tr class="jkv-row" data-jkv="${i}"><td class="txt">${judgeable(r) ? `${epOf.get(r)}회차` : '<span class="faint">판정 외</span>'}</td><td class="txt"><strong>${escHtml(r.name)}</strong> <span class="tk plain">${escHtml(r.ticker)}</span></td><td class="txt">${escHtml(r.market || "")} ${r.rank ?? "–"}위</td><td>${jkvMcap(r.mcapEok)}</td><td class="txt">${jkvTag(r)}</td><td class="txt">${r.valuation ? `${r.valuation.pass ? '<span class="tag inc">통과</span>' : '<span class="tag exit">미달</span>'} <span class="faint small">FCF ${fmt.n(r.valuation.fcfYield, 1)}%</span>` : "–"}</td><td class="txt" style="white-space:normal">${jkvWhy(r)} ${judgeable(r) ? '<span class="jkv-more">근거 ▾</span>' : ""}</td></tr>
     <tr class="jkv-detail" data-jkv-detail="${i}" hidden><td colspan="7"></td></tr>`).join("")}
     </tbody></table></div>
-    ${visible < flat.length ? `<p class="small faint" style="margin-top:10px">다음 종목(${escHtml(flat[visible].market || "")} 시총 ${flat[visible].rank ?? "–"}위)은 다음 주 월요일에 공개됩니다.</p>` : ""}`;
+    ${nextNote ? `<p class="small faint" style="margin-top:10px">다음 회차(${nextNote})는 다음 주 월요일에 공개됩니다.</p>` : ""}`;
 }
 // 표에서 종목을 누르면 바로 아래 줄에 그 종목의 기준 11개 판정 근거를 펼치거나 접는다
 function toggleJkvDetail(i) {
