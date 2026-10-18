@@ -627,15 +627,23 @@ async function main() {
     };
     const verdicts = { kospi: [], kosdaq: [] };
     for (const [key, market] of [["kospi", "코스피"], ["kosdaq", "코스닥"]]) {
-      for (const t of topcap[key] || []) verdicts[key].push(await verdictRow(t, market));
-      // 실제 시총(주가×주식수)으로 정렬. 시총을 못 구한 회사(판정 제외·데이터 부족)는 뒤로
-      verdicts[key].sort((a, b) => (b.mcapEok ?? -1) - (a.mcapEok ?? -1));
-      verdicts[key].forEach((r, i) => (r.rank = i + 1));
+      const rows = [];
+      for (const t of topcap[key] || []) rows.push(await verdictRow(t, market));
+      // 실제 시총(주가×주식수)으로 정렬. 시총을 못 구한 회사(판정 제외·10년 이력 부족)는
+      // 맨 뒤로 보내지 않고 kr-topcap.json 에 적힌 자리(대략 시총순)를 그대로 지킨다 —
+      // 매주 시총 순서대로 공개하는 시리즈에서 실제 시총 상위가 뒤 회차로 밀리면 안 된다.
+      const ranked = rows.filter((r) => r.mcapEok != null).sort((a, b) => b.mcapEok - a.mcapEok);
+      const out = [];
+      rows.forEach((r, i) => { if (r.mcapEok == null) out[i] = r; });
+      let wi = 0;
+      for (let i = 0; i < rows.length; i++) if (!out[i]) out[i] = ranked[wi++];
+      out.forEach((r, i) => (r.rank = i + 1));
+      verdicts[key] = out;
     }
     await writeFile(path.join(OUT_DIR, "joker-verdicts.json"), JSON.stringify({
       updated: now.toISOString().slice(0, 10),
-      seriesStart: "2026-10-05", // 첫 공개 주의 월요일. 앱이 이 날부터 매주 한 배치(10개)씩 공개한다
-      batchSize: 10,
+      seriesStart: "2026-10-05", // 첫 공개 주의 월요일. 앱이 이 날부터 매주 코스피·코스닥 1종목씩 공개한다
+      batchSize: 10, // (구버전 앱 호환용 · 현재 앱은 사용하지 않음)
       note: "버핏 정량 체크리스트와 밸류 트랩·지배구조·수급 필터로 시총 상위 기업을 판정합니다. 통과는 정량 기준 통과일 뿐 추천이 아니며, 실제 조커픽은 안전마진 계산과 주간 검토를 따로 거칩니다.",
       kospi: verdicts.kospi, kosdaq: verdicts.kosdaq,
     }, null, 1));
