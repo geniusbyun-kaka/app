@@ -6,7 +6,7 @@
 // 판정 로직은 앱(invest/index.html)의 공용 로직을 그대로 포팅했다:
 //   추종 대상 = 연속 매수 2분기 이상 또는 8분기 중 2회 이상 매수(그 사이 매도 없음), 평가액 $150M 이상
 //   최근 매수가 = 마지막 매수 분기 종가 최저가 +5%, Form 4·수기 뉴스 실단가가 있으면 그 가중평균
-//   강력 추천 = 현재가(종가)가 최근 매수가 이하 · 추천 = 최근 매수가 대비 +10% 이내
+//   강력 추천 = 현재가(종가)가 최근 매수가 대비 +5% 이내 · 추천 = 최근 매수가 대비 +13% 이내
 // 로직을 앱에서 바꾸면 여기도 같이 바꿀 것 (docs/mopick-logic.md §2 참조).
 //
 // 필요 환경변수: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT(mailto:...),
@@ -145,10 +145,10 @@ async function strongPicks() {
       const cur = priceOf(h.ticker) ?? stock.close.at(-1);
       if (cur == null || !(recent.mid > 0)) continue;
       const rel = cur / recent.mid - 1;
-      if (rel > 0.10) continue; // 강력 추천(최근 매수가 이하)과 추천(+10% 이내)만 알림
+      if (rel > 0.13) continue; // 강력 추천(최근 매수가 +5% 이내)과 추천(+13% 이내)만 알림
       const key = alias(h.ticker);
       const prev = best.get(key);
-      if (!prev || rel < prev.rel) best.set(key, { ticker: h.ticker, guru: g.short, cur, mid: recent.mid, rel, strong: rel <= 0, weight: totalValue ? h.value / totalValue : 0 });
+      if (!prev || rel < prev.rel) best.set(key, { ticker: h.ticker, guru: g.short, cur, mid: recent.mid, rel, strong: rel <= 0.05, weight: totalValue ? h.value / totalValue : 0 });
     }
   }
   // 할인 폭 순 정렬이라 강력 추천이 자연히 앞에 온다. 알림이 길어지지 않게 6종목까지만.
