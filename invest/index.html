@@ -2065,7 +2065,6 @@ async function renderMaxPrices() {
   const gurus = GURUS.filter((g) => g.ready);
   body.innerHTML = [
     maxBackBtn,
-    `<p class="desc"><strong>레전드 실매수 추종 트랙</strong>입니다: 조커픽의 자체 발굴 체크리스트와 별개로, 레전드가 공시로 확인된 가격에 실제로 사고 있다는 사실 자체를 따라갑니다 (펀더멘털 체크리스트 통과 여부와 무관). 추천 대상은 레전드 연속 매수 종목 화면과 같은 기준입니다: <strong>최근 분기까지 연속 매수 중</strong>이거나 <strong>꾸준히 모으는 종목</strong>(최근 8분기 중 2회 이상 매수, 그 사이 매도 없음)만 올립니다. 여기에 더해 <strong>분기말 보유 평가액 $150M 미만</strong>의 소형 포지션은 연속 매수 중이라도 뺍니다 (수백 종목을 들고 있는 기관의 잔챙이 포지션까지 다 올라오면 정작 의미 있는 픽이 묻히기 때문입니다). <strong>추정 평균단가</strong>는 레전드가 매수한 분기마다 그 분기 <strong>종가 최저가에서 5% 오른 가격</strong>을 매수 단가로 보고, 그 분기에 늘린 주식수로 가중평균한 값입니다 (레전드들은 약세 구간에서 분할 매수하는 경향이 있어 저점 부근 체결로 봅니다). <strong>최근 매수가</strong>는 가장 최근에 매수한 분기의 같은 추정가인데, SEC Form 4 · 13D/G 공시나 수기 등록된 매수 뉴스에 <strong>실제 단가</strong>가 있으면(예: 버크셔의 레너 추가 매수, 알파벳 $350 사모 매입) 추정가 대신 그 단가의 주식수 가중평균을 사용하며 태그가 붙습니다 (My Page 와 같은 값). 따라 사기 판단은 이 값을 기준으로 합니다. 현재가가 <strong>최근 매수가보다 낮으면 강력 추천</strong>, <strong>+10% 이내면 추천</strong>, 그보다 높으면 관망입니다. 티커를 누르면 종목 차트로 이동합니다.</p>`,
     gurus.map((g) => `<div class="card" id="mx-follow-${g.id}"><div class="card-head"><h3>${g.name} · ${g.org}</h3></div><div class="empty">분기별 매수와 주가 이력으로 추정 단가를 계산하는 중…</div></div>`).join(""),
     pushAlertCardHtml(),
     alertsCardHtml(),
