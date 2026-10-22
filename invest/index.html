@@ -3923,7 +3923,7 @@ function saveCloudFavs() {
   sb.from("profiles").update({ favorites: { stocks: favStocks(), gurus: favGurus() } }).eq("id", auth.user.id)
     .then(({ error }) => { if (error) console.warn(`관심 목록을 계정에 저장하지 못했습니다 (Supabase 에서 supabase/schema.sql 최신본을 실행했는지 확인): ${error.message}`); });
 }
-// 관심 종목 뉴스 스냅샷 (news 브랜치의 stock-news.json · 매일 오전 6시 갱신)
+// 관심 종목 뉴스 스냅샷 (news 브랜치의 stock-news.json · 하루 4회 갱신)
 let stockNewsPromise = null;
 function ensureStockNews() {
   if (!stockNewsPromise) stockNewsPromise = fetch(`${NEWS_BASE}stock-news.json?t=${Date.now()}`, { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((n) => (state.stockNews = n || null));
@@ -4023,7 +4023,7 @@ async function myNewsHtml(stocks, guruObjs) {
     const groups = stocks.map((sym) => {
       const items = (sn?.items?.[sym] || sn?.items?.[myAlias(sym)] || []).slice(0, 2);
       return `<div class="my-news-group"><div class="hd"><span class="tk" data-stock="${sym}">${sym}</span><span class="nm">${state.stockIndex?.items.find((x) => x.symbol === sym)?.name || ""}</span></div>
-        ${items.length ? items.map(newsItem).join("") : `<div class="my-news-item"><div class="src">${sn ? "이 종목의 수집된 기사가 아직 없습니다" : "종목 뉴스 스냅샷이 아직 없습니다. 다음 뉴스 갱신(매일 오전 6시)부터 표시됩니다"}</div></div>`}
+        ${items.length ? items.map(newsItem).join("") : `<div class="my-news-item"><div class="src">${sn ? "이 종목의 수집된 기사가 아직 없습니다" : "종목 뉴스 스냅샷이 아직 없습니다. 다음 뉴스 갱신(하루 4회, 0시·6시·12시·18시)부터 표시됩니다"}</div></div>`}
       </div>`;
     });
     parts.push(`<div class="eyebrow">관심 종목 뉴스 ${sn?.updated ? `· ${fmt.time(sn.updated)} 수집` : ""}</div>${groups.join("")}`);
@@ -4047,7 +4047,7 @@ async function myNewsHtml(stocks, guruObjs) {
     });
     parts.push(`<div class="eyebrow" style="margin-top:${stocks.length ? "14px" : "0"}">관심 레전드 매수·매도 공시</div>${groups.join("")}`);
   }
-  parts.push(`<p class="small faint" style="margin-top:10px">종목 뉴스는 매일 한국시간 오전 6시에 수집되고, 레전드 공시(SEC Form 4 · 13D/G)는 매주 월요일 갱신됩니다.</p>`);
+  parts.push(`<p class="small faint" style="margin-top:10px">종목 뉴스는 하루 4회(한국시간 0시·6시·12시·18시) 수집되고, 레전드 공시(SEC Form 4 · 13D/G)는 매주 월요일 갱신됩니다.</p>`);
   return parts.join("");
 }
 // ── 관심 레전드 새 소식: 최근 7일 안의 매수·매도 이벤트(SEC 자동 수집 + 뉴스 등록)가 있으면
@@ -4158,7 +4158,7 @@ async function renderMyPage() {
     `<div id="my-fresh" hidden></div>`,
     stocks.length ? `<div class="card"><div class="card-head"><h3>관심 종목</h3><span class="small faint">레전드들의 최근 매수가와 비교</span></div><div id="my-stocks-body"><div class="empty">13F 와 주가 이력으로 추정 단가를 계산하는 중…</div></div></div>` : "",
     guruObjs.map((g) => `<div class="card" id="my-guru-${g.id}"><div class="card-head"><h3>${g.name} · ${g.org}</h3></div><div class="empty">13F 데이터를 불러오는 중…</div></div>`).join(""),
-    `<div class="card"><div class="card-head"><h3>뉴스 및 공시</h3><span class="small faint">매일 오전 6시 갱신</span></div><div id="my-news-body"><div class="empty">불러오는 중…</div></div></div>`,
+    `<div class="card"><div class="card-head"><h3>뉴스 및 공시</h3><span class="small faint">하루 4회 갱신</span></div><div id="my-news-body"><div class="empty">불러오는 중…</div></div></div>`,
     myPfCardHtml(),
   ].join("");
   initCommaInputs(p);

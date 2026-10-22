@@ -2,7 +2,7 @@
 // 마이 페이지의 '뉴스 및 공시'용 종목별 뉴스 스냅샷.
 // 대가들의 13F 보유 종목(filings 브랜치) + 인기 종목/ETF 목록을 모아
 // Yahoo Finance 검색 API 에서 종목당 최신 기사 2개씩 받아 제목을 한국어로 번역해 저장한다.
-// 기존 CNBC 뉴스 워크플로(news-data.yml)에서 매일 한국시간 오전 6시(21:00 UTC)에 함께 실행된다.
+// 기존 CNBC 뉴스 워크플로(news-data.yml)에서 하루 4회(한국시간 0시·6시·12시·18시)에 함께 실행된다.
 //
 // 결과물 (출력 폴더 기준):
 //   stock-news.json  { updated, count, items: { TICKER: [{ title, titleKo, url, publisher, published }] } }
