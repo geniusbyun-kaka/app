@@ -665,7 +665,7 @@ try { if (localStorage.getItem("sb-hzzmzpsjuovijtananmf-auth-token")) document.g
       <p>주식은 절대 투기를 위한 상품이 아닙니다. 국내 부동산 투자와 같이 <strong>장기적인 시각</strong>을 가지고 하셔야 합니다. 좋은 자산을 꾸준히 모아가면 시간이 수익을 만들어 줍니다.</p>
       <blockquote class="quote">"10년 동안 보유할 생각이 없는 주식은 단 10분도 보유하지 마십시오."<br><span class="small faint">If you aren't willing to own a stock for ten years, don't even think about owning it for ten minutes. — 워렌 버핏, 1996년 버크셔 해서웨이 주주서한</span></blockquote>
       <div id="lessons"></div>
-      <p class="small faint" style="margin-top:12px"><a href="https://github.com/geniusbyun-kaka/app/edit/claude/baby-sleep-tracking-app-23p7s7/invest/lessons.json" target="_blank" rel="noopener">글 관리 (관리자 전용)</a> · 저장소 관리자만 편집할 수 있고, 저장하면 잠시 뒤 이 페이지에 반영됩니다</p>
+      <p class="small faint" style="margin-top:12px"><a href="https://github.com/geniusbyun-kaka/app/edit/main/invest/lessons.json" target="_blank" rel="noopener">글 관리 (관리자 전용)</a> · 저장소 관리자만 편집할 수 있고, 저장하면 잠시 뒤 이 페이지에 반영됩니다</p>
     </div>
     <div class="card">
       <div class="card-head"><h3>1단계 · 주식 통장(증권 계좌) 만들기</h3><span class="small faint">신분증 하나로 5~10분</span></div>
@@ -2120,7 +2120,7 @@ function guruEventsCardHtml(evs) {
   const inIdx = (t) => !!state.stockIndex?.items.some((x) => x.symbol === t);
   return `<div class="card"><div class="card-head"><h3>13F 밖 최근 매수·매도 소식</h3><span class="small faint">SEC Form 4 · 13D/G 자동 수집 (매일 오전 6시 갱신) + 수기 등록</span></div>
     ${rows.length ? `<div class="tablewrap"><table><thead><tr><th>날짜</th><th>레전드</th><th>종목</th><th>내용</th></tr></thead><tbody>${rows.map((r) => `<tr><td class="txt">${String(r.date).slice(2, 10)}</td><td class="txt">${r.guru}</td><td class="txt">${r.ticker ? `<span class="tk ${inIdx(r.ticker) ? "" : "plain"}" ${inIdx(r.ticker) ? `data-stock="${r.ticker}"` : ""}>${r.ticker}</span>` : "–"}</td><td class="txt" style="white-space:normal;min-width:180px">${r.html}${r.url ? ` · <a href="${escHtml(r.url)}" target="_blank" rel="noopener">공시 보기</a>` : ""}</td></tr>`).join("")}</tbody></table></div>` : `<div class="empty">최근 수집된 공시가 없습니다. 13F 스냅샷 워크플로가 실행되면(매일 오전 6시) 자동으로 채워집니다.</div>`}
-    <p class="small faint" style="margin-top:8px">Form 4 는 지분 10% 이상 보유자가 매매 후 이틀 안에 날짜·주식수·단가까지 신고하는 공시라 13F 보다 훨씬 빠릅니다 (버크셔의 레너 매수가 이렇게 공개됐습니다). 13D/G 는 5% 지분 공시입니다. <a href="https://github.com/geniusbyun-kaka/app/edit/claude/baby-sleep-tracking-app-23p7s7/invest/guru-news.json" target="_blank" rel="noopener">뉴스 수기 등록 (관리자 전용)</a></p></div>`;
+    <p class="small faint" style="margin-top:8px">Form 4 는 지분 10% 이상 보유자가 매매 후 이틀 안에 날짜·주식수·단가까지 신고하는 공시라 13F 보다 훨씬 빠릅니다 (버크셔의 레너 매수가 이렇게 공개됐습니다). 13D/G 는 5% 지분 공시입니다. <a href="https://github.com/geniusbyun-kaka/app/edit/main/invest/guru-news.json" target="_blank" rel="noopener">뉴스 수기 등록 (관리자 전용)</a></p></div>`;
 }
 async function renderMaxCommon() {
   const body = $("#max-body");
