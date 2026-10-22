@@ -119,7 +119,7 @@ header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:spac
 .fresh-item .d{font-family:var(--mono);font-size:12px;color:var(--ink-3);white-space:nowrap}
 .fresh-badge{display:inline-block;padding:1px 7px;border-radius:999px;background:#F0625F;color:#fff;font-size:10.5px;font-weight:700;letter-spacing:.04em;white-space:nowrap}
 @media (max-width:640px){
-  #refresh,#login{padding:4px 9px;font-size:12px}
+  #login{padding:4px 9px;font-size:12px}
 }
 .tab.more-toggle{padding:14px 16px;font-size:14.5px;color:var(--ink-3)}
 .tabs-extra{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:6px}
@@ -566,7 +566,6 @@ try { if (localStorage.getItem("sb-hzzmzpsjuovijtananmf-auth-token")) document.g
     </div>
     <div class="status">
       <span id="status"><span class="dot"></span>데이터 불러오는 중</span>
-      <button class="btn" id="refresh" type="button">새로고침</button>
       <button class="btn" id="login" type="button">로그인</button>
       <button class="btn" id="my-open" type="button" aria-pressed="false">My Page</button>
       <button class="btn primary compact" id="sub-open" type="button">구독하기</button>
@@ -1269,8 +1268,7 @@ async function loadLive() {
     state.latest = latest; state.intraday = intraday;
     cacheSet("md:latest", latest); cacheSet("md:intraday", intraday);
     renderQuotes(); hideNotice();
-    const age = (Date.now() - new Date(latest.updated)) / 60000;
-    setStatus(age > 45 ? "warn" : "ok", `스냅샷 ${fmt.time(latest.updated)} (${fmt.ago(latest.updated)})${age > 45 ? " · 갱신이 지연되고 있습니다" : ""}`);
+    setStatus("ok", `스냅샷 ${fmt.time(latest.updated)} (${fmt.ago(latest.updated)})`);
   } catch (err) {
     if (state.latest) { setStatus("warn", `새 데이터를 받지 못해 이전 스냅샷 표시 (${fmt.ago(state.latest.updated)})`); return; }
     setStatus("bad", "시세 데이터 없음");
@@ -3344,7 +3342,6 @@ $("#bottom-nav").addEventListener("click", (e) => {
   selectTab(b.dataset.bn);
   window.scrollTo({ top: 0 });
 });
-$("#refresh").addEventListener("click", loadAll);
 $("#bt-asset2-add").addEventListener("click", () => { $("#bt-asset2-wrap").hidden = false; $("#bt-asset2-add-wrap").hidden = true; $("#bt-asset2").focus(); });
 $("#bt-asset2-remove").addEventListener("click", () => { $("#bt-asset2-wrap").hidden = true; $("#bt-asset2-add-wrap").hidden = false; $("#bt-asset2").value = ""; });
 $("#bt-asset2").addEventListener("keydown", (e) => { if (e.key === "Enter") runFromForm(); });
@@ -3997,8 +3994,7 @@ function myStockTableHtml(rows) {
         <td class="${m.rel == null ? "" : m.rel <= 0 ? "pos" : "neg"}">${m.rel == null ? "–" : fmt.pct(m.rel)}</td>${tail}</tr>`;
     });
   });
-  return `<div class="tablewrap"><table><thead><tr><th>종목</th><th>판단</th><th>현재가</th><th>전일비</th><th>관심 레전드</th><th>마지막 매수</th><th>최근 매수가 (추정)</th><th>최근 매수가 대비</th><th>관리</th></tr></thead><tbody>${trs.join("")}</tbody></table></div>
-    <p class="small faint" style="margin-top:8px">최근 매수가는 레전드가 마지막으로 매수한 분기의 <strong>종가 최저가에서 5% 오른 가격</strong>으로 계산한 추정치입니다. 다만 SEC Form 4 · 13D/G 공시나 수기 등록된 매수 뉴스에 <strong>실제 단가</strong>가 있으면(마지막 13F 매수 분기 안의 거래 포함 · 예: 버크셔의 레너 추가 매수, 알파벳 $350 사모 매입) 추정가 대신 그 공시들의 주식수 가중평균 단가를 최근 매수가로 사용하며 <span class="tag new">Form 4</span> 또는 <span class="tag new">매입 공시·뉴스</span> 표시가 붙습니다. 현재가가 최근 매수가보다 낮으면 <strong>강력 추천</strong>, +10% 이내면 <strong>추천</strong>입니다. 티커를 누르면 종목 차트로 이동합니다.</p>`;
+  return `<div class="tablewrap"><table><thead><tr><th>종목</th><th>판단</th><th>현재가</th><th>전일비</th><th>관심 레전드</th><th>마지막 매수</th><th>최근 매수가 (추정)</th><th>최근 매수가 대비</th><th>관리</th></tr></thead><tbody>${trs.join("")}</tbody></table></div>`;
 }
 async function myGuruCardHtml(g) {
   const headBtn = `<button class="btn" type="button" data-port-open="${g.id}" style="margin-left:auto">상세 보기 →</button>`;
