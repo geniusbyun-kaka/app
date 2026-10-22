@@ -28,6 +28,8 @@ create policy "update own profile" on public.profiles
 revoke all on public.profiles from anon, authenticated;
 grant select on public.profiles to authenticated;
 grant update (display_name, last_seen_at) on public.profiles to authenticated;
+-- 2025-10-30 이후 새로 만드는 테이블은 명시적 grant 가 없으면 Data API 가 접근 못 함
+grant select, insert, update, delete on public.profiles to service_role;
 
 -- 가입하면 profiles 에 한 줄 자동 생성
 create or replace function public.handle_new_user()
@@ -91,6 +93,8 @@ create policy "delete own push subscriptions" on public.push_subscriptions
 
 revoke all on public.push_subscriptions from anon, authenticated;
 grant select, insert, delete on public.push_subscriptions to authenticated;
+-- push-alerts 워크플로가 service_role 키로 REST API 를 통해 읽고 지움
+grant select, insert, update, delete on public.push_subscriptions to service_role;
 
 -- ── 문의 및 건의사항 ──────────────────────────────────────────────
 -- 문의 탭에서 보낸 글. 회원은 자기 문의만 보고 쓸 수 있고,
@@ -119,3 +123,4 @@ create policy "insert own inquiries" on public.inquiries
 revoke all on public.inquiries from anon, authenticated;
 grant select on public.inquiries to authenticated;
 grant insert (user_id, email, title, body) on public.inquiries to authenticated;
+grant select, insert, update, delete on public.inquiries to service_role;
