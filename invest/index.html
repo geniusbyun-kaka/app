@@ -2030,28 +2030,6 @@ function followTagHtml(grade) {
   if (grade === 0) return '<span class="tag">관망</span>';
   return "";
 }
-// 대가별 따라 사기 판단(강력 추천·추천·관망)을 티커별로 모은다. 여러 대가가 겹치면 가장 좋은 판단을 쓴다.
-// 공통 매수 화면에서 종목 이름 옆 태그로 쓰이며, 종목별 주가 이력을 내려받아 계산하므로 한 번 계산 후 캐시한다.
-let followGradesPromise = null;
-function ensureFollowGrades() {
-  if (!followGradesPromise) followGradesPromise = (async () => {
-    const map = new Map();
-    for (const g of GURUS.filter((x) => x.ready)) {
-      try {
-        const f = await ensureGuruFilings(g);
-        const { rows } = await guruFollowRows(g, f);
-        for (const r of rows) {
-          if (!r.h.ticker || r.grade < 0) continue;
-          const key = SHARE_CLASS_ALIAS[r.h.ticker] || r.h.ticker;
-          const prev = map.get(key);
-          if (prev == null || r.grade > prev) map.set(key, r.grade);
-        }
-      } catch {}
-    }
-    return map;
-  })();
-  return followGradesPromise;
-}
 function followSectionHtml(g, f, rows, missing) {
   const table = rows.length ? `<div class="tablewrap"><table><thead><tr><th>종목</th><th>판단</th><th>마지막 매수</th><th>매수 분기</th><th>추정 평균단가</th><th>최근 매수가</th><th>현재가</th><th>최근 매수가 대비</th></tr></thead><tbody>${rows.map((r) => `<tr>
       <td class="txt">${tickerHtml(r.h)}</td><td class="txt">${followGradeHtml(r)}</td><td class="txt">${r.recent.period}${r.recent.evLabel ? ` <span class="tag new">${r.recent.evLabel}</span>` : ""}</td><td>${r.nBuys}회</td><td>$${fmt.n(r.avg)}</td><td>$${fmt.n(r.recent.mid)}${r.recent.evLabel && r.recent.shares ? ` <span class="faint small">${fmtSh(r.recent.shares)}주</span>` : ""}</td><td>${r.cur != null ? "$" + fmt.n(r.cur) : "–"}</td><td class="${r.rel == null ? "" : r.rel <= 0 ? "pos" : "neg"}">${r.rel == null ? "–" : fmt.pct(r.rel)}</td>
@@ -2156,19 +2134,20 @@ async function renderMaxCommon() {
   const priceOf = (e) => { for (const t of e.tickers) { const p = idx.find((x) => x.symbol === t)?.price; if (p != null) return p; } return null; };
   all.forEach((e, i) => { e.id = i; e.price = priceOf(e); });
   state.commonRows = all; // 상세 창(숫자 클릭)에서 사용
-  const tickerCell = (e, withGrade = true) => {
+  const tickerCell = (e) => {
     const first = [...e.tickers].find((t) => idx.some((x) => x.symbol === t));
     const label = e.tickers.size ? [...e.tickers].join("·") : "–";
-    return `<span class="tk ${first ? "" : "plain"}" ${first ? `data-stock="${first}"` : ""}>${label}</span><span class="nm">${e.name}</span>${withGrade ? `<span class="cm-grade" data-cm-grade="${e.id}"></span>` : ""}`;
+    return `<span class="tk ${first ? "" : "plain"}" ${first ? `data-stock="${first}"` : ""}>${label}</span><span class="nm">${e.name}</span>`;
   };
   // ── 이번 분기 공통 매수 추천 종목: 대가당 $10M 이상 매수만 놓고, 근거가 많은 순으로 5종목 ──
+  // 이 화면은 가격을 보지 않으므로 강력 추천·추천 같은 가격 판단 어휘를 쓰지 않는다 (그건 Pro 의
+  // 매수 가격 따라가기 전용). 대신 근거 칸에 합의의 근거(인원·버핏/애크먼·시총)를 전부 보여준다.
   const reco = all.filter((e) => (e.qualified = e.holders.filter((x) => x.buyVal >= RECO_MIN_BUY)).length);
-  // reasons 는 순위 매기기(정렬·강력 추천 판단)에만 쓰고, 표의 근거 칸에는 시총 TOP 50 만 보여준다
-  // (함께 매수한 인원·버핏/애크먼 여부는 매수 대가 칸에 이미 드러나는 정보라 중복 표기하지 않는다)
   reco.forEach((e) => {
     e.reasons = [];
     if (e.qualified.length >= 2) e.reasons.push(`${e.qualified.length}명이 함께 매수`);
-    if (e.qualified.some((x) => x.g.id === "buffett" || x.g.id === "ackman")) e.reasons.push("버핏·애크먼의 매수");
+    const bigs = e.qualified.filter((x) => x.g.id === "buffett" || x.g.id === "ackman").map((x) => GURU_SHORT[x.g.id] || x.g.name);
+    if (bigs.length) e.reasons.push(`${bigs.join("·")} 매수`);
     e.top50 = [...e.tickers].some((t) => TOP50_US.has(SHARE_CLASS_ALIAS[t] || t));
     if (e.top50) e.reasons.push("미국 시총 TOP 50");
     e.buySum = e.qualified.reduce((s, x) => s + x.buyVal, 0);
@@ -2176,11 +2155,10 @@ async function renderMaxCommon() {
   reco.sort((a, b) => b.reasons.length - a.reasons.length || b.qualified.length - a.qualified.length || b.buySum - a.buySum);
   const recoTop = reco.slice(0, 5);
   const recoCard = `<div class="card"><div class="card-head"><h3>이번 분기 공통 매수 추천 종목</h3><span class="small faint">레전드당 $10M 이상 매수한 종목 중 TOP 5</span></div>
-    ${recoTop.length ? `<div class="tablewrap"><table><thead><tr><th>종목</th><th>판단</th><th>매수 레전드 (추정 매수액)</th><th>근거</th><th>현재가</th></tr></thead><tbody>${recoTop.map((e) => `<tr>
-      <td class="txt">${tickerCell(e, false)}</td>
-      <td class="txt">${e.reasons.length ? '<span class="tag inc">강력 추천</span>' : '<span class="tag new">추천</span>'}</td>
+    ${recoTop.length ? `<div class="tablewrap"><table><thead><tr><th>종목</th><th>매수 레전드 (추정 매수액)</th><th>근거</th><th>현재가</th></tr></thead><tbody>${recoTop.map((e) => `<tr>
+      <td class="txt">${tickerCell(e)}</td>
       <td class="txt">${e.qualified.map((x) => `${GURU_SHORT[x.g.id] || x.g.name} (${fmtB(x.buyVal)})`).join(", ")}</td>
-      <td class="txt">${e.top50 ? "미국 시총 TOP 50" : "–"}</td>
+      <td class="txt">${e.reasons.length ? e.reasons.join(" · ") : "–"}</td>
       <td>${e.price != null ? "$" + fmt.n(e.price) : "–"}</td>
     </tr>`).join("")}</tbody></table></div>` : '<div class="empty">이번 분기에 $10M 이상 매수한 종목이 없습니다</div>'}</div>`;
   // 표는 이름만 간단히. 비중·보유/축소 상태는 인원수를 눌러 상세 창에서 본다.
@@ -2198,21 +2176,12 @@ async function renderMaxCommon() {
     maxBackBtn,
     `<p class="desc">해당 종목들에 대한 추천은 투자 레전드들의 <strong>매수 추정가</strong>를 반드시 같이 보셔야 현재 가격이 비싼지 싼 가격인지를 판단하실 수 있습니다. <strong>해당 종목 매수 추정가격 및 매수 알림 설정</strong> 등의 기능은 <strong>Pro 구독부터</strong> 가능하니 반드시 참조하여 투자 판단하시길 바라겠습니다. 투자의 책임은 본인에게 있습니다.</p>`,
     recoCard,
-    `<div class="card"><div class="card-head"><h3>이번 분기 공통 매수</h3><span class="small faint">최근 분기에 2명 이상이 주식수를 늘리거나 신규 편입</span></div>${commonBuys.length ? table(commonBuys) : '<div class="empty">이번 분기에 2명 이상이 함께 매수한 종목이 없습니다</div>'}</div>`,
+    `<div class="card"><div class="card-head"><h3>이번 분기 공통 매수</h3><span class="small faint">최근 분기에 2명 이상이 주식수를 늘리거나 신규 편입</span></div>${commonBuys.length ? table(commonBuys) : '<div class="empty">이번 분기에 2명 이상이 함께 매수한 종목이 없습니다</div>'}
+      <p class="small faint" style="margin-top:8px">지금 가격이 레전드 매수가보다 싼지 비싼지(강력 추천 · 추천 · 관망 판단)는 <span class="tag plan-pro">Pro 구독</span> 레전드 픽 매수 가격 따라가기에서 확인할 수 있습니다.</p></div>`,
     `<div class="card"><div class="card-head"><h3>공통 보유</h3><span class="small faint">2명 이상이 보유 중 (공통 매수는 위 표에)</span></div>${commonHolds.length ? table(commonHolds) : '<div class="empty">겹치는 보유 종목이 없습니다</div>'}</div>`,
     guruEventsCardHtml(evs),
     `<p class="small faint">13F 는 분기 말 보유분이 45일 뒤에 공개되는 자료라 실제 매매보다 늦습니다. 매수액은 분기 말 평가액에서 늘어난 주식수 비율로 나눈 추정치입니다. 투자 판단과 책임은 본인에게 있습니다.</p>`,
   ].join("");
-  // 종목 이름 옆 판단 태그: '투자 대가 매수 가격 따라가기'의 강력 추천·추천·관망을 그대로 가져와 붙인다.
-  // 종목별 주가 이력을 내려받아 계산하므로 표를 먼저 그리고, 계산이 끝나는 대로 태그를 채운다.
-  ensureFollowGrades().then((grades) => {
-    if ($("#max-page").hidden || body.dataset.screen !== "common") return;
-    $$(".cm-grade", body).forEach((el) => {
-      const e = state.commonRows?.[Number(el.dataset.cmGrade)];
-      const grade = e && grades.get(e.key);
-      if (grade != null) el.innerHTML = " " + followTagHtml(grade);
-    });
-  });
 }
 // 인원수 클릭 → 대가별 상태·비중 상세 창 (Max 라운지 위에 뜨는 작은 모달)
 function openCommonDetail(i) {
