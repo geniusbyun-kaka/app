@@ -3446,6 +3446,24 @@ $$("[data-cy]").forEach((c) => c.addEventListener("click", () => { setCompareYea
 setInterval(() => { if (document.visibilityState === "visible") loadLive(); }, REFRESH_MS);
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && state.latest && Date.now() - new Date(state.latest.updated) > REFRESH_MS) loadLive(); });
 
+// ───────────────────────── 앱 자동 업데이트 ─────────────────────────
+// 홈 화면에 추가한 PWA·오래 열어둔 탭은 배포 전의 옛 index.html 을 며칠씩 계속 실행해,
+// PC 와 핸드폰이 서로 다른 화면을 보는 일이 생긴다. 앱이 다시 보일 때마다 서버의
+// index.html 버전(ETag·Last-Modified)을 확인해 바뀌었으면 즉시 새로고침한다.
+let pageTag = null;
+async function fetchPageTag() {
+  try {
+    const r = await fetch(location.pathname, { method: "HEAD", cache: "no-store" });
+    return r.ok ? (r.headers.get("etag") || r.headers.get("last-modified") || null) : null;
+  } catch { return null; }
+}
+fetchPageTag().then((t) => { pageTag = t; });
+document.addEventListener("visibilitychange", async () => {
+  if (document.visibilityState !== "visible" || !pageTag) return;
+  const t = await fetchPageTag();
+  if (t && t !== pageTag) location.reload();
+});
+
 // ───────────────────────── 종목 (S&P 500 · ETF) ─────────────────────────
 async function getStocksJson(name) {
   const res = await fetch(`${STOCKS_BASE}${name}?t=${Date.now()}`, { cache: "no-store" });
