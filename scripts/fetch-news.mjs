@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // CNBC 월드 메인 페이지(https://www.cnbc.com/world/)의 상위 3개 기사를 받아
 // 제목·핵심 포인트·본문을 한국어로 번역해 `news` 브랜치에 저장한다.
-// GitHub Actions 에서 매일 한국시간 오전 6시(21:00 UTC)에 실행된다.
+// GitHub Actions 에서 하루 4회(한국시간 0시·6시·12시·18시)에 실행된다.
 //
 // 결과물 (출력 폴더 기준):
 //   news.json   { updated, source, articles: [{ url, title, titleKo, image, published, keyPointsKo, bodyKo, note }] }
