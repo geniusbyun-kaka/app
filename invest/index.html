@@ -3559,7 +3559,7 @@ function toggleStockLegends() {
       <td class="txt">${changeHtml(h)}</td>
       <td class="txt"><button class="chip" type="button" data-port-open="${g.id}">보기 →</button></td>
     </tr>`).join("")}</tbody></table></div>
-    <p class="small faint" style="margin:6px 0 0">각 레전드의 최신 13F 분기 말 보유 기준이며, 비중은 그 레전드 포트폴리오 안에서의 비중입니다.</p></div>`;
+    <p class="small faint" style="margin:6px 0 0">각 레전드의 최신 13F 분기 말 보유 기준이며, 비중은 그 레전드 포트폴리오 안에서의 비중입니다. 이번 분기 %는 직전 분기 말 대비 보유 주식수 증감률입니다 (예: +100%는 주식수 2배).</p></div>`;
   panel.hidden = false; btn.setAttribute("aria-expanded", "true");
 }
 function renderStockDetail() {
@@ -3772,8 +3772,8 @@ function tickerHtml(h) {
 function changeHtml(h) {
   if (h.change === "new") return '<span class="tag new">신규</span>';
   if (h.change === "split") return `<span class="tag">분할 ×${fmt.n(h.splitRatio, 0)}</span>`;
-  if (h.change === "inc") return `<span class="pos">+${fmt.n(h.pct * 100, 1)}%</span><span class="tag inc">매수</span>`;
-  if (h.change === "dec") return `<span class="neg">${fmt.n(h.pct * 100, 1)}%</span><span class="tag dec">매도</span>`;
+  if (h.change === "inc") return `<span class="pos" title="직전 분기 대비 보유 주식수 증감률">주식수 +${fmt.n(h.pct * 100, 1)}%</span><span class="tag inc">매수</span>`;
+  if (h.change === "dec") return `<span class="neg" title="직전 분기 대비 보유 주식수 증감률">주식수 ${fmt.n(h.pct * 100, 1)}%</span><span class="tag dec">매도</span>`;
   if (h.change === "same") return '<span class="faint">변동 없음</span>';
   return "–";
 }
