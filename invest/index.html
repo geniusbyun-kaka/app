@@ -3987,7 +3987,7 @@ function myStockTableHtml(rows) {
 }
 async function myGuruCardHtml(g) {
   const headBtn = `<button class="btn" type="button" data-port-open="${g.id}" style="margin-left:auto">상세 보기 →</button>`;
-  const head = `<div class="card-head"><h3>${g.name} · ${g.org} ${favStarHtml("guru", g.id, true, true)}</h3>${headBtn}</div>`;
+  const head = `<div class="card-head"><h3>${guruTitle(g)} ${favStarHtml("guru", g.id, true, true)}</h3>${headBtn}</div>`;
   let f; try { f = await ensureGuruFilings(g); } catch { return `<div class="card" id="my-guru-${g.id}">${head}<div class="empty">13F 데이터를 불러오지 못했습니다</div></div>`; }
   const L = f.latest;
   const buys = L.holdings.filter((h) => h.change === "inc" || h.change === "new").sort((a, b) => b.value - a.value).slice(0, 5);
