@@ -1816,6 +1816,8 @@ function renderGuruTab() {
       <span class="gu-cta">추천 종목 보기 →</span>
     </button>`).join("")}</div></div>`;
 }
+// 카드 제목은 '이름 · 기관명'이지만, 퍼스트 이글처럼 기관명이 이름으로 시작하면 같은 말이 겹쳐 기관명만 쓴다
+const guruTitle = (g) => (g.org.startsWith(g.name) ? g.org : `${g.name} · ${g.org}`);
 const guruHeadHtml = (g) => `<div class="gu-page-head"><button class="btn" type="button" id="gu-page-back">← 레전드 목록</button><h2>${g.name} 추천 종목</h2><span class="small faint">${g.org}</span>${favStarHtml("guru", g.id, isFavGuru(g.id), true)}</div>`;
 function renderGuruPage(id) {
   const g = GURUS.find((x) => x.id === id); if (!g) { state.guruSel = null; return renderGuruTab(); }
@@ -1823,7 +1825,7 @@ function renderGuruPage(id) {
   const p = $("#panel-gurus");
   window.scrollTo(0, 0);
   if (!g.ready) {
-    p.innerHTML = guruHeadHtml(g) + `<div class="card"><div class="card-head"><h3>${g.name} · ${g.org}</h3><span class="small faint">준비 중</span></div>
+    p.innerHTML = guruHeadHtml(g) + `<div class="card"><div class="card-head"><h3>${guruTitle(g)}</h3><span class="small faint">준비 중</span></div>
       <p class="desc">${g.desc}</p>
       <p class="desc" style="margin-top:8px">이 투자자의 13F 데이터는 아직 수집 전입니다. 준비되는 대로 이곳에서 추천 종목과 매수 근거를 보여드립니다.</p></div>`;
     return;
@@ -2036,7 +2038,7 @@ function followSectionHtml(g, f, rows, missing) {
       <td class="txt">${tickerHtml(r.h)}</td><td class="txt">${followGradeHtml(r)}</td><td class="txt">${r.recent.period}${r.recent.evLabel ? ` <span class="tag new">${r.recent.evLabel}</span>` : ""}</td><td>${r.nBuys}회</td><td>$${fmt.n(r.avg)}</td><td>$${fmt.n(r.recent.mid)}${r.recent.evLabel && r.recent.shares ? ` <span class="faint small">${fmtSh(r.recent.shares)}주</span>` : ""}</td><td>${r.cur != null ? "$" + fmt.n(r.cur) : "–"}</td><td class="${r.rel == null ? "" : r.rel <= 0 ? "pos" : "neg"}">${r.rel == null ? "–" : fmt.pct(r.rel)}</td>
     </tr>`).join("")}</tbody></table></div>` : `<div class="empty">지금은 연속 매수 중이거나 꾸준히 모으는 종목이 없습니다</div>`;
   const note = missing.length ? `<p class="small faint" style="margin-top:8px">주가 이력이 없어 계산에서 제외: ${missing.join(", ")}</p>` : "";
-  return `<div class="card-head"><h3>${g.name} · ${g.org}</h3><span class="small faint">${f.latest.period} 분기 공시까지 반영</span></div>${table}${note}`;
+  return `<div class="card-head"><h3>${guruTitle(g)}</h3><span class="small faint">${f.latest.period} 분기 공시까지 반영</span></div>${table}${note}`;
 }
 async function renderMaxPrices() {
   const body = $("#max-body");
@@ -2044,7 +2046,7 @@ async function renderMaxPrices() {
   const gurus = GURUS.filter((g) => g.ready);
   body.innerHTML = [
     maxBackBtn,
-    gurus.map((g) => `<div class="card" id="mx-follow-${g.id}"><div class="card-head"><h3>${g.name} · ${g.org}</h3></div><div class="empty">분기별 매수와 주가 이력으로 추정 단가를 계산하는 중…</div></div>`).join(""),
+    gurus.map((g) => `<div class="card" id="mx-follow-${g.id}"><div class="card-head"><h3>${guruTitle(g)}</h3></div><div class="empty">분기별 매수와 주가 이력으로 추정 단가를 계산하는 중…</div></div>`).join(""),
     pushAlertCardHtml(),
     alertsCardHtml(),
     `<p class="small faint">13F는 분기 말 보유분이 45일 뒤에 공개되는 자료이고, 단가는 분기 주가 범위로 계산한 추정치라 실제 체결가와 다를 수 있습니다 (예: 블록딜). 투자 판단과 책임은 본인에게 있습니다.</p>`,
@@ -2062,7 +2064,7 @@ async function renderMaxPrices() {
       card().innerHTML = followSectionHtml(g, f, rows, missing);
     } catch {
       if (!card()) return;
-      card().innerHTML = `<div class="card-head"><h3>${g.name} · ${g.org}</h3></div><div class="empty">13F 데이터를 불러오지 못했습니다</div>`;
+      card().innerHTML = `<div class="card-head"><h3>${guruTitle(g)}</h3></div><div class="empty">13F 데이터를 불러오지 못했습니다</div>`;
     }
   }
 }
@@ -3985,7 +3987,7 @@ function myStockTableHtml(rows) {
 }
 async function myGuruCardHtml(g) {
   const headBtn = `<button class="btn" type="button" data-port-open="${g.id}" style="margin-left:auto">상세 보기 →</button>`;
-  const head = `<div class="card-head"><h3>${g.name} · ${g.org} ${favStarHtml("guru", g.id, true, true)}</h3>${headBtn}</div>`;
+  const head = `<div class="card-head"><h3>${guruTitle(g)} ${favStarHtml("guru", g.id, true, true)}</h3>${headBtn}</div>`;
   let f; try { f = await ensureGuruFilings(g); } catch { return `<div class="card" id="my-guru-${g.id}">${head}<div class="empty">13F 데이터를 불러오지 못했습니다</div></div>`; }
   const L = f.latest;
   const buys = L.holdings.filter((h) => h.change === "inc" || h.change === "new").sort((a, b) => b.value - a.value).slice(0, 5);
@@ -4145,7 +4147,7 @@ async function renderMyPage() {
     head,
     `<div id="my-fresh" hidden></div>`,
     stocks.length ? `<div class="card"><div class="card-head"><h3>관심 종목</h3><span class="small faint">레전드들의 최근 매수가와 비교</span></div><div id="my-stocks-body"><div class="empty">13F 와 주가 이력으로 추정 단가를 계산하는 중…</div></div></div>` : "",
-    guruObjs.map((g) => `<div class="card" id="my-guru-${g.id}"><div class="card-head"><h3>${g.name} · ${g.org}</h3></div><div class="empty">13F 데이터를 불러오는 중…</div></div>`).join(""),
+    guruObjs.map((g) => `<div class="card" id="my-guru-${g.id}"><div class="card-head"><h3>${guruTitle(g)}</h3></div><div class="empty">13F 데이터를 불러오는 중…</div></div>`).join(""),
     `<div class="card"><div class="card-head"><h3>뉴스 및 공시</h3><span class="small faint">하루 4회 갱신</span></div><div id="my-news-body"><div class="empty">불러오는 중…</div></div></div>`,
     myPfCardHtml(),
   ].join("");

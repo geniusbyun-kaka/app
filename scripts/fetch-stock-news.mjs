@@ -102,15 +102,20 @@ async function tickerNews(sym) {
 }
 
 async function main() {
-  const tickers = await guruTickers();
-  for (const t of POPULAR) tickers.add(t);
-  // 뉴스로 등록된 종목(invest/guru-news.json)도 관심 종목에 오를 수 있으니 기사를 수집한다 (예: BSP)
+  // Set 은 넣은 순서를 지키고 뒤에서 MAX 로 자르므로, 반드시 수집해야 할 종목을 앞에 넣는다.
+  // 1) 뉴스로 등록된 종목(invest/guru-news.json · 예: BSP): 13F 밖 신규 종목이라 여기 아니면 아무 데도 없다.
+  //    13F 보유 종목을 먼저 넣으면 전체가 MAX 를 넘을 때 맨 뒤의 이 종목들이 잘려 기사가 영영 안 모인다.
+  const tickers = new Set();
   try {
     for (const it of JSON.parse(await readFile("invest/guru-news.json", "utf8")).items || [])
       for (const raw of String(it.ticker || "").split(/[,\s]+/))
         if (/^[A-Z0-9.-]{1,10}$/.test(raw.trim()) && raw.trim()) tickers.add(raw.trim());
   } catch (err) { console.warn(`[stock-news] guru-news.json 읽기 실패: ${err.message}`); }
+  // 2) 인기 종목·ETF → 3) 대가 13F 보유 종목 (제한 초과 시 13F 롱테일부터 제외)
+  for (const t of POPULAR) tickers.add(t);
+  for (const t of await guruTickers()) tickers.add(t);
   const list = [...tickers].slice(0, MAX);
+  if (tickers.size > MAX) console.warn(`[stock-news] 종목 ${tickers.size}개 중 ${MAX}개만 수집 (13F 롱테일 ${tickers.size - MAX}개 제외)`);
   console.log(`[stock-news] 대상 종목 ${list.length}개`);
   const items = {};
   let ok = 0, fail = 0;
