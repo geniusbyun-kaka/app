@@ -3961,7 +3961,19 @@ async function myStockRows(stocks, cmpGurus) {
       }
       matches.push({ g, h, rec, cur, rel, grade });
     }
-    out.push({ sym, item, matches });
+    // 관심 레전드 중 보유자가 없으면 나머지 추적 레전드의 보유 여부를 찾아 보여준다.
+    // '보유 없음'이라고만 쓰면 다른 레전드(예: 매클레모어의 UNH)가 보유 중인 사실을 가리게 된다.
+    const others = [];
+    if (!matches.length) {
+      for (const g of GURUS) {
+        if (!g.ready || cmpGurus.some((c) => c.id === g.id)) continue;
+        let f; try { f = await ensureGuruFilings(g); } catch { continue; }
+        const h = f.latest.holdings.find((x) => x.ticker && myAlias(x.ticker) === myAlias(sym));
+        if (h) others.push({ g, h });
+      }
+      others.sort((a, b) => b.h.value - a.h.value);
+    }
+    out.push({ sym, item, matches, others });
   }
   return out;
 }
@@ -3971,7 +3983,12 @@ function myStockTableHtml(rows) {
   const trs = rows.flatMap((r) => {
     const quote = `<td>${r.item ? fmt.n(r.item.price) : "–"}</td><td class="${cls(r.item?.changePercent)}">${r.item?.changePercent == null ? "–" : fmt.signed(r.item.changePercent) + "%"}</td>`;
     const tail = `<td class="txt">${favStarHtml("stock", r.sym, true, true)}</td>`;
-    if (!r.matches.length) return [`<tr><td class="txt">${stockCell(r)}</td><td class="txt faint">–</td>${quote}<td class="txt faint" colspan="4">관심 레전드 보유 없음</td>${tail}</tr>`];
+    if (!r.matches.length) {
+      const msg = r.others?.length
+        ? `${r.others.slice(0, 3).map((o) => `${GURU_SHORT[o.g.id] || o.g.name} <span class="faint small">비중 ${fmt.n(o.h.weight * 100, 1)}%</span>`).join(" · ")} 보유 중 <span class="faint small">(관심 레전드에 추가하면 최근 매수가와 비교)</span>`
+        : "추적 중인 레전드 보유 없음";
+      return [`<tr><td class="txt">${stockCell(r)}</td><td class="txt faint">–</td>${quote}<td class="txt faint" colspan="4">${msg}</td>${tail}</tr>`];
+    }
     return r.matches.map((m) => {
       const gname = GURU_SHORT[m.g.id] || m.g.name;
       const holdNote = m.h?.ticker && m.h.ticker !== r.sym ? ` <span class="faint small">(${m.h.ticker} 보유)</span>` : "";
