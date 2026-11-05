@@ -169,9 +169,9 @@ async function main() {
   if (!picks.length) { console.log("[push] 오늘 종가 기준 매수 적정·매수 고려 없음 → 발송 안 함"); return; }
   const kst = new Date(Date.now() + 9 * 3600000);
   const anyStrong = picks.some((p) => p.strong);
-  const title = `모픽 ${anyStrong ? "매수 적정" : "매수 고려"} · ${kst.getUTCMonth() + 1}/${kst.getUTCDate()} 뉴욕 종가 기준`;
+  const title = `모픽 ${anyStrong ? "★ 매수 적정" : "매수 고려"} · ${kst.getUTCMonth() + 1}/${kst.getUTCDate()} 뉴욕 종가 기준`;
   const fmt$ = (v) => "$" + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const body = picks.map((p) => `[${p.strong ? "매수 적정" : "매수 고려"}] ${p.ticker} 종가 ${fmt$(p.cur)} · ${p.guru} 최근 매수가 ${fmt$(p.mid)} 대비 ${p.rel > 0 ? "+" : ""}${(p.rel * 100).toFixed(1)}%`).join("\n");
+  const body = picks.map((p) => `[${p.strong ? "★ 매수 적정" : "매수 고려"}] ${p.ticker} 종가 ${fmt$(p.cur)} · ${p.guru} 최근 매수가 ${fmt$(p.mid)} 대비 ${p.rel > 0 ? "+" : ""}${(p.rel * 100).toFixed(1)}%`).join("\n");
   console.log(`[push] ${title}\n${body}`);
   if (DRY) { console.log("[push] DRY_RUN → 발송 생략"); return; }
 
