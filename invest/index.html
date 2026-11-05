@@ -1861,7 +1861,7 @@ function guruPicksHtml(g, f) {
   return [
     g.note ? `<div class="notice" style="margin-bottom:0">${g.note}</div>` : "",
     `<p class="desc"><strong>${L.period}</strong> 분기 13F 공시(${L.filed}) 기준입니다. ${g.filer}가 최근 분기까지 <strong>2분기 이상 연속으로</strong> 주식수를 늘린 종목을 추천으로 보여드립니다. 티커를 누르면 종목 차트로 이동합니다.</p>
-    <p class="small faint" style="margin-top:-6px;margin-bottom:12px">지금 가격이 레전드의 실제 매수가보다 <strong>싼지 비싼지</strong>(매수 적정 · 매수 고려 · 관망 판단)는 <span class="tag plan-pro">Pro 구독</span> 레전드 픽 매수 가격 따라가기에서 확인할 수 있습니다.</p>`,
+    <p class="small faint" style="margin-top:-6px;margin-bottom:12px">지금 가격이 레전드의 실제 매수가보다 <strong>싼지 비싼지</strong>(★ 매수 적정 · 매수 고려 · 관망 판단)는 <span class="tag plan-pro">Pro 구독</span> 레전드 픽 매수 가격 따라가기에서 확인할 수 있습니다.</p>`,
     streaks.length ? streaks.map(pick).join("") : `<div class="empty">최근 분기까지 2분기 이상 연속 매수한 종목이 없습니다. 아래 꾸준히 사는 종목과 포트폴리오를 참고하세요.</div>`,
     often.length ? `<div class="card"><div class="card-head"><h3>참고 · 꾸준히 사는 종목</h3><span class="small faint">연속은 아니지만 최근 8분기 중 2번 이상 매수, 그 사이 매도 없음</span></div>
       <div class="tablewrap"><table><thead><tr><th>종목</th><th>8분기 매수</th><th>최근 8분기</th><th>마지막 매수</th><th>비중</th></tr></thead><tbody>${often.map((h) => `<tr><td class="txt">${tickerHtml(h)}</td><td>${h.buys8}회</td><td>${histHtml(h.hist)}</td><td class="txt">${h.lastBuy || "–"}</td><td>${fmt.n(h.weight * 100, 1)}%</td></tr>`).join("")}</tbody></table></div></div>` : "",
@@ -2029,7 +2029,8 @@ function followGradeHtml(r) {
   return followTagHtml(r.grade);
 }
 function followTagHtml(grade) {
-  if (grade === 2) return '<span class="tag inc">매수 적정</span>';
+  // 매수 적정의 ★ 은 최상위 등급 강조 표기. 금색 관심 별표 버튼(.fav-btn)과 달리 태그 안에서 태그 색을 따라 혼동되지 않는다.
+  if (grade === 2) return '<span class="tag inc">★ 매수 적정</span>';
   if (grade === 1) return '<span class="tag new">매수 고려</span>';
   if (grade === 0) return '<span class="tag">관망</span>';
   return "";
@@ -2181,7 +2182,7 @@ async function renderMaxCommon() {
     `<p class="desc">해당 종목들에 대한 추천은 투자 레전드들의 <strong>매수 추정가</strong>를 반드시 같이 보셔야 현재 가격이 비싼지 싼 가격인지를 판단하실 수 있습니다. <strong>해당 종목 매수 추정가격 및 매수 알림 설정</strong> 등의 기능은 <strong>Pro 구독부터</strong> 가능하니 반드시 참조하여 투자 판단하시길 바라겠습니다. 투자의 책임은 본인에게 있습니다.</p>`,
     recoCard,
     `<div class="card"><div class="card-head"><h3>이번 분기 공통 매수</h3><span class="small faint">최근 분기에 2명 이상이 주식수를 늘리거나 신규 편입</span></div>${commonBuys.length ? table(commonBuys) : '<div class="empty">이번 분기에 2명 이상이 함께 매수한 종목이 없습니다</div>'}
-      <p class="small faint" style="margin-top:8px">지금 가격이 레전드 매수가보다 싼지 비싼지(매수 적정 · 매수 고려 · 관망 판단)는 <span class="tag plan-pro">Pro 구독</span> 레전드 픽 매수 가격 따라가기에서 확인할 수 있습니다.</p></div>`,
+      <p class="small faint" style="margin-top:8px">지금 가격이 레전드 매수가보다 싼지 비싼지(★ 매수 적정 · 매수 고려 · 관망 판단)는 <span class="tag plan-pro">Pro 구독</span> 레전드 픽 매수 가격 따라가기에서 확인할 수 있습니다.</p></div>`,
     `<div class="card"><div class="card-head"><h3>공통 보유</h3><span class="small faint">2명 이상이 보유 중 (공통 매수는 위 표에)</span></div>${commonHolds.length ? table(commonHolds) : '<div class="empty">겹치는 보유 종목이 없습니다</div>'}</div>`,
     guruEventsCardHtml(evs),
     `<p class="small faint">13F 는 분기 말 보유분이 45일 뒤에 공개되는 자료라 실제 매매보다 늦습니다. 매수액은 분기 말 평가액에서 늘어난 주식수 비율로 나눈 추정치입니다. 투자 판단과 책임은 본인에게 있습니다.</p>`,
@@ -3048,7 +3049,7 @@ async function pushCurrentSub() {
 function pushAlertCardHtml() {
   return `<div class="card" id="push-card">
     <div class="card-head"><h3>매수 추천 매일 알림</h3><span class="small faint">매일 아침 7:30 (한국시간) · 뉴욕 종가 기준</span></div>
-    <p class="desc">미국 장이 마감되면 그날 종가로 따라 사기 판단을 다시 계산해, <strong>매수 적정</strong>(레전드 최근 매수가보다 싼 종목)이나 <strong>매수 고려</strong>(최근 매수가 대비 +10% 이내)가 있을 때만 이 기기로 알림을 보냅니다. 예: "[매수 적정] GOOGL 종가 $329.52 · 버핏 최근 매수가 대비 -5.8%".</p>
+    <p class="desc">미국 장이 마감되면 그날 종가로 따라 사기 판단을 다시 계산해, <strong>★ 매수 적정</strong>(레전드 최근 매수가보다 싼 종목)이나 <strong>매수 고려</strong>(최근 매수가 대비 +10% 이내)가 있을 때만 이 기기로 알림을 보냅니다. 예: "[★ 매수 적정] GOOGL 종가 $329.52 · 버핏 최근 매수가 대비 -5.8%".</p>
     <div id="push-body" class="small faint">알림 상태 확인 중…</div></div>`;
 }
 async function refreshPushCard() {
