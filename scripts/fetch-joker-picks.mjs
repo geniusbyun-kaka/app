@@ -46,6 +46,7 @@ import { mkdir, writeFile, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import zlib from "node:zlib";
 import { yahooChart, withRetry } from "./yahoo.mjs";
+import { SERIES_START, PUBLISHED_SEED, publishedEpisodes, freezeSeries } from "./joker-series.mjs";
 
 const OUT_DIR = process.argv[2] || "joker-out";
 const KEY = process.env.DART_API_KEY?.trim();
@@ -626,6 +627,11 @@ async function main() {
       };
     };
     const verdicts = { kospi: [], kosdaq: [] };
+    // 공개 순서 고정: 직전 실행이 남긴 published 를 이어받아, 이미 공개한 회차의 종목이 시총 변동으로
+    // 바뀌거나 사라지지 않게 한다. 다음 월요일 회차(공개 회차 + 1)까지 이번 실행에서 확정한다.
+    const prevVerdicts = await readJson(path.join(OUT_DIR, "joker-verdicts.json"), null);
+    const published = { kospi: [], kosdaq: [] };
+    const targetEp = publishedEpisodes(now) + 1;
     for (const [key, market] of [["kospi", "코스피"], ["kosdaq", "코스닥"]]) {
       const rows = [];
       for (const t of topcap[key] || []) rows.push(await verdictRow(t, market));
@@ -637,12 +643,15 @@ async function main() {
       rows.forEach((r, i) => { if (r.mcapEok == null) out[i] = r; });
       let wi = 0;
       for (let i = 0; i < rows.length; i++) if (!out[i]) out[i] = ranked[wi++];
-      out.forEach((r, i) => (r.rank = i + 1));
-      verdicts[key] = out;
+      out.forEach((r, i) => (r.rank = i + 1)); // rank 는 항상 이번 실행의 실제 시총 순위로 둔다
+      const frozen = freezeSeries(out, prevVerdicts?.published?.[key] ?? PUBLISHED_SEED[key], prevVerdicts?.[key], targetEp);
+      verdicts[key] = frozen.rows;
+      published[key] = frozen.published;
     }
     await writeFile(path.join(OUT_DIR, "joker-verdicts.json"), JSON.stringify({
       updated: now.toISOString().slice(0, 10),
-      seriesStart: "2026-10-05", // 첫 공개 주의 월요일. 앱이 이 날부터 매주 코스피·코스닥 1종목씩 공개한다
+      seriesStart: SERIES_START, // 첫 공개 주의 월요일. 앱이 이 날부터 매주 코스피·코스닥 1종목씩 공개한다
+      published, // 공개가 확정된 회차의 시장별 티커 순서 (다음 실행이 이어받아 순서를 지킨다)
       batchSize: 10, // (구버전 앱 호환용 · 현재 앱은 사용하지 않음)
       note: "버핏 정량 체크리스트와 밸류 트랩·지배구조·수급 필터로 시총 상위 기업을 판정합니다. 통과는 정량 기준 통과일 뿐 추천이 아니며, 실제 조커픽은 안전마진 계산과 주간 검토를 따로 거칩니다.",
       kospi: verdicts.kospi, kosdaq: verdicts.kosdaq,
