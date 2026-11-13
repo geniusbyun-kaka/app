@@ -124,3 +124,24 @@ revoke all on public.inquiries from anon, authenticated;
 grant select on public.inquiries to authenticated;
 grant insert (user_id, email, title, body) on public.inquiries to authenticated;
 grant select, insert, update, delete on public.inquiries to service_role;
+
+-- ── 회원 탈퇴 (계정 삭제) ─────────────────────────────────────────
+-- 앱의 "내 계정 → 회원 탈퇴"가 호출합니다. 로그인한 본인의 계정만 지울 수 있고,
+-- profiles · push_subscriptions · inquiries 는 on delete cascade 로 함께 지워집니다.
+-- 구글 플레이는 앱 안에서 계정을 삭제할 수 있어야 등록을 받아 줍니다.
+create or replace function public.delete_my_account()
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if (select auth.uid()) is null then
+    raise exception 'not authenticated';
+  end if;
+  delete from auth.users where id = (select auth.uid());
+end;
+$$;
+
+revoke all on function public.delete_my_account() from public, anon;
+grant execute on function public.delete_my_account() to authenticated;

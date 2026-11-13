@@ -395,6 +395,11 @@ html.gated,html.gated body{overflow:hidden}
 .gate-btn{height:58px;border:0;border-radius:29px;background:var(--gate-btn);color:var(--gate-btn-ink);font-size:17px;font-weight:700;margin-top:6px;transition:filter .15s}
 .gate-btn:active{filter:brightness(.92)}
 .gate-btn:disabled{opacity:.6}
+.gate-legal{font-size:12px}.gate-legal a{color:inherit;text-decoration:underline}
+.acct-links{margin:14px 0 0;font-size:13px;color:var(--ink-3)}.acct-links a{color:inherit;text-decoration:underline}
+.acct-links button{border:0;background:none;padding:0;font:inherit;color:var(--up);text-decoration:underline;cursor:pointer}
+.acct-del{margin-top:14px;padding:12px;border:1px solid var(--line);border-radius:8px;font-size:13px;line-height:1.6}
+footer a{color:inherit;text-decoration:underline}
 .gate-links{display:flex;justify-content:center;gap:18px;font-size:14px}
 .gate-links button{border:0;background:none;color:var(--gate-btn);padding:6px 2px;font-size:14px}
 .gu-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px}
@@ -891,7 +896,7 @@ try { if (localStorage.getItem("sb-hzzmzpsjuovijtananmf-auth-token")) document.g
     <div class="card">
       <div class="card-head"><h3>대표 코인</h3><span class="small faint" id="coin-status"></span></div>
       <div class="kpis" id="coin-tiles"></div>
-      <p class="desc" style="margin-top:10px">10분마다 갱신되는 지연 시세입니다. 코인 시장은 24시간 열려 있어 변동률은 전일 종가(UTC 기준) 대비입니다.</p>
+      <p class="desc" style="margin-top:10px"><strong>이 화면은 시세 정보만 보여주며, 모픽은 가상자산의 매매·중개·보관(지갑) 기능을 제공하지 않습니다.</strong> 10분마다 갱신되는 지연 시세입니다. 코인 시장은 24시간 열려 있어 변동률은 전일 종가(UTC 기준) 대비입니다.</p>
     </div>
     <div class="card">
       <div class="card-head"><h3>김치 프리미엄</h3><span class="small faint">한국(업비트) 가격이 미국 가격의 원화 환산보다 얼마나 비싼지</span></div>
@@ -956,7 +961,7 @@ try { if (localStorage.getItem("sb-hzzmzpsjuovijtananmf-auth-token")) document.g
   <!-- 문의 및 건의사항 (내용은 renderSupport 가 채운다) -->
   <section class="panel" id="panel-support" role="tabpanel" hidden></section>
 
-  <footer>데이터: Yahoo Finance (지연 시세). NQ 1계약 = 지수 × $20, 마이크로(MNQ) = 지수 × $2. 화면 색상은 한국식(상승 빨강, 하락 파랑)입니다.</footer>
+  <footer>데이터: Yahoo Finance (지연 시세). NQ 1계약 = 지수 × $20, 마이크로(MNQ) = 지수 × $2. 화면 색상은 한국식(상승 빨강, 하락 파랑)입니다.<br>모픽은 불특정 다수에게 같은 정보를 제공하는 서비스로, 개별적인 투자 상담과 자금 운용은 하지 않습니다. 모든 투자는 원금 손실이 발생할 수 있으며 그 손실은 투자자 본인에게 귀속됩니다.<br><a href="terms.html" target="_blank" rel="noopener">이용약관</a> · <a href="privacy.html" target="_blank" rel="noopener">개인정보처리방침</a> · <a href="delete-account.html" target="_blank" rel="noopener">계정 삭제 안내</a></footer>
 </div>
 
 <!-- Max 구독자 전용 라운지: 앱과 분리된 전체 화면 창 -->
@@ -1112,6 +1117,7 @@ function renderGate() {
       ${msg}
       <button class="gate-btn" type="submit" ${dis}>${auth.busy ? "보내는 중…" : "계속"}</button>
     </form>
+    <p class="gate-note gate-legal">계속하면 <a href="terms.html" target="_blank" rel="noopener">이용약관</a>과 <a href="privacy.html" target="_blank" rel="noopener">개인정보처리방침</a>에 동의하게 됩니다. 모픽의 정보는 투자 권유가 아니며, 투자에는 원금 손실 위험이 있습니다.</p>
     <div class="gate-or"><span>또는</span></div>
     <button class="gate-btn kakao" type="button" id="gate-kakao" ${dis}>
       <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3C6.75 3 2.5 6.36 2.5 10.5c0 2.64 1.73 4.96 4.35 6.3l-.9 3.37c-.08.3.26.54.52.37l3.97-2.64c.5.06 1.02.1 1.56.1 5.25 0 9.5-3.36 9.5-7.5S17.25 3 12 3Z"/></svg>
@@ -1135,7 +1141,7 @@ function openAuth() {
   if (!auth.user) return updateGate();
   setAuthMsg(""); $("#auth-modal").hidden = false; document.body.style.overflow = "hidden"; renderAuth();
 }
-function closeAuth() { $("#auth-modal").hidden = true; document.body.style.overflow = ""; }
+function closeAuth() { auth.delAsk = false; $("#auth-modal").hidden = true; document.body.style.overflow = ""; }
 function renderLoginBtn() {
   const b = $("#login");
   if (!auth.user) { b.textContent = "로그인"; b.removeAttribute("title"); return; }
@@ -1157,7 +1163,25 @@ function renderAuth() {
     </dl>
     ${auth.profileError ? `<p class="auth-msg error">${escHtml(auth.profileError)}</p>` : ""}
     ${msg}
-    <div class="form-actions"><button class="btn" type="button" id="auth-logout" ${auth.busy ? "disabled" : ""}>로그아웃</button></div>`;
+    <div class="form-actions"><button class="btn" type="button" id="auth-logout" ${auth.busy ? "disabled" : ""}>로그아웃</button></div>
+    ${auth.delAsk ? `<div class="acct-del"><strong>정말 탈퇴하시겠습니까?</strong><br>계정과 함께 이메일, 관심 종목·관심 레전드, 알림 설정, 문의 내역이 즉시 삭제되며 되돌릴 수 없습니다.
+      <div class="form-actions"><button class="btn" type="button" id="auth-del-yes" ${auth.busy ? "disabled" : ""}>${auth.busy ? "삭제 중…" : "탈퇴하고 모두 삭제"}</button><button class="btn primary" type="button" id="auth-del-no" ${auth.busy ? "disabled" : ""}>취소</button></div></div>`
+    : `<p class="acct-links"><a href="terms.html" target="_blank" rel="noopener">이용약관</a> · <a href="privacy.html" target="_blank" rel="noopener">개인정보처리방침</a> · <button type="button" id="auth-del">회원 탈퇴</button></p>`}`;
+}
+// 회원 탈퇴: schema.sql 의 delete_my_account() 가 auth.users 의 내 계정을 지우고, 연결된 정보(profiles ·
+// push_subscriptions · inquiries)는 on delete cascade 로 함께 지워진다. 이 기기에 남은 설정(md:*)도 비운다.
+async function deleteAccount() {
+  const error = await authCall(() => sb.rpc("delete_my_account"));
+  if (error) {
+    auth.delAsk = false;
+    setAuthMsg(/function|schema cache|not find/i.test(String(error.message || error)) ? "탈퇴 기능이 아직 준비되지 않았습니다. 문의 탭으로 탈퇴를 요청해 주시면 바로 처리해 드립니다." : authErrText(error), true);
+    return renderAuth();
+  }
+  try { for (const k of Object.keys(localStorage)) if (k.startsWith("md:")) localStorage.removeItem(k); } catch {}
+  auth.delAsk = false;
+  await sb.auth.signOut({ scope: "local" }).catch(() => {});
+  alert("탈퇴가 완료되었습니다. 그동안 이용해 주셔서 감사합니다.");
+  location.reload();
 }
 function renderAuthUI() { renderGate(); if (!$("#auth-modal").hidden) renderAuth(); renderLoginBtn(); }
 async function authCall(fn) {
@@ -1233,6 +1257,10 @@ function initAuth() {
       const error = await authCall(() => sb.auth.signOut());
       if (error) { setAuthMsg(authErrText(error), true); renderAuth(); }
     }
+    if (auth.busy) return;
+    if (e.target.closest("#auth-del")) { auth.delAsk = true; setAuthMsg(""); renderAuth(); }
+    if (e.target.closest("#auth-del-no")) { auth.delAsk = false; renderAuth(); }
+    if (e.target.closest("#auth-del-yes")) deleteAccount();
   });
 }
 
@@ -1756,6 +1784,8 @@ const PLANS = [
   { id: "max", name: "Max 구독형", month: 89000, feats: ["<b>AI 나스닥 레버리지 투자매매법</b>", "Plus · Pro 구독형의 모든 기능 포함"] },
 ];
 const YEAR_OFF = 0.15; // 연간 일괄 결제 할인율
+// 유사투자자문업자가 밝혀야 하는 내용 (자본시장법 2024-08 개정): 개별 상담 불가 · 원금 손실 가능 · 손실은 투자자 귀속
+const LEGAL_NOTE = "모픽은 불특정 다수에게 같은 정보를 제공하는 서비스로, 개별적인 투자 상담과 자금 운용은 하지 않습니다. 모든 투자는 원금 손실이 발생할 수 있으며 그 손실은 투자자 본인에게 귀속됩니다.";
 const PLAN_RANK = { plus: 1, pro: 2, max: 3 };
 const PLAN_LABEL = { plus: "Plus", pro: "Pro", max: "Max" };
 // 라운지 기능별 최소 요금제: 공통 매수·연속 매수는 Plus, AI 나스닥 레버리지는 Max, 나머지는 Pro
@@ -1793,8 +1823,9 @@ function renderPlanMenu() {
       ${yearly ? `<span class="small faint">연 ${won(Math.round(p.month * 12 * (1 - YEAR_OFF)))} 일괄 결제 (정가 ${won(p.month * 12)})</span>` : `<span class="small faint">연간 결제 시 월 ${won(Math.round(p.month * (1 - YEAR_OFF)))} (15% 할인)</span>`}
       <ul class="plan-feats">${p.feats.map((t) => `<li>${t}</li>`).join("")}</ul>
       <span class="plan-cta">${p.name} 시작하기</span>
-      <span class="plan-note">데모 화면이라 실제 결제는 연결되어 있지 않습니다</span>
+      <span class="plan-note">정식 출시 전까지 결제 없이 이용할 수 있습니다</span>
     </button>`).join("")}</div>
+    <p class="small faint" style="margin-top:14px">${LEGAL_NOTE} <a href="terms.html" target="_blank" rel="noopener">이용약관</a> · <a href="privacy.html" target="_blank" rel="noopener">개인정보처리방침</a></p>
     ${planRank() ? `<div class="form-actions"><button class="btn primary" type="button" id="gu-max-lounge">이미 ${PLAN_LABEL[guruPlan]} 구독 중 · 라운지 바로가기 →</button></div>` : ""}`;
 }
 const guruFilings = {};
@@ -1896,7 +1927,7 @@ function renderMaxHome() {
   restoreGuruPanel();
   $("#max-body").dataset.screen = "home";
   $("#max-body").innerHTML = `<div class="card">
-    <div class="card-head"><h3>구독 전용 기능</h3><span class="small faint">데모 화면 · 실제 결제 없음</span></div>
+    <div class="card-head"><h3>구독 전용 기능</h3></div>
     <p class="desc">Max 구독은 모든 기능을, Pro 구독은 <strong>Max 전용 표시가 없는 기능</strong>을, Plus 구독은 <strong>Plus 구독 표시가 있는 기능</strong>을 사용할 수 있습니다.</p>
     <div class="max-grid" style="margin-top:12px">
       <button class="max-feat" type="button" data-maxfeat="common">${mfHot}<span class="t">투자 레전드의 공통 매수 종목</span>${mfPlus}<span class="d">여러 레전드가 함께 들고 있거나 이번 분기에 같이 사들인 종목을 한눈에 봅니다.</span><span class="go">열기 →</span></button>
@@ -2217,7 +2248,7 @@ function renderMaxLev() {
   const sig = sma200Signal();
   $("#max-body").innerHTML = [
     maxBackBtn,
-    `<div class="card"><div class="card-head"><h3>AI 나스닥 레버리지 투자법</h3><span class="small faint">추세 필터 전략 · 데모</span></div>
+    `<div class="card"><div class="card-head"><h3>AI 나스닥 레버리지 투자법</h3><span class="small faint">추세 필터 전략</span></div>
       <p class="desc">규칙은 하나입니다. <strong>나스닥 100 지수가 200일 이동평균 위에 있는 날만 레버리지 ETF(TQQQ)를 보유</strong>하고, 아래로 내려오면 전량 매도 후 현금으로 대기합니다. 레버리지의 치명적인 최대 낙폭(-80% 이상)을 추세 필터로 줄이는 것이 핵심입니다.</p>
       ${sig
         ? `<div class="max-sig ${sig.on ? "on" : "off"}" style="margin-top:12px"><span class="light"></span><span><strong>오늘의 신호 (${sig.date} 종가):</strong> ${sig.name} <b class="num">${fmt.n(sig.last, 0)}</b> ${sig.on ? "&gt;" : "&lt;"} 200일 이평 <b class="num">${fmt.n(sig.avg, 0)}</b> → <strong>${sig.on ? "보유 구간입니다" : "현금 대기 구간입니다"}</strong></span></div>`
@@ -2242,7 +2273,7 @@ function runLevBacktest() {
 // ── 버핏식 포트폴리오 구성 컨설팅 (구 포트폴리오 구성 및 적립식 추천) ──
 // 버크셔의 분기별 현금성 자산(현금 + 단기 국채, 보험·기타 부문 10-Q/10-K 기준).
 // 새 분기 보고서가 나오면 여기에 한 줄 추가하면 비중이 자동 계산된다.
-const BRK_CASH = { "2025-06-30": 344.1e9, "2025-09-30": 381.7e9, "2025-12-31": 369.0e9, "2026-03-31": 397.4e9, "2026-06-30": 359.2e9 };
+const BRK_CASH = { "2025-06-30": 344.1e9, "2025-09-30": 381.7e9, "2025-12-31": 369.0e9, "2026-03-31": 397.4e9, "2026-06-30": 359.2e9, "2026-09-30": 352.3e9 };
 // ── 버크셔를 사람으로 치면: 분기 숫자를 "투자자산 1억원 · 월 소득 n원인 사람"으로 축소해 보여준다 ──
 // 현금 흐름 ($B · 10-Q 기준). 새 보고서가 나오면 한 줄 추가하면 화면이 최신 항목을 쓴다.
 // months: 기간(월) · opEarn: 세후 영업이익 · buy/sell: 상장주식 매수/매도 · buyback: 자사주 매입 · acq: 기업 인수
@@ -2930,7 +2961,7 @@ function diviSectionsHtml(raw, demo) {
   const value = hs.reduce((s, h) => s + h.value, 0);
   const costV = hs.reduce((s, h) => s + h.costV, 0);
   if (!(total > 0)) return `<div class="card"><div class="empty">배당이 나오는 보유 종목이 없습니다.</div></div>`;
-  const srcLabel = demo ? "데모 포트폴리오" : "내 관심 종목 기준";
+  const srcLabel = demo ? "예시 포트폴리오" : "내 관심 종목 기준";
   // 월별 예상 배당: 분기 배당은 지급월에 4분의 1씩, 월 배당은 매달 12분의 1씩
   const months = Array.from({ length: 12 }, (_, i) => hs.reduce((s, h) => s + (h.payMonths.length && h.payMonths.includes(i + 1) ? h.income / h.payMonths.length : 0), 0));
   const maxM = Math.max(...months);
@@ -3008,13 +3039,13 @@ function renderDiviScreen(mode) {
     `<p class="desc"><strong>배당 대시보드</strong>입니다: 보유한 배당주가 앞으로 12개월 동안 얼마를, 몇 월에 주는지, 어떤 종목이 배당을 끌고 가는지, 그리고 각 종목의 배당이 <strong>끊길 걱정 없는 배당인지(퀄리티 점수 0~6)</strong>를 한 화면에 보여줍니다.</p>
     <div class="chips divi-tabs" style="margin-top:2px">
       <button class="chip" type="button" data-divi-mode="my" aria-pressed="${mode === "my"}" ${my.length ? "" : "disabled"}>내 관심 종목${my.length ? ` (${my.length})` : ""}</button>
-      <button class="chip" type="button" data-divi-mode="demo" aria-pressed="${mode === "demo"}">데모 포트폴리오</button>
+      <button class="chip" type="button" data-divi-mode="demo" aria-pressed="${mode === "demo"}">예시 포트폴리오</button>
       ${my.length ? "" : `<span class="small faint" style="align-self:center">종목 탭에서 배당주를 ☆ 관심 등록하면 "내 관심 종목" 모드가 열립니다</span>`}
     </div>`,
     editor,
     hs.length ? diviSectionsHtml(hs, mode === "demo")
       : `<div class="card"><div class="empty">위 표에서 보유 수량을 입력하고 "대시보드 계산"을 누르면 이 자리에 내 배당 대시보드가 채워집니다.</div></div>`,
-    `<p class="small faint">${mode === "demo" ? "이 화면은 데모 데이터로 형태를 보여주는 예시이며, 특정" : "이 화면은 계산 도구이며, 특정"} 종목의 매수·매도를 권유하지 않습니다. 배당은 회사 사정에 따라 언제든 줄거나 끊길 수 있습니다.</p>`,
+    `<p class="small faint">${mode === "demo" ? "이 화면은 예시 데이터로 형태를 보여주는 예시이며, 특정" : "이 화면은 계산 도구이며, 특정"} 종목의 매수·매도를 권유하지 않습니다. 배당은 회사 사정에 따라 언제든 줄거나 끊길 수 있습니다.</p>`,
   ].filter(Boolean).join("");
 }
 async function renderMaxDivi() {
@@ -3089,7 +3120,7 @@ function maxAlerts() { return cacheGet("md:alerts") || []; }
 // 매수 가격 따라가기 화면 하단에 들어가는 매입 가격 알림 카드
 function alertsCardHtml() {
   const list = maxAlerts();
-  return `<div class="card" id="max-alerts-card"><div class="card-head"><h3>원하는 매입 가격 알림</h3><span class="small faint">데모 · 발송 기능 준비 중</span></div>
+  return `<div class="card" id="max-alerts-card"><div class="card-head"><h3>원하는 매입 가격 알림</h3><span class="small faint">발송 기능 준비 중</span></div>
       <p class="desc">위 표에서 눈여겨본 종목의 목표 매입가를 등록해 두세요. 푸시·메일 발송은 준비 중이라 지금은 이 브라우저에 저장되고, 이 화면에서 도달 여부를 보여드립니다.</p>
       <div class="cmp-row" style="margin-top:10px">
         <div class="field"><label for="max-al-sym">티커</label><input id="max-al-sym" list="sym-list" placeholder="예: AAPL" style="font-family:var(--mono);text-transform:uppercase"></div>
