@@ -48,6 +48,7 @@ invest/icon.svg, icon-*.png     버픽 로고 아이콘
 invest/vendor/supabase.js       supabase-js 2.117.2 (MIT), 로그인·회원 정보
 supabase/schema.sql             회원 정보 테이블(profiles)과 보안 규칙. Supabase SQL Editor 에서 실행
 supabase/email-template.html    로그인 메일 양식 (인증 코드 포함)
+invest/terms.html · privacy.html · delete-account.html   이용약관 · 개인정보처리방침 · 계정 삭제 안내 (스토어 등록용)
 scripts/fetch-market-data.mjs   Yahoo Finance 에서 시세·일봉을 받아 JSON 으로 저장
 scripts/fetch-stocks.mjs        S&P 500 전 종목·주요 ETF 의 일봉·5분봉을 종목별 JSON 으로 저장
 scripts/fetch-filings.mjs       버크셔 해서웨이 13F-HR 을 SEC EDGAR 에서 받아 분기별 보유 종목으로 정리
