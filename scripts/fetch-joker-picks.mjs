@@ -236,7 +236,8 @@ function extractYear(list) {
   const byId = (ids, sj) => (it) => ids.includes(it.account_id) && (!sj || sj(it));
   const byNm = (re, sj, ex) => (it) => sj(it) && re.test(it.account_nm || "") && !(ex && ex.test(it.account_nm || ""));
   const BS = (it) => it.sj_div === "BS", CF = (it) => it.sj_div === "CF";
-  const rev = first(byId(["ifrs-full_Revenue", "ifrs_Revenue"], isIS)) ?? first(byNm(/^매출액$|^수익\(매출액\)$|^매출$/, isIS));
+  const rev = first(byId(["ifrs-full_Revenue", "ifrs_Revenue"], isIS)) ?? first(byNm(/^매출액$|^수익\(매출액\)$|^매출$/, isIS))
+    ?? first(byNm(/^영업수익$/, isIS)); // 일부 회사(바이오·서비스 등)는 매출액 대신 영업수익으로 적는다 (리가켐바이오 2022~2024 사례)
   const op = first(byId(["dart_OperatingIncomeLoss"], isIS)) ?? first(byNm(/^영업이익(\(손실\))?$/, isIS));
   const ni = first(byId(["ifrs-full_ProfitLossAttributableToOwnersOfParent"], isIS))
     ?? first(byNm(/지배기업.*(순이익|지분)|지배주주.*순이익/, isIS))
@@ -247,7 +248,10 @@ function extractYear(list) {
   const liab = first(byId(["ifrs-full_Liabilities", "ifrs_Liabilities"], BS)) ?? first(byNm(/^부채총계$/, BS));
   const cfo = first(byId(["ifrs-full_CashFlowsFromUsedInOperatingActivities", "ifrs_CashFlowsFromUsedInOperatingActivities"], CF))
     ?? first(byNm(/영업활동.*현금흐름/, CF));
-  const capex = sumAbs(byNm(/유형자산의?\s*취득|무형자산의?\s*취득/, CF));
+  const capex = sumAbs(byNm(/유형자산의?\s*취득|무형자산의?\s*취득/, CF))
+    // 일부 회사는 설비투자를 자산 항목별로 쪼개 적는다 (예: 리노공업 2016 '토지의 취득'·'기계장치의 취득').
+    // 합산 항목이 없을 때만 항목별 취득을 모은다. 금융상품·관계기업 등 투자 취득은 이름에 안 걸린다
+    ?? sumAbs(byNm(/(토지|건물|구축물|기계장치|차량운반구|공구|비품|시설장치|건설중인자산|사용권자산|산업재산권|소프트웨어|개발비|기타의?유형자산|기타의?무형자산)의?\s*취득/, CF));
   const dep = sumAbs(byNm(/감가상각|상각비/, CF, /대손|손상|미상각/));
   const cash = (first(byId(["ifrs-full_CashAndCashEquivalents", "ifrs_CashAndCashEquivalents"], BS)) ?? first(byNm(/^현금및현금성자산/, BS)) ?? 0)
     + (sumAbs(byNm(/단기금융상품/, BS)) ?? 0);
@@ -258,7 +262,7 @@ function extractYear(list) {
   const tsBuy = sumAbs(byNm(/자기주식.*취득/, CF));
   const tsSell = sumAbs(byNm(/자기주식.*처분/, CF));
   if (ni == null || eq == null) return null; // 최소한 순이익·자본이 없으면 못 쓴다
-  return { rev, op, ni, eq, liab, cfo, capex, dep, cash, borrow, intExp, tsBuy, tsSell };
+  return { rev, op, ni, eq, liab, cfo, capex, dep, cash, borrow, intExp, tsBuy, tsSell, x2: 1 }; // x2 = 보강된 추출기(영업수익·항목별 설비투자 폴백)로 뽑은 데이터
 }
 // prefer 가 "OFS" 면 별도재무제표부터 조회한다 (연결이 없는 회사로 확인된 경우 호출 절약).
 // 반환: undefined = 한도 소진, null = 데이터 없음, { data, fs } = 성공(어느 재무제표였는지 포함)
@@ -520,6 +524,17 @@ async function main() {
       if (got) { e.cache.years[LAST_YEAR] = got.data; dirty = true; }
       else if (got === null) { e.cache.years[LAST_YEAR].intExp = null; e.cache.years[LAST_YEAR].tsBuy = null; dirty = true; } // 못 받으면 null 로 마킹해 반복 방지
     }
+    // 매출·설비투자 항목 누락 보정: 옛 추출기는 '영업수익'이나 항목별 설비투자를 못 읽어 null 로
+    // 저장했고, 한 해만 비어도 10년 판정이 통째로 막혔다 (약 175개 회사 · 리노공업 2016 등).
+    // 보강된 추출기(x2)로 그 연도만 한 번씩 다시 받고, 그래도 비면 x2 마킹으로 반복을 막는다
+    for (const y of YEARS) {
+      const v = e.cache.years[y];
+      if (!v || v.x2 || (v.rev != null && v.capex != null) || budgetOut || calls >= COLLECT_CAP) continue;
+      const got = await fetchYear(e.corp, y, e.cache.fs);
+      if (got === undefined) break; // 한도 소진 — 마킹하지 않고 다음 실행에서 이어서
+      e.cache.years[y] = got ? got.data : { ...v, x2: 1 };
+      dirty = true;
+    }
     // 최신 연도부터 조회: 최신이 없으면(신규 상장 등) 과거 조회를 건너뛰고,
     // 연결재무제표가 없는 회사로 확인되면 다음 연도부터 별도를 먼저 조회해 호출을 아낀다
     for (const y of [...YEARS].reverse()) {
@@ -584,7 +599,11 @@ async function main() {
       if (corp.excluded) return { ...base, verdict: "excluded", note: "금융·지주·리츠 등은 이 산식이 맞지 않아 판정 제외" };
       const e = entryByStock.get(t.t);
       const s = e ? screenCorp(e.cache.years) : null;
-      if (!s) return { ...base, verdict: "nodata", note: "10년치 재무 데이터가 아직 안 모였습니다" };
+      if (!s) {
+        // 사유를 구분해 보여준다: 연도 자체가 비면 상장 이력 문제, 연도는 다 있는데 항목이 비면 공시 항목 문제
+        const allYears = YEARS.every((y) => e.cache.years[y]);
+        return { ...base, verdict: "nodata", note: allYears ? "일부 연도의 매출·설비투자 항목을 확인하지 못해 판정 보류" : "상장 10년 미만 등 10년치 사업보고서가 아직 안 모였습니다" };
+      }
       // 주식수·현재가 → 시총. 판정 시리즈는 통과 여부와 무관하게 조회한다 (연 단위 캐시)
       let shares = e.cache.sharesYear === LAST_YEAR ? e.cache.shares : null;
       if (!shares && !budgetOut) {
