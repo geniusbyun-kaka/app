@@ -1,6 +1,7 @@
 name: Joker picks (Buffett-style KR screen)
 
-# 매주 토요일 오전(한국시간 9시) DART 사업보고서 재무제표로 한국 상장사를 버핏식 기준으로
+# 매주 토요일 오전(한국시간 7시 17분 = 금요일 22:17 UTC) DART 사업보고서 재무제표로 한국 상장사를 버핏식 기준으로
+# (정각 cron 은 GitHub 혼잡으로 5~6시간씩 밀려 토요일 오후 검토와 겹쳤다 — 2026-11-14 결정으로 비정각 시각으로 이동)
 # 스크리닝해 조커픽 후보를 `joker` 브랜치에 저장합니다 (invest/index.html 의 Max 라운지가 읽습니다).
 # 후보는 바로 공개되지 않고, 주말 동안 사업 지배구조·경제적 해자 검토를 거쳐
 # invest/joker-approved.json 에 등록된 픽만 월요일부터 구독자 화면에 나옵니다.
@@ -11,7 +12,7 @@ name: Joker picks (Buffett-style KR screen)
 # 넘긴 실행부터 주간 픽이 뽑히기 시작합니다. 이후에는 새 사업보고서 분만 받아 빠릅니다.
 on:
   schedule:
-    - cron: "0 0 * * 6"
+    - cron: "17 22 * * 5"
   workflow_dispatch:
 
 permissions:
