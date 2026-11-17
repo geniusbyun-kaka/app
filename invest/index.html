@@ -1992,14 +1992,21 @@ function guruBuys(f, h) {
 // 정확 일치만 보면 이런 공시가 통째로 빠지므로(버크셔 9/21 레너 274만주 누락 사례),
 // 나열된 티커 중 하나라도 클래스 별칭(SHARE_CLASS_ALIAS)으로 같은 종목이면 매칭한다.
 const evTickerMatch = (evTicker, ticker) => String(evTicker || "").split(/[,\s]+/).some((t) => t && myAlias(t.replace(/\./g, "-")) === myAlias(ticker));
+// 해당 클래스를 정확히 지목한 공시인지 (별칭 없이). GOOGL/GOOG 처럼 클래스별로 따로 공시가 있으면 그걸 우선한다
+const evTickerExact = (evTicker, ticker) => String(evTicker || "").split(/[,\s]+/).some((t) => t && t.replace(/\./g, "-") === ticker);
 function pricedBuyEvents(evs, g, ticker) {
   if (!ticker) return [];
   const file = guruEventFile(g.id);
   const short = GURU_SHORT[g.id] || g.name;
-  return [
+  const all = [
     ...(evs.auto || []).filter((e) => e.guru === file && e.side === "buy" && e.priceLow != null && evTickerMatch(e.ticker, ticker)),
     ...(evs.manual || []).filter((e) => e.side === "buy" && e.priceLow != null && evTickerMatch(e.ticker, ticker) && (String(e.guru || "").includes(short) || String(e.guru || "").includes(g.name))).map((e) => ({ ...e, manual: true })),
   ];
+  // 같은 회사의 다른 클래스(GOOGL/GOOG 등)가 각각 따로 공시됐으면 이 행의 클래스 것만 쓴다.
+  // 그래야 두 행이 서로의 주식수까지 합산해 보여주지 않는다 (2026-11-17 알파벳 28.6M주 중복 사례).
+  // 클래스를 특정한 공시가 하나도 없을 때만 별칭 전체를 쓴다 (한 공시에 두 클래스를 함께 신고한 레너 "LEN, LEN.B" 형태).
+  const exact = all.filter((e) => evTickerExact(e.ticker, ticker));
+  return exact.length ? exact : all;
 }
 const pricedEvDate = (e) => String(e.to || e.from || e.filed || e.date || "").slice(0, 10);
 // 13F 추정치 rec { period, mid } 위에, 마지막 매수 분기 안이거나 그 뒤의 실제 단가 공시·뉴스를
