@@ -92,12 +92,16 @@ function quarterBuyEst(stock, period) {
   return isFinite(lo) ? lo * 1.05 : null;
 }
 const evTickerMatch = (evTicker, ticker) => String(evTicker || "").split(/[,\s]+/).some((t) => t && alias(t.replace(/\./g, "-")) === alias(ticker));
+const evTickerExact = (evTicker, ticker) => String(evTicker || "").split(/[,\s]+/).some((t) => t && t.replace(/\./g, "-") === ticker);
 const pricedEvDate = (e) => String(e.to || e.from || e.filed || e.date || "").slice(0, 10);
 function pricedBuyEvents(evs, g, ticker) {
-  return [
+  const all = [
     ...(evs.auto || []).filter((e) => e.guru === g.file && e.side === "buy" && e.priceLow != null && evTickerMatch(e.ticker, ticker)),
     ...(evs.manual || []).filter((e) => e.side === "buy" && e.priceLow != null && evTickerMatch(e.ticker, ticker) && (String(e.guru || "").includes(g.short) || String(e.guru || "").includes(g.name))),
   ];
+  // 클래스별 공시가 따로 있으면 그 클래스 것만 (앱 invest/index.html 과 동일 로직 — 알파벳 중복 합산 방지)
+  const exact = all.filter((e) => evTickerExact(e.ticker, ticker));
+  return exact.length ? exact : all;
 }
 function applyPricedEvents(rec, events) {
   const cutoff = rec ? quarterStart(rec.period) : "";
