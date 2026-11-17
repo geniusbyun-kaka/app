@@ -2715,6 +2715,7 @@ const jkIsDemo = (p) => /데모/.test(String(p.source || ""));
 // 공개된 종목은 아래 표에 쌓이고, 표에서 종목을 누르면 그 종목의 체크리스트 판정 근거가 펼쳐진다.
 const JK_FAIL_LABEL = { roe10: "ROE 10년 평균", debt: "부채비율", intCov: "이자보상배율", opStd: "이익 변동성", fcfYears: "잉여현금흐름", epsCagr: "이익 성장", niTrend: "이익 방향", roeDown: "ROE 추세", majorHolder: "대주주 지분", avgValueEok: "거래대금" };
 let jkvRows = []; // 지금까지 공개된 판정 시리즈 종목 (표에서 근거 토글용)
+let jkvNotes = {}; // 운영진 노트 (invest/joker-notes.json · 티커 → 블록딜 등 정성 맥락)
 const jkvTag = (r) => r.verdict === "pass" ? '<span class="tag inc">버핏 기준 통과</span>'
   : r.verdict === "fail" ? '<span class="tag exit">탈락</span>'
   : r.verdict === "excluded" ? '<span class="tag">판정 제외</span>' : '<span class="tag">데이터 부족</span>';
@@ -2731,7 +2732,8 @@ function jkvDetailHtml(r) {
   return `<div class="jk-verdict">${jkvTag(r)}<span>${summary}${r.price ? ` · 판정 시 주가 <strong>${fmt.krw(r.price)}</strong>` : ""}</span></div>
     <div class="eyebrow" style="margin-top:14px">버핏 체크리스트 (펀더멘털 · 기준 11개 + 참고 2개)</div>
     ${jkChecklistHtml(r.metrics)}
-    ${jkValuationHtml(r.valuation)}`;
+    ${jkValuationHtml(r.valuation)}
+    ${jkvNotes[r.ticker] ? `<div class="eyebrow" style="margin-top:14px">운영진 노트 · 숫자 밖의 맥락</div><p class="desc">${escHtml(jkvNotes[r.ticker])}</p>` : ""}`;
 }
 function jkVerdictSeriesHtml(vd) {
   // 매주 월요일 코스피 1종목 + 코스닥 1종목을 시총 순서대로 집중분석해 공개한다 (David 로직).
@@ -2822,6 +2824,8 @@ async function renderMaxJoker() {
   ].join("");
   initCommaInputs(body);
   // 버핏 판정 시리즈는 별도 파일이라 픽 로딩과 독립적으로 채운다 (실패해도 픽 화면은 유지)
+  fetch(`joker-notes.json?t=${Date.now()}`, { cache: "no-store" })
+    .then((r) => (r.ok ? r.json() : null)).then((j) => { if (j && j.notes) jkvNotes = j.notes; }).catch(() => {});
   fetch(`${JOKER_BASE}joker-verdicts.json?t=${Date.now()}`, { cache: "no-store" })
     .then((r) => (r.ok ? r.json() : null)).catch(() => null)
     .then((vd) => {
@@ -4102,6 +4106,8 @@ async function myNewsHtml(stocks, guruObjs) {
 // My Page 를 열어보면 '본 것'으로 기록되어 점은 사라지고, 카드는 7일 동안 유지된다.
 // 이벤트가 없는 평상시에는 아무것도 나타나지 않는다. ──
 const GURU_FRESH_DAYS = 7;
+// 공시의 발행사 법인명에서 뒤쪽 법인 접미사(INC, CORP 등)와 앞의 THE 를 떼어 짧게 보여준다
+const issuerShort = (s) => String(s || "").replace(/[,.]?\s*(INC|INCORPORATED|CORP|CORPORATION|CO|COMPANY|PLC|LTD|LIMITED|S\.?P\.?A|N\.?V|HOLDINGS?)\.?$/i, "").replace(/^THE\s+/i, "").trim();
 function freshGuruEvents(evs, gurus) {
   const cutoff = new Date(Date.now() - GURU_FRESH_DAYS * 86400000).toISOString().slice(0, 10);
   const items = [];
@@ -4112,10 +4118,16 @@ function freshGuruEvents(evs, gurus) {
       if (e.guru !== file) continue;
       const date = String(e.to || e.from || e.filed || "").slice(0, 10);
       if (!date || date < cutoff) continue;
+      // 13D/G 는 티커가 없을 때가 많아 발행사 이름(법인 접미사 제거)으로 어떤 종목인지 보여준다.
+      // 13G/13D 첫 공시 = 신규 지분 (실질 매수), /A 수정 공시 = 보유 지분 변동.
+      // 중복 제거 키에 발행사·지분율을 넣는다: 같은 날 같은 양식의 13G/A 여러 건(티커 없음)이
+      // 전에는 한 건으로 합쳐져 나머지가 화면에서 사라졌다 (11/16 버크셔 4건 중 1건만 표시된 사례).
+      const company = e.ticker || issuerShort(e.issuer);
+      const isAmend = (e.form || "").indexOf("/A") >= 0;
       items.push({
-        date, url: e.url, key: `a|${file}|${e.form}|${e.ticker || ""}|${date}|${e.side}`,
-        html: `<strong>${short}</strong> · ${e.ticker ? `<strong>${escHtml(e.ticker)}</strong> ` : ""}${e.side === "stake"
-          ? `지분 ${e.percent != null ? fmt.n(e.percent, 1) + "% " : ""}공시`
+        date, url: e.url, key: `a|${file}|${e.form}|${e.ticker || ""}|${e.issuer || ""}|${e.percent != null ? e.percent : ""}|${date}|${e.side}`,
+        html: `<strong>${short}</strong> · ${company ? `<strong>${escHtml(company)}</strong> ` : ""}${e.side === "stake"
+          ? `${isAmend ? "보유 지분 변동" : '<strong class="pos">신규 지분</strong>'} 공시${e.percent != null ? ` · 지분 ${fmt.n(e.percent, 1)}%` : ""}`
           : `<strong class="${e.side === "buy" ? "pos" : "neg"}">${e.side === "buy" ? "매수" : "매도"}</strong> ${fmtSh(e.shares)}주${e.priceLow != null ? ` · 단가 $${fmt.n(e.priceLow)}${e.priceHigh > e.priceLow ? "~$" + fmt.n(e.priceHigh) : ""}` : ""}`} <span class="faint">(${escHtml(e.form)})</span>`,
       });
     }
