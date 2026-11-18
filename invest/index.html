@@ -1079,6 +1079,7 @@ function authErrText(err) {
   if (wait) return `보안을 위해 ${wait[1]}초 후에 다시 요청할 수 있습니다.`;
   if (err?.status === 429 || /rate limit|too many/i.test(m)) return "메일 발송 한도에 걸렸습니다. 잠시 후 다시 시도해 주세요.";
   if (/validate email|invalid format|email address/i.test(m)) return "이메일 주소를 다시 확인해 주세요.";
+  if (/credentials/i.test(m)) return "이메일 또는 비밀번호가 맞지 않습니다.";
   if (/expired|invalid|token/i.test(m)) return "코드가 맞지 않거나 만료되었습니다. 다시 확인해 주세요.";
   if (/fetch|network|load failed/i.test(m)) return "서버에 연결하지 못했습니다. 인터넷 연결을 확인해 주세요.";
   return `오류가 발생했습니다: ${m}`;
@@ -1096,6 +1097,20 @@ function renderGate() {
   if ($("#gate").hidden) return;
   const msg = auth.msg ? `<p class="gate-msg ${auth.msgError ? "error" : ""}" role="status">${escHtml(auth.msg)}</p>` : "";
   const dis = auth.busy ? "disabled" : "";
+  // 비밀번호 로그인: 스토어 심사 담당자처럼 메일 인증을 받을 수 없는 계정용 (계정은 Supabase 대시보드에서 관리자가 만든다)
+  if (auth.step === "pw") {
+    $("#gate-body").innerHTML = `
+      <p class="gate-label">비밀번호로 로그인</p>
+      <form id="gate-pw-form" style="display:grid;gap:14px">
+        <input class="gate-input" id="gate-pw-email" type="email" inputmode="email" autocomplete="username" required placeholder="이메일" aria-label="이메일" value="${escHtml(auth.email)}" ${dis}>
+        <input class="gate-input" id="gate-pw" type="password" autocomplete="current-password" required placeholder="비밀번호" aria-label="비밀번호" ${dis}>
+        <p class="gate-note">비밀번호를 발급받은 계정만 이용할 수 있습니다. 일반 회원은 이메일 인증으로 로그인해 주세요.</p>
+        ${msg}
+        <button class="gate-btn" type="submit" ${dis}>${auth.busy ? "확인 중…" : "로그인"}</button>
+      </form>
+      <div class="gate-links"><button type="button" id="gate-back" ${dis}>이메일 인증으로 로그인</button></div>`;
+    return;
+  }
   if (auth.step === "code") {
     $("#gate-body").innerHTML = `
       <p class="gate-label">메일을 확인해 주세요</p>
@@ -1122,7 +1137,8 @@ function renderGate() {
     <button class="gate-btn kakao" type="button" id="gate-kakao" ${dis}>
       <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3C6.75 3 2.5 6.36 2.5 10.5c0 2.64 1.73 4.96 4.35 6.3l-.9 3.37c-.08.3.26.54.52.37l3.97-2.64c.5.06 1.02.1 1.56.1 5.25 0 9.5-3.36 9.5-7.5S17.25 3 12 3Z"/></svg>
       카카오로 계속하기
-    </button>`;
+    </button>
+    <div class="gate-links"><button type="button" id="gate-pw-open" ${dis}>비밀번호로 로그인</button></div>`;
 }
 // 카카오 OAuth: Supabase 의 카카오 공급자를 쓴다. 성공하면 카카오 동의 화면으로 이동했다가
 // 돌아오고, 세션은 supabase-js 가 주소의 토큰으로 자동 복원한다 (onAuthStateChange 가 받음).
@@ -1240,6 +1256,7 @@ function initAuth() {
   });
   $("#gate").addEventListener("click", (e) => {
     if (auth.busy) return;
+    if (e.target.closest("#gate-pw-open")) { auth.step = "pw"; setAuthMsg(""); renderGate(); return $("#gate-pw-email")?.focus(); }
     if (e.target.closest("#gate-back")) { auth.step = "email"; setAuthMsg(""); renderGate(); return $("#gate-email")?.focus(); }
     if (e.target.closest("#gate-resend")) return sendAuthCode();
     if (e.target.closest("#gate-kakao")) return signInKakao();
@@ -1247,6 +1264,11 @@ function initAuth() {
   $("#gate").addEventListener("submit", (e) => {
     e.preventDefault();
     if (auth.busy) return;
+    if (e.target.id === "gate-pw-form") {
+      auth.email = $("#gate-pw-email").value.trim(); const password = $("#gate-pw").value;
+      authCall(() => sb.auth.signInWithPassword({ email: auth.email, password })).then((error) => { if (error) { setAuthMsg(authErrText(error), true); renderAuthUI(); $("#gate-pw")?.focus(); } });
+      return;
+    }
     if (e.target.id === "gate-email-form") { auth.email = $("#gate-email").value.trim(); if (auth.email) sendAuthCode(); }
     if (e.target.id === "gate-code-form") { auth.code = $("#gate-code").value.replace(/\D/g, ""); if (auth.code) verifyAuthCode(); else { setAuthMsg("메일의 링크를 누르거나, 인증 코드를 입력해 주세요.", true); renderGate(); } }
   });
