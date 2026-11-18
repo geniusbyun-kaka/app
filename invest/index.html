@@ -4023,6 +4023,8 @@ async function myStockRows(stocks, cmpGurus) {
 function myStockTableHtml(rows) {
   const cls = (v) => (v > 0 ? "pos" : v < 0 ? "neg" : "");
   const stockCell = (r) => `<span class="tk${r.item ? "" : " plain"}" ${r.item ? `data-stock="${r.sym}"` : ""}>${r.sym}</span><span class="nm">${r.item?.name || ""}</span>`;
+  // 판단·최근 매수가(추정)·대비는 라운지 "매수 가격 따라가기"와 같은 Pro 기능이라 Pro 미만에는 잠근다
+  const proOk = planRank() >= PLAN_RANK.pro;
   const trs = rows.flatMap((r) => {
     const quote = `<td>${r.item ? fmt.n(r.item.price) : "–"}</td><td class="${cls(r.item?.changePercent)}">${r.item?.changePercent == null ? "–" : fmt.signed(r.item.changePercent) + "%"}</td>`;
     const tail = `<td class="txt">${favStarHtml("stock", r.sym, true, true)}</td>`;
@@ -4030,21 +4032,24 @@ function myStockTableHtml(rows) {
       const msg = r.others?.length
         ? `${r.others.slice(0, 3).map((o) => `${GURU_SHORT[o.g.id] || o.g.name} <span class="faint small">비중 ${fmt.n(o.h.weight * 100, 1)}%</span>`).join(" · ")} 보유 중 <span class="faint small">(관심 레전드에 추가하면 최근 매수가와 비교)</span>`
         : "추적 중인 레전드 보유 없음";
-      return [`<tr><td class="txt">${stockCell(r)}</td><td class="txt faint">–</td>${quote}<td class="txt faint" colspan="4">${msg}</td>${tail}</tr>`];
+      return [`<tr><td class="txt">${stockCell(r)}</td><td class="txt faint" colspan="5">${msg}</td>${quote}${tail}</tr>`];
     }
     return r.matches.map((m) => {
       const gname = GURU_SHORT[m.g.id] || m.g.name;
       const holdNote = m.h?.ticker && m.h.ticker !== r.sym ? ` <span class="faint small">(${m.h.ticker} 보유)</span>` : "";
       const weightNote = m.h ? `<span class="faint small">비중 ${fmt.n(m.h.weight * 100, 1)}%</span>` : `<span class="faint small">13F 반영 전 신규 지분</span>`;
-      return `<tr><td class="txt">${stockCell(r)}</td>
-        <td class="txt">${m.grade >= 0 ? followTagHtml(m.grade) : m.rec ? '<span class="faint">현재가 없음</span>' : '<span class="faint">최근 매수 이력 없음</span>'}</td>${quote}
-        <td class="txt">${gname}${holdNote} ${weightNote}</td>
-        <td class="txt">${m.rec ? m.rec.period + (m.rec.form4 ? ` <span class="tag new">${m.rec.evLabel || "Form 4"}</span>` : "") : "–"}</td>
+      const proCells = proOk
+        ? `<td class="txt">${m.grade >= 0 ? followTagHtml(m.grade) : m.rec ? '<span class="faint">현재가 없음</span>' : '<span class="faint">최근 매수 이력 없음</span>'}</td>
         <td>${m.rec ? "$" + fmt.n(m.rec.mid) + (m.rec.form4 && m.rec.shares ? ` <span class="faint small">${fmtSh(m.rec.shares)}주</span>` : "") : "–"}</td>
-        <td class="${m.rel == null ? "" : m.rel <= 0 ? "pos" : "neg"}">${m.rel == null ? "–" : fmt.pct(m.rel)}</td>${tail}</tr>`;
+        <td class="${m.rel == null ? "" : m.rel <= 0 ? "pos" : "neg"}">${m.rel == null ? "–" : fmt.pct(m.rel)}</td>`
+        : `<td class="txt faint" colspan="3">Pro 구독부터 🔒</td>`;
+      return `<tr><td class="txt">${stockCell(r)}</td>${proCells}
+        <td class="txt">${gname}${holdNote} ${weightNote}</td>
+        <td class="txt">${m.rec ? m.rec.period + (m.rec.form4 ? ` <span class="tag new">${m.rec.evLabel || "Form 4"}</span>` : "") : "–"}</td>${quote}${tail}</tr>`;
     });
   });
-  return `<div class="tablewrap"><table><thead><tr><th>종목</th><th>판단</th><th>현재가</th><th>전일비</th><th>관심 레전드</th><th>마지막 매수</th><th>최근 매수가 (추정)</th><th>최근 매수가 대비</th><th>관리</th></tr></thead><tbody>${trs.join("")}</tbody></table></div>`;
+  const upsell = proOk ? "" : `<p class="small faint" style="margin:0 0 8px">레전드 <strong>판단·최근 매수가(추정) 비교</strong>는 <strong>Pro 구독부터</strong> 제공됩니다. <button class="chip" type="button" id="my-pro-upsell">구독 안내 →</button></p>`;
+  return `${upsell}<div class="tablewrap"><table><thead><tr><th>종목</th><th>판단</th><th>최근 매수가 (추정)</th><th>최근 매수가 대비</th><th>관심 레전드</th><th>마지막 매수</th><th>현재가</th><th>전일비</th><th>관리</th></tr></thead><tbody>${trs.join("")}</tbody></table></div>`;
 }
 async function myGuruCardHtml(g) {
   const headBtn = `<button class="btn" type="button" data-port-open="${g.id}" style="margin-left:auto">상세 보기 →</button>`;
@@ -4253,6 +4258,7 @@ async function renderMyPage() {
 // 마이 페이지 안의 바로가기: 티커 → 종목 차트, data-mytab → 해당 탭
 $("#panel-my").addEventListener("click", (e) => {
   const mt = e.target.closest("[data-mytab]"); if (mt) return selectTab(mt.dataset.mytab);
+  if (e.target.closest("#my-pro-upsell")) return openGuruModal();
   if (e.target.closest("#mypf-add")) return $("#mypf-rows").insertAdjacentHTML("beforeend", myPfRowHtml());
   const pd = e.target.closest("[data-mypf-del]"); if (pd) return pd.closest(".mypf-row").remove();
   if (e.target.closest("#mypf-save")) return saveMyPf();
