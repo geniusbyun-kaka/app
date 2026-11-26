@@ -26,7 +26,10 @@
 - [ ] 탈퇴 기능 실제 테스트 (테스트 이메일로 가입 → 탈퇴 → Users 목록에서 사라졌는지)
 - [x] 자체 도메인 구입: `mopickapp.com` (가비아, 2026-11-26, 개인 명의 → 법인 설립 후 명의 변경)
 - [x] 가비아 DNS 레코드 입력, 모픽 전용 저장소 `geniusbyun-kaka/mopick` 생성
-- [ ] 배포 토큰 발급 → `MOPICK_DEPLOY_TOKEN` Secret 등록 → `mopick` 저장소 Pages 켜기 (HTTPS 강제)
+- [x] 배포 토큰 발급 → `MOPICK_DEPLOY_TOKEN` Secret 등록 → `mopick` 저장소 Pages 켜기 (2026-11-26, mopickapp.com 열림)
+- [ ] `mopick` 저장소 Pages 에서 **Enforce HTTPS** 체크 (인증서 발급 후)
+- [ ] HTTPS 확인 후: 옛 주소 → 새 주소 넘김 PR 머지
+- [ ] 배포 토큰 만료일 확인 (만료 전 재발급. 만료되면 mopickapp.com 이 더 이상 갱신되지 않음)
 - [ ] 도메인 연결 후: Supabase Site URL · Redirect URLs, 카카오 로그인 Redirect URI 를 새 주소로 변경
 - [ ] 고객 문의용 이메일 주소 정하기 (약관·스토어 등록 양쪽에 필요)
 - [ ] 스토어 자료: 대표 이미지 1024x500, 휴대폰 스크린샷 4~8장, 짧은 설명(80자), 자세한 설명(4000자)
