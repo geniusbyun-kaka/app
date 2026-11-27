@@ -96,7 +96,7 @@ cd invest && python3 -m http.server 8790         # 브라우저에서 http://loc
 처음 한 번 Supabase 대시보드에서 할 일:
 
 1. **SQL Editor**: `supabase/schema.sql` 전체를 붙여넣고 Run. 회원 정보 테이블(`profiles`)과 보안 규칙이 만들어집니다.
-2. **Authentication → URL Configuration**: Site URL 과 Redirect URLs 에 `https://geniusbyun-kaka.github.io/app/invest/` 추가.
+2. **Authentication → URL Configuration**: Site URL 은 `https://mopickapp.com/`, Redirect URLs 에 `https://mopickapp.com/**` 추가. (모픽은 `deploy-mopick` 워크플로가 `geniusbyun-kaka/mopick` 저장소로 복사해 `mopickapp.com` 으로 서비스합니다.)
 3. (나중에) **Authentication → Emails**: 기본 메일에는 로그인 링크만 있습니다. 메일 양식은 SMTP(Gmail, Resend 등)를 연결해야 수정할 수 있고, 연결 후 `Magic Link` 와 `Confirm signup` 양식을 `supabase/email-template.html` 로 바꾸면 인증 코드 입력으로도 로그인됩니다. 홈 화면에 추가한 아이폰 앱에서는 메일 링크가 사파리로 열리므로 코드 방식이 필요합니다.
 4. 앱에서 한 번 로그인한 뒤 SQL Editor 에서 `update public.profiles set is_admin = true, plan = 'max' where email = '내 이메일';` 을 실행하면 관리자가 됩니다.
 

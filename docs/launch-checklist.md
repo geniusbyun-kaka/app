@@ -1,6 +1,6 @@
 # 모픽 출시 체크리스트 (목표: 2027-01-01 구글 플레이)
 
-마지막 갱신: 2026-11-26. 상태가 바뀌면 이 파일을 고친다. `[x]` 완료 · `[ ]` 남음.
+마지막 갱신: 2026-11-27. 상태가 바뀌면 이 파일을 고친다. `[x]` 완료 · `[ ]` 남음.
 
 ## 1. 가장 급한 것 (법인 설립 직후, 순서대로)
 
@@ -26,9 +26,14 @@
 - [ ] 탈퇴 기능 실제 테스트 (테스트 이메일로 가입 → 탈퇴 → Users 목록에서 사라졌는지)
 - [x] 자체 도메인 구입: `mopickapp.com` (가비아, 2026-11-26, 개인 명의 → 법인 설립 후 명의 변경)
 - [x] 가비아 DNS 레코드 입력, 모픽 전용 저장소 `geniusbyun-kaka/mopick` 생성
-- [ ] 배포 토큰 발급 → `MOPICK_DEPLOY_TOKEN` Secret 등록 → `mopick` 저장소 Pages 켜기 (HTTPS 강제)
+- [x] 배포 토큰 발급 → `MOPICK_DEPLOY_TOKEN` Secret 등록 → `mopick` 저장소 Pages 켜기 (2026-11-26, mopickapp.com 열림)
+- [ ] `mopick` 저장소 Pages 에서 **Enforce HTTPS** 체크 (인증서 발급 후)
+- [ ] HTTPS 확인 후: 옛 주소 → 새 주소 넘김 PR 머지
+- [ ] 배포 토큰 만료일 확인 (만료 전 재발급. 만료되면 mopickapp.com 이 더 이상 갱신되지 않음)
 - [ ] 도메인 연결 후: Supabase Site URL · Redirect URLs, 카카오 로그인 Redirect URI 를 새 주소로 변경
-- [ ] 고객 문의용 이메일 주소 정하기 (약관·스토어 등록 양쪽에 필요)
+- [x] 고객 문의용 이메일: `mopick.support@gmail.com` (2026-11-27, 약관 3개 페이지에 반영. Play Console 개발자 계정도 이 계정으로)
+- [ ] 로그인 메일 발신 계정을 `mopick.support@gmail.com` 으로 변경 (Supabase SMTP, 앱 비밀번호 필요)
+- [ ] (가입자 증가 시) 메일 발송을 Resend + `login@mopickapp.com` 으로 전환. 지메일 발송 한도 하루 약 500통
 - [ ] 스토어 자료: 대표 이미지 1024x500, 휴대폰 스크린샷 4~8장, 짧은 설명(80자), 자세한 설명(4000자)
 - [ ] 약관·개인정보처리방침 법률 검토 (초안 상태)
 

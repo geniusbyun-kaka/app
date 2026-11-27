@@ -2,6 +2,10 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
+<script>
+// 옛 주소(geniusbyun-kaka.github.io/app/invest/)로 들어오면 정식 주소로 넘긴다. 메일 로그인 링크의 토큰(#...)도 그대로 가져간다.
+if (/\.github\.io$/.test(location.hostname)) location.replace("https://mopickapp.com/" + location.search + location.hash);
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>모픽 (Mopick)</title>
 <meta name="description" content="워렌 버핏의 가치투자법을 따라가는 투자의 픽">
